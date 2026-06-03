@@ -42,11 +42,12 @@ async function getValidCredentials(page: Page): Promise<{ userName: string; pass
 const data1 = ExcelUtil.getTestData(SHEET, "TC01_ValidLogin");
 test(`${data1.TestID} - ${data1.Description}`, async ({ page }) => {
     Allure.attachDetails(data1.Description, data1.Issue);
-    const { userName, password } = await getValidCredentials(page);
     const home = new HomeSteps(page);
     await home.launchApplication();
-    await home.login(userName, password);
-    await home.validateLogin(userName);
+    // Nipige requires selecting the account's role ("Login as") — driven by the `persona`
+    // column in the test data (e.g. tenant / seller).
+    await home.login(data1.UserName, data1.Password, data1.persona);
+    await home.validateLogin(data1.UserName);
     await home.logout();
 });
 

@@ -20,47 +20,72 @@ export default class HomeSteps {
         });
     }
     /**
-     * Log into the application
-     * @param userName 
-     * @param password 
+     * Log into the application.
+     * @param userName email address / username
+     * @param password account password
+     * @param persona optional "Login as" role to select before submitting (e.g. "tenant",
+     *                "seller"). The Nipige login screen requires picking the role the account
+     *                belongs to; omit it for screens/flows that do not present role buttons.
      */
-    public async login(userName: string, password: string) {
-        await test.step(`Login to application credentials as ${userName} & ${password}`, async () => {
-            await this.ui.element(HomePage.USER_ICON, HomePageConstants.USER_ICON).click();
-            await this.enterLoginDetails(userName, password);
-        });        
+    public async login(userName: string, password: string, persona?: string) {
+        await test.step(`Login as ${userName}${persona ? ` with role '${persona}'` : ""}`, async () => {
+            await this.enterLoginDetails(userName, password, persona);
+        });
     }
     /**
-     * Enter login details
-     * @param userName 
-     * @param password 
+     * Enter login details and submit.
+     * @param userName email address / username
+     * @param password account password
+     * @param persona optional "Login as" role to select before submitting
      */
-    public async enterLoginDetails(userName: string, password: string) {
-        await test.step(`Enter login credentials as ${userName} & ${password}`, async () => {
+    public async enterLoginDetails(userName: string, password: string, persona?: string) {
+        await test.step(`Enter login credentials as ${userName}`, async () => {
             await this.ui.editBox(HomePage.USER_NAME_TEXTBOX, HomePageConstants.USER_NAME).fill(userName);
             await this.ui.editBox(HomePage.PASSWORD_TEXTBOX, HomePageConstants.PASSWORD).fill(password);
-            await this.ui.checkbox(HomePage.REMEMBER_ME_CHECKBOX, HomePageConstants.REMEMBER_ME_CHECKBOX).check();
+            if (persona) {
+                await this.selectLoginRole(persona);
+            }
             await this.ui.element(HomePage.SIGN_IN_BUTTON, HomePageConstants.SIGN_IN_BUTTON).click();
         });
     }
     /**
-     * Validate logged in user
-     * @param userName 
+     * Selects the "Login as" role button matching the given persona. The Excel data stores the
+     * persona in lower case (e.g. "tenant", "sub dealer"); the on-screen buttons are title-cased
+     * (e.g. "Tenant", "Sub Dealer"), so we normalise before matching.
+     * @param persona role name as stored in the test data
+     */
+    private async selectLoginRole(persona: string) {
+        const role = persona.trim().split(/\s+/)
+            .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+            .join(" ");
+        await test.step(`Select '${role}' as the login role`, async () => {
+            await this.ui.element(HomePage.loginAsRole(role),
+                `${HomePageConstants.LOGIN_AS_ROLE} (${role})`).click();
+        });
+    }
+    /**
+     * Validate that the user is successfully logged in.
+     * The Nipige app shows an account display name rather than the login email, so success is
+     * asserted via the dashboard URL plus a visible profile menu rather than by matching the
+     * username text.
+     * @param userName the account used to log in (used only for clearer failure messages)
      */
     public async validateLogin(userName: string) {
         await test.step(`Verify that user is successfully logged in as ${userName}`, async () => {
-            const loggedInUser = this.page.locator(HomePage.LOGGED_IN_USER);
+            const profileMenu = this.page.locator(HomePage.PROFILE_MENU).first();
             const signInError = this.page.locator(HomePage.SIGN_IN_ERROR_MESSAGE);
             // Wait for the app to settle into EITHER a logged-in or a failed state, so an
             // unsuccessful login fails fast with a clear reason instead of a long visibility timeout.
             const LOGIN_STATE_TIMEOUT_MS = 15_000;
-            await expect(loggedInUser.or(signInError).first(),
-                `Neither the logged-in user nor a sign-in error appeared for '${userName}'`)
+            await expect(profileMenu.or(signInError).first(),
+                `Neither the logged-in profile menu nor a sign-in error appeared for '${userName}'`)
                 .toBeVisible({ timeout: LOGIN_STATE_TIMEOUT_MS });
             if (await signInError.isVisible()) {
                 throw new Error(`Login failed for '${userName}': ${(await signInError.innerText()).trim()}`);
             }
-            await expect(loggedInUser, `Logged-in username for '${userName}'`).toHaveText(userName);
+            await expect(this.page,
+                `Expected to land on the dashboard after logging in as '${userName}'`)
+                .toHaveURL(/\/home/, { timeout: LOGIN_STATE_TIMEOUT_MS });
         });
     }
     /**
@@ -79,10 +104,11 @@ export default class HomeSteps {
      */
     public async logout() {
         await test.step(`Logged out of application`, async () => {
-            await this.ui.pauseInSecs(CommonConstants.TWO);
-            await this.ui.element(HomePage.LOGGED_IN_USER, HomePageConstants.USER_NAME).click();
+            await this.ui.element(HomePage.PROFILE_MENU, HomePageConstants.PROFILE_MENU).click();
             await this.ui.element(HomePage.SIGN_OUT_LINK, HomePageConstants.SIGN_OUT_LINK).click();
-            await this.ui.pauseInSecs(CommonConstants.TWO);
+            await expect(this.page.locator(HomePage.USER_NAME_TEXTBOX),
+                "Expected to return to the login page after logging out")
+                .toBeVisible({ timeout: CommonConstants.DEFAULT_TIMEOUT * CommonConstants.ONE_THOUSAND });
         });
     }
     /**
