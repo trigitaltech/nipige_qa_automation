@@ -76,7 +76,9 @@ export default class HomeSteps {
             const signInError = this.page.locator(HomePage.SIGN_IN_ERROR_MESSAGE);
             // Wait for the app to settle into EITHER a logged-in or a failed state, so an
             // unsuccessful login fails fast with a clear reason instead of a long visibility timeout.
-            const LOGIN_STATE_TIMEOUT_MS = 15_000;
+            // Allow generous headroom: the migration backend can cold-start and leave the
+            // Log in button in a "Loading..." state for several seconds.
+            const LOGIN_STATE_TIMEOUT_MS = 30_000;
             await expect(profileMenu.or(signInError).first(),
                 `Neither the logged-in profile menu nor a sign-in error appeared for '${userName}'`)
                 .toBeVisible({ timeout: LOGIN_STATE_TIMEOUT_MS });
