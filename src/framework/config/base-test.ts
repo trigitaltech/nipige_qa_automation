@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { test as base } from '@playwright/test';
 
-export const test = base.extend<{ MyFixtures }, { gData: Map<string, any> }>({
+export const test = base.extend<Record<string, never>, { gData: Map<string, any> }>({
   gData: [async ({ }, use) => {
     const data = new Map<string, any>();
     data.set("SPACE", " ");

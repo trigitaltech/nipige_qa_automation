@@ -11,6 +11,10 @@ export default class Allure {
         }
     }
 
+    public static async attachText(name: string, content: string) {
+        await allure.attachment(name, content, { contentType: ContentType.TEXT });
+    }
+
     public static async attachPNG(name: string, path: string) {
         await allure.attachmentPath(name, path, {
             contentType: ContentType.PNG,

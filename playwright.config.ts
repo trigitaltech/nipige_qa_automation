@@ -7,21 +7,21 @@ dotenv.config();
 const timeInMin: number = 60 * 1000;
 const config: PlaywrightTestConfig = {
   use: {
-    browserName: Browser.type(process.env.BROWSER.toLowerCase()),
+    browserName: Browser.type((process.env.BROWSER ?? 'chrome').toLowerCase()),
     headless: false,
-    channel: Browser.channel(process.env.BROWSER.toLowerCase()),
+    channel: Browser.channel((process.env.BROWSER ?? 'chrome').toLowerCase()),
     launchOptions: {
       args: ["--start-maximized", "--disable-extensions", "--disable-plugins"],
       headless: false,
-      timeout: Number.parseInt(process.env.BROWSER_LAUNCH_TIMEOUT, 10),
-      slowMo: 100,
+      timeout: Number.parseInt(process.env.BROWSER_LAUNCH_TIMEOUT ?? '0', 10),
+     slowMo: 1000,
       downloadsPath: "./test-results/downloads",
     },
     viewport: null,
     ignoreHTTPSErrors: true,
     acceptDownloads: true,
-    actionTimeout: Number.parseInt(process.env.ACTION_TIMEOUT, 10) * timeInMin,
-    navigationTimeout: Number.parseInt(process.env.NAVIGATION_TIMEOUT, 10) * timeInMin,
+    actionTimeout: Number.parseInt(process.env.ACTION_TIMEOUT ?? '1', 10) * timeInMin,
+    navigationTimeout: Number.parseInt(process.env.NAVIGATION_TIMEOUT ?? '2', 10) * timeInMin,
     screenshot: { 
       mode: "only-on-failure",
       fullPage: true,
@@ -30,11 +30,11 @@ const config: PlaywrightTestConfig = {
   },
   testDir: "./src/tests",
   outputDir: "./test-results/failure",
-  retries: Number.parseInt(process.env.RETRIES, 10),
+  retries: Number.parseInt(process.env.RETRIES ?? '0', 10),
   preserveOutput: "failures-only",
   reportSlowTests: null,
-  timeout: Number.parseInt(process.env.TEST_TIMEOUT, 10) * timeInMin,
-  workers: Number.parseInt(process.env.PARALLEL_THREAD, 10),
+  timeout: Number.parseInt(process.env.TEST_TIMEOUT ?? '20', 10) * timeInMin,
+  workers: Number.parseInt(process.env.PARALLEL_THREAD ?? '1', 10),
   reporter: [
     ["dot"],
     ["allure-playwright", {
@@ -42,7 +42,7 @@ const config: PlaywrightTestConfig = {
       suiteTitle: false,
       environmentInfo: {
         OS: process.platform.toUpperCase(),
-        BROWSER: process.env.BROWSER.toUpperCase(),
+        BROWSER: (process.env.BROWSER ?? 'chrome').toUpperCase(),
         BASE_URL: process.env.BASE_URL,
       },
     }],
@@ -54,11 +54,11 @@ const config: PlaywrightTestConfig = {
   projects: [  
     {
       name: "local",
-      testMatch: `*${process.env.TEST_NAME.trim()}*`,
+      testMatch: `*${(process.env.TEST_NAME ?? 'LoginTest').trim()}*`,
     },
     {
       name: "suite",
-      testMatch: "*.test.ts",
+      testMatch: "*.spec.ts",
     },
   ],
 };

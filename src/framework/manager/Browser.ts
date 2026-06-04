@@ -1,16 +1,15 @@
+import { BrowserName } from "@playwright/test";
 import BrowserConstants from "../constants/BrowserConstants";
 
 export default class Browser {
-    public static type(browser: string) {
-        let browserType;
+    public static type(browser: string): BrowserName {
         if (browser === BrowserConstants.FIREFOX) {
-            browserType = BrowserConstants.FIREFOX;
+            return BrowserConstants.FIREFOX as BrowserName;
         } else if (browser === BrowserConstants.WEBKIT) {
-            browserType = BrowserConstants.WEBKIT;
+            return BrowserConstants.WEBKIT as BrowserName;
         } else {
-            browserType = BrowserConstants.CHROMIUM;
+            return BrowserConstants.CHROMIUM as BrowserName;
         }
-        return browserType;
     }
 
     public static channel(browser: string) {

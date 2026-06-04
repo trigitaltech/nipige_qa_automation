@@ -8,12 +8,10 @@
     "url": ""
   },
   "scripts": {
-    "lint": "eslint . --ext .ts",
     "report": "allure serve",
-    "create:suite": "cd ./src/framework/manager & npx ts-node SuiteManager.ts",
-    "test": "playwright test --project=suite",
-    "local:test": "playwright test --project=local",
-    "local:test:ui": "playwright test --project=local --ui"
+    "test": "npx playwright test --project=suite",
+    "local:test": "npx playwright test --project=local",
+    "local:test:ui": "npx playwright test --project=local --ui"
   },
   "keywords": [],
   "author": "Vinay Kumar B M",
@@ -32,6 +30,7 @@
     "@types/xmldom": "^0.1.31",
     "@typescript-eslint/eslint-plugin": "^5.16.0",
     "@typescript-eslint/parser": "^5.16.0",
+    "allure-js-commons": "^3.9.0",
     "allure-playwright": "3.4.1",
     "compare-pdf-plus": "1.0.4",
     "convert-excel-to-json": "1.7.0",
