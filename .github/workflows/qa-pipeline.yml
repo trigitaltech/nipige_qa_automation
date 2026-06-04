@@ -2,9 +2,9 @@ name: QA Automation Pipeline
 
 on:
   push:
-    branches: [main]
-  # pull_request:
-  #   branches: [main, master, develop]
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master, develop]
   workflow_dispatch:
     inputs:
       test_suite:
@@ -28,7 +28,6 @@ jobs:
     timeout-minutes: 30
 
     env:
-      # Browser — headless on CI; chrome maps to Chromium in Playwright
       BROWSER: chrome
       TEST_TIMEOUT: "20"
       BROWSER_LAUNCH_TIMEOUT: "0"
@@ -39,9 +38,7 @@ jobs:
       BASE_URL: "http://advantageonlineshopping.com"
       SOAP_API_BASE_URL: "http://www.advantageonlineshopping.com:80"
       REST_API_BASE_URL: "https://fakestoreapi.com"
-      # TEST_NAME is used only for the 'local' project; not needed here
       TEST_NAME: ""
-      # Link used by reporter
       LINK: "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
     steps:
@@ -61,7 +58,6 @@ jobs:
         run: npx playwright install chromium --with-deps
 
       # ── .env is committed to the repo for now ─────────────────────────
-      # Later: replace this step with GitHub Secrets (see commented block below)
       - name: Verify .env exists
         run: |
           if [ ! -f .env ]; then
@@ -70,8 +66,15 @@ jobs:
           fi
           echo ".env found."
 
+      # ── Fix: playwright.config.ts has headless:false (works locally on Windows)
+      # GitHub Actions has no display/XServer — headed Chrome crashes with
+      # "Missing X server or $DISPLAY". This patches it to headless:true for CI.
+      - name: Patch Playwright config for headless CI
+        run: |
+          sed -i 's/headless: false/headless: true/g' playwright.config.ts
+          echo "Patched playwright.config.ts — headless: true enforced for CI"
+
       # ── Run API-only tests individually (no DB, no image compare) ──────
-      # These tests run purely over HTTP so they're the most CI-friendly.
       - name: Run REST API Tests
         run: npx playwright test src/tests/RESTUserTest.spec.ts --project=local
         env:
@@ -119,8 +122,6 @@ jobs:
     name: "UI Tests (Advantage Online Shopping)"
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    # UI tests hit a live public demo site — keep them non-blocking on PRs
-    # by setting continue-on-error. Remove this line if you want them to block.
     continue-on-error: true
 
     env:
@@ -161,6 +162,12 @@ jobs:
             exit 1
           fi
           echo ".env found."
+
+      # ── Fix: force headless mode for CI ───────────────────────────────
+      - name: Patch Playwright config for headless CI
+        run: |
+          sed -i 's/headless: false/headless: true/g' playwright.config.ts
+          echo "Patched playwright.config.ts — headless: true enforced for CI"
 
       - name: Run Login Tests
         run: npx playwright test src/tests/LoginTest.spec.ts --project=local
