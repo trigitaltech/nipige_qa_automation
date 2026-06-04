@@ -30,7 +30,12 @@ export default class TaxCodePage {
     // then class-based fallbacks. The steps layer detects which type is present at runtime.
     static readonly COUNTRY_SELECT = 'select';
     // eslint-disable-next-line max-len
-    static readonly COUNTRY_FILTER_TRIGGER = 'select, button:has-text("All Countries"), [role="combobox"]:has-text("All Countries"), [class*="dropdown"]:has-text("All Countries")';
+    static readonly COUNTRY_FILTER_TRIGGER = [
+        'select',
+        'button:has-text("All Countries")',
+        '[role="combobox"]:has-text("All Countries")',
+        '[class*="dropdown"]:has-text("All Countries")',
+    ].join(", ");
     static readonly DROPDOWN_OPTION = '[role="option"], [role="listbox"] li, [class*="option"]:not(button):not(a)';
     static readonly CLEAR_BTN = 'button:has-text("Clear")';
 
@@ -46,7 +51,14 @@ export default class TaxCodePage {
     static readonly CELL_START_DATE = 'table tbody tr td:nth-child(3)';
     static readonly CELL_END_DATE = 'table tbody tr td:nth-child(4)';
     static readonly CELL_STATUS = 'table tbody tr td:nth-child(5)';
-    static readonly NO_RECORDS = 'td:has-text("No records"), td:has-text("No tax"), [class*="empty-state"]';
+    static readonly NO_RECORDS = [
+        'td:has-text("No records")',
+        'td:has-text("No tax")',
+        'td:has-text("No data found")',
+        '[class*="empty-state"]',
+        ':text("No records found")',
+        ':text("No data found")',
+    ].join(", ");
 
     // ── Row-scoped helpers ────────────────────────────────────────────────────
     static rowFor(taxCode: string): string {
@@ -73,6 +85,22 @@ export default class TaxCodePage {
     static readonly TAX_RATE_INPUT = 'input[placeholder*="5, 12, 18" i]';
     static readonly TAX_LINE_TYPE_SELECT = 'select';
     static readonly ADD_ITEM_BTN = 'button:has-text("Add Item")';
+    static readonly FORM_INPUTS = 'form input, form select, form textarea';
+    static readonly VALIDATION_MESSAGE = [
+        '[role="alert"]',
+        '.invalid-feedback',
+        '.text-danger',
+        '.text-red-500',
+        '.text-red-600',
+        '[class*="error"]',
+        '[class*="invalid"]',
+        ':text("required")',
+        ':text("invalid")',
+        ':text("must")',
+        ':text("numeric")',
+        ':text("duplicate")',
+        ':text("already")',
+    ].join(", ");
 
     // ── Submit buttons ────────────────────────────────────────────────────────
     static readonly CREATE_SUBMIT_BTN = 'button:has-text("Create Tax Code")';

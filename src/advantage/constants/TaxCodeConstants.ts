@@ -9,15 +9,23 @@ export default class TaxCodeConstants {
     static readonly EXPIRING_SOON_LABEL = "Expiring Soon";
 
     static readonly EXPECTED_COLUMNS = ["TAX CODE", "COUNTRY", "START DATE", "END DATE", "STATUS"];
+    static readonly EXPECTED_SUMMARY_CARDS = [
+        TaxCodeConstants.TOTAL_CODES_LABEL,
+        TaxCodeConstants.ACTIVE_LABEL,
+        TaxCodeConstants.COUNTRIES_LABEL,
+        TaxCodeConstants.EXPIRING_SOON_LABEL,
+    ];
 
     static readonly STATUS_ACTIVE = "Active";
     static readonly STATUS_EXPIRED = "Expired";
+    static readonly NO_MATCH_SEARCH = "NO_RECORDS_TAX_!@#_999999";
+    static readonly SPECIAL_CHAR_SEARCH = "!@#$%^&*";
 
     static readonly TAX_LINE_TYPE_PERCENTAGE = "Percentage";
     static readonly COUNTRY_ALL = "All Countries";
 
     // Countries available in the Tenant Country create-form combobox
-    static readonly COUNTRY_POOL = ["IND", "India", "USA", "NIGERIAN"];
+    static readonly COUNTRY_POOL = ["India", "USA", "Nigeria"];
 
     // Reduced from 800/500 — network-idle waits replace most fixed pauses
     static readonly TABLE_SETTLE_MS = 500;

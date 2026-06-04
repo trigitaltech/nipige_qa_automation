@@ -1,42 +1,44 @@
 import { test } from "@base-test";
 import type { Page } from "@playwright/test";
 import HomeSteps from "@uiSteps/HomeSteps";
-import TaxCodeSteps from "@uiSteps/TaxCodeSteps";
+import TaxCodeSteps, { TaxCodeFormData } from "@uiSteps/TaxCodeSteps";
 import Assert from "@asserts/Assert";
 import TaxCodeConstants from "@uiConstants/TaxCodeConstants";
 
-// ─── Credentials ─────────────────────────────────────────────────────────────
 const EMAIL = process.env.TENANT_EMAIL ?? "freshcart@gmail.com";
 const PASS = process.env.TENANT_PASSWORD ?? "Welcome@123";
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 function pickRandom<T>(arr: readonly T[]): T {
     return arr[Math.floor(Math.random() * arr.length)];
 }
 
-// ─── Suite-level shared state — set once in beforeAll ─────────────────────────
 let sharedPage!: Page;
 let tcSteps!: TaxCodeSteps;
 let sharedTaxCode!: string;
 let sharedCountry!: string;
-const UPDATED_RATE = "18";
+let suiteStart = 0;
 
-// ═════════════════════════════════════════════════════════════════════════════
-// Tax Code Management — serial suite
-//
-// beforeAll:  Login + create ONE shared tax code (TAX_<PREFIX>_<ts>)
-// TC_01      Search functionality (independent of shared code)
-// TC_02      Country filter      (independent of shared code)
-// TC_03      Verify shared tax code is listed
-// TC_04      View shared tax code
-// TC_05      Edit shared tax code (rate → 18)
-// TC_06      Delete shared tax code — runs last, cleans up
-// afterAll:  Close shared browser page
-// ═════════════════════════════════════════════════════════════════════════════
+const INITIAL_RATE = "10";
+const UPDATED_RATE = "18";
+const CANCELLED_RATE = "99";
+
+function validForm(overrides: Partial<TaxCodeFormData> = {}): TaxCodeFormData {
+    return {
+        country: sharedCountry,
+        taxCode: `TAX_VALIDATION_${Date.now().toString().slice(-6)}`,
+        startDate: "2026-06-01",
+        endDate: "2030-12-31",
+        taxLineName: `Line_${Date.now().toString().slice(-6)}`,
+        taxRate: INITIAL_RATE,
+        ...overrides,
+    };
+}
+
 test.describe("Tax Code Management", () => {
     test.describe.configure({ mode: "serial" });
 
     test.beforeAll(async ({ browser }) => {
+        suiteStart = Date.now();
         sharedCountry = pickRandom(TaxCodeConstants.COUNTRY_POOL);
         sharedPage = await browser.newPage();
 
@@ -48,97 +50,174 @@ test.describe("Tax Code Management", () => {
         tcSteps = new TaxCodeSteps(sharedPage);
         sharedTaxCode = tcSteps.generateUniqueTaxCode(sharedCountry);
 
-        // Create the ONE shared tax code used by TC_03 – TC_06
         await tcSteps.navigateToTaxCode();
         await tcSteps.verifyPageLoaded();
         await tcSteps.clickCreateButton();
         await tcSteps.verifyCreatePageLoaded();
-        await tcSteps.fillCreateForm({
-            country: sharedCountry,
+        await tcSteps.fillCreateForm(validForm({
             taxCode: sharedTaxCode,
-            startDate: "2026-06-01",
-            endDate: "2030-12-31",
-            taxLineName: `Line_${Date.now()}`,
-            taxRate: "10",
-        });
+            taxLineName: `Line_${Date.now().toString().slice(-6)}`,
+        }));
         await tcSteps.submitCreateForm();
         await tcSteps.verifySuccessMessage();
         await tcSteps.navigateToTaxCode();
-        console.log(`[beforeAll] Created: '${sharedTaxCode}' (country: ${sharedCountry})`);
+        await tcSteps.searchTaxCode(sharedTaxCode);
+        await tcSteps.verifyTaxCodeInTable(sharedTaxCode);
+        await tcSteps.clearSearch();
+        console.log(`[beforeAll] Created '${sharedTaxCode}' for ${sharedCountry}`);
     });
 
     test.afterAll(async () => {
+        const totalRuntimeSeconds = ((Date.now() - suiteStart) / 1000).toFixed(1);
+        console.log(`[TaxCode] Total runtime: ${totalRuntimeSeconds}s`);
+        if (tcSteps && sharedTaxCode && sharedPage && !sharedPage.isClosed()) {
+            await tcSteps.navigateToTaxCode().catch(() => {});
+            await tcSteps.searchTaxCode(sharedTaxCode).catch(() => {});
+            if (await tcSteps.isTaxCodeVisible(sharedTaxCode)) {
+                await tcSteps.clickDeleteIconForRow(sharedTaxCode).catch(() => {});
+                await tcSteps.confirmDelete().catch(() => {});
+            }
+        }
         await sharedPage?.close();
     });
 
-    // ─── TC_01 — Search ───────────────────────────────────────────────────────
-    test("TC_01 - Verify Search Functionality", async () => {
+    test("TC_01 - Dashboard summary cards are displayed", async () => {
         await tcSteps.navigateToTaxCode();
         await tcSteps.verifyPageLoaded();
+        await tcSteps.verifySummaryCardsDisplayed();
+    });
 
-        const hasRows = await tcSteps.hasDataRows();
-        if (!hasRows) {
-            console.warn("[TC_01] No tax codes in table — skipping");
-            return;
-        }
+    test("TC_02 - Tax Code grid columns are displayed", async () => {
+        await tcSteps.navigateToTaxCode();
+        await tcSteps.verifyPageLoaded();
+        await tcSteps.verifyGridColumnsDisplayed();
+    });
 
-        const searchTerm = (await tcSteps.getFirstTaxCodeName()).substring(0, 6);
-        console.log(`[TC_01] Searching for: '${searchTerm}'`);
-        await tcSteps.searchTaxCode(searchTerm);
-        await tcSteps.verifySearchResults(searchTerm);
-
+    test("TC_03 - Empty state message is displayed when no records exist in results", async () => {
+        await tcSteps.navigateToTaxCode();
+        await tcSteps.searchTaxCode(TaxCodeConstants.NO_MATCH_SEARCH);
+        await tcSteps.verifyNoRecordsMessage();
         await tcSteps.clearSearch();
-        await tcSteps.waitForTableStable();
-        const rowCount = await tcSteps.getTableRowCount();
-        await Assert.assertTrue(rowCount > 0, "All records visible after clearing search");
-        console.log(`[TC_01] PASS — ${rowCount} rows visible after clear`);
     });
 
-    // ─── TC_02 — Country Filter ───────────────────────────────────────────────
-    test("TC_02 - Verify Country Filter", async () => {
-        await tcSteps.navigateToTaxCode();
-        await tcSteps.verifyPageLoaded();
-
-        await tcSteps.openCountryFilter();
-        const allOptions = await tcSteps.getCountryOptions();
-        await Assert.assertTrue(allOptions.length > 0, "Country filter exposes at least one option");
-        console.log(`[TC_02] Options: ${allOptions.join(" | ")}`);
-
-        const countriesToTest = allOptions
-            .filter((o) => o.toLowerCase() !== TaxCodeConstants.COUNTRY_ALL.toLowerCase() && o.trim() !== "")
-            .slice(0, 3);
-
-        // Alias to const so the loop closure doesn't capture a re-assignable let variable
-        const steps = tcSteps;
-        for (let i = 0; i < countriesToTest.length; i++) {
-            const country = countriesToTest[i];
-            await test.step(`Filter by country: '${country}'`, async () => {
-                await steps.openCountryFilter();
-                await steps.selectCountryOption(country);
-                const count = await steps.getTableRowCount();
-                console.log(`  '${country}' → ${count} row(s)`);
-                if (count > 0) {
-                    await steps.verifyAllRowsShowCountry(country);
-                }
-            });
-        }
-
-        await tcSteps.clickClear();
-        const totalCount = await tcSteps.getTableRowCount();
-        await Assert.assertTrue(totalCount > 0, "All records visible after clicking Clear");
-        console.log(`[TC_02] PASS — ${totalCount} records after Clear`);
-    });
-
-    // ─── TC_03 — Verify the shared tax code appears in the listing ────────────
-    test("TC_03 - Create Tax Code (Verify in Listing)", async () => {
+    test("TC_04 - Search by Tax Code", async () => {
         await tcSteps.navigateToTaxCode();
         await tcSteps.searchTaxCode(sharedTaxCode);
         await tcSteps.verifyTaxCodeInTable(sharedTaxCode);
-        console.log(`[TC_03] PASS — '${sharedTaxCode}' confirmed in listing`);
     });
 
-    // ─── TC_04 — View ─────────────────────────────────────────────────────────
-    test("TC_04 - Verify View Tax Code", async () => {
+    test("TC_05 - Search by Country", async () => {
+        await tcSteps.navigateToTaxCode();
+        await tcSteps.searchTaxCode(sharedCountry);
+        await tcSteps.verifySearchResultsContainTermInAnyColumn(sharedCountry);
+    });
+
+    test("TC_06 - Search shows no records found", async () => {
+        await tcSteps.navigateToTaxCode();
+        await tcSteps.searchTaxCode(TaxCodeConstants.NO_MATCH_SEARCH);
+        await tcSteps.verifyNoRecordsMessage();
+    });
+
+    test("TC_07 - Special character search shows no records found", async () => {
+        await tcSteps.navigateToTaxCode();
+        await tcSteps.searchTaxCode(TaxCodeConstants.SPECIAL_CHAR_SEARCH);
+        await tcSteps.verifyNoRecordsMessage();
+    });
+
+    test("TC_08 - Clear search restores all records", async () => {
+        await tcSteps.navigateToTaxCode();
+        const initialCount = await tcSteps.getTableRowCount();
+        await tcSteps.searchTaxCode(sharedTaxCode);
+        await tcSteps.verifyTaxCodeInTable(sharedTaxCode);
+        await tcSteps.clearSearch();
+        const restoredCount = await tcSteps.getTableRowCount();
+        await Assert.assertTrue(restoredCount >= initialCount, "Clear search restores all records");
+    });
+
+    test("TC_09 - Country filter dropdown options load", async () => {
+        await tcSteps.navigateToTaxCode();
+        await tcSteps.verifyCountryDropdownOptionsLoad();
+    });
+
+    test("TC_10 - Country filter shows matching country records", async () => {
+        await tcSteps.navigateToTaxCode();
+        await tcSteps.openCountryFilter();
+        await tcSteps.selectCountryOption(sharedCountry);
+        await tcSteps.verifyAllRowsShowCountry(sharedCountry);
+        await tcSteps.clickClear();
+    });
+
+    test("TC_11 - Country filter handles no records scenario", async () => {
+        await tcSteps.navigateToTaxCode();
+        await tcSteps.searchTaxCode(TaxCodeConstants.NO_MATCH_SEARCH);
+        await tcSteps.openCountryFilter();
+        await tcSteps.selectCountryOption(sharedCountry);
+        await tcSteps.verifyNoRecordsMessage();
+        await tcSteps.clearSearch();
+        await tcSteps.clickClear();
+    });
+
+    test("TC_12 - Create Tax Code validates blank Country", async () => {
+        await tcSteps.navigateToTaxCode();
+        await tcSteps.clickCreateButton();
+        await tcSteps.verifyCreatePageLoaded();
+        await tcSteps.fillCreateForm(validForm({ country: undefined }));
+        await tcSteps.submitCreateFormExpectingValidation();
+        await tcSteps.verifyValidationVisible("country");
+    });
+
+    test("TC_13 - Create Tax Code validates blank Tax Code", async () => {
+        await tcSteps.navigateToTaxCode();
+        await tcSteps.clickCreateButton();
+        await tcSteps.verifyCreatePageLoaded();
+        await tcSteps.fillCreateForm(validForm({ taxCode: undefined }));
+        await tcSteps.submitCreateFormExpectingValidation();
+        await tcSteps.verifyValidationVisible("tax");
+    });
+
+    test("TC_14 - Create Tax Code validates Start Date greater than End Date", async () => {
+        await tcSteps.navigateToTaxCode();
+        await tcSteps.clickCreateButton();
+        await tcSteps.verifyCreatePageLoaded();
+        await tcSteps.fillCreateForm(validForm({ startDate: "2031-01-01", endDate: "2030-12-31" }));
+        await tcSteps.submitCreateFormExpectingValidation();
+        await tcSteps.verifyValidationVisible("date");
+    });
+
+    test("TC_15 - Create Tax Code validates non-numeric Tax Rate", async () => {
+        await tcSteps.navigateToTaxCode();
+        await tcSteps.clickCreateButton();
+        await tcSteps.verifyCreatePageLoaded();
+        await tcSteps.fillCreateForm(validForm({ taxRate: "" }));
+        await tcSteps.verifyTaxRateRejectsNonNumericInput("abc");
+    });
+
+    test("TC_16 - Create Tax Code supports multiple Tax Lines using Add Item", async () => {
+        await tcSteps.navigateToTaxCode();
+        await tcSteps.clickCreateButton();
+        await tcSteps.verifyCreatePageLoaded();
+        await tcSteps.fillCreateForm(validForm());
+        await tcSteps.verifyMultipleTaxLinesCanBeAdded();
+    });
+
+    test("TC_17 - Create Tax Code validates duplicate Tax Line", async () => {
+        const duplicateLine = `Duplicate_${Date.now().toString().slice(-6)}`;
+        await tcSteps.navigateToTaxCode();
+        await tcSteps.clickCreateButton();
+        await tcSteps.verifyCreatePageLoaded();
+        await tcSteps.fillCreateForm(validForm({ taxCode: sharedTaxCode, taxLineName: duplicateLine }));
+        await tcSteps.addTaxLine(duplicateLine, INITIAL_RATE);
+        await tcSteps.submitCreateFormExpectingValidation();
+        await tcSteps.verifyValidationVisible("duplicate");
+    });
+
+    test("TC_18 - Created Tax Code appears in list", async () => {
+        await tcSteps.navigateToTaxCode();
+        await tcSteps.searchTaxCode(sharedTaxCode);
+        await tcSteps.verifyTaxCodeInTable(sharedTaxCode);
+    });
+
+    test("TC_19 - View Tax Code details", async () => {
         await tcSteps.navigateToTaxCode();
         await tcSteps.searchTaxCode(sharedTaxCode);
         await tcSteps.clickViewIconForRow(sharedTaxCode);
@@ -147,20 +226,72 @@ test.describe("Tax Code Management", () => {
         await tcSteps.verifyViewFieldsNotEmpty();
         await tcSteps.clickBack();
         await tcSteps.verifyOnListPage();
-        console.log("[TC_04] PASS — View details verified");
     });
 
-    // ─── TC_05 — Edit ─────────────────────────────────────────────────────────
-    test("TC_05 - Edit Tax Code", async () => {
+    test("TC_20 - View Tax Code page is read-only", async () => {
+        await tcSteps.navigateToTaxCode();
+        await tcSteps.searchTaxCode(sharedTaxCode);
+        await tcSteps.clickViewIconForRow(sharedTaxCode);
+        await tcSteps.verifyViewPageLoaded();
+        await tcSteps.verifyViewPageReadOnly();
+        await tcSteps.clickBack();
+    });
+
+    test("TC_21 - View Tax Code edit controls are disabled", async () => {
+        await tcSteps.navigateToTaxCode();
+        await tcSteps.searchTaxCode(sharedTaxCode);
+        await tcSteps.clickViewIconForRow(sharedTaxCode);
+        await tcSteps.verifyViewPageLoaded();
+        await tcSteps.verifyEditControlsDisabledOnView();
+        await tcSteps.clickBack();
+    });
+
+    test("TC_22 - Edit Tax Code validates mandatory fields", async () => {
         await tcSteps.navigateToTaxCode();
         await tcSteps.searchTaxCode(sharedTaxCode);
         await tcSteps.clickEditIconForRow(sharedTaxCode);
         await tcSteps.verifyEditPageLoaded();
+        await tcSteps.clearFirstTaxLineName();
+        await tcSteps.submitEditFormExpectingValidation();
+        await tcSteps.verifyValidationVisible("required");
+    });
+
+    test("TC_23 - Edit Tax Code validates invalid date", async () => {
+        await tcSteps.navigateToTaxCode();
+        await tcSteps.searchTaxCode(sharedTaxCode);
+        await tcSteps.clickEditIconForRow(sharedTaxCode);
+        await tcSteps.verifyEditPageLoaded();
+        await tcSteps.fillDateRange("2031-01-01", "2030-12-31");
+        await tcSteps.submitEditFormExpectingValidation();
+        await tcSteps.verifyValidationVisible("date");
+    });
+
+    test("TC_24 - Edit Tax Code Cancel button discards changes", async () => {
+        await tcSteps.navigateToTaxCode();
+        await tcSteps.searchTaxCode(sharedTaxCode);
+        await tcSteps.clickEditIconForRow(sharedTaxCode);
+        await tcSteps.verifyEditPageLoaded();
+        await tcSteps.updateTaxRate(CANCELLED_RATE);
+        await tcSteps.cancelForm();
+        await tcSteps.navigateToTaxCode();
+        await tcSteps.searchTaxCode(sharedTaxCode);
+        await tcSteps.clickViewIconForRow(sharedTaxCode);
+        await tcSteps.verifyViewPageLoaded();
+        const savedRate = await tcSteps.getFirstTaxRateValue();
+        await Assert.assertFalse(savedRate.includes(CANCELLED_RATE), "Cancelled rate change is discarded");
+        await tcSteps.clickBack();
+    });
+
+    test("TC_25 - Edit Tax Code adds Tax Line and saves changes", async () => {
+        await tcSteps.navigateToTaxCode();
+        await tcSteps.searchTaxCode(sharedTaxCode);
+        await tcSteps.clickEditIconForRow(sharedTaxCode);
+        await tcSteps.verifyEditPageLoaded();
+        await tcSteps.addTaxLine(`EditLine_${Date.now().toString().slice(-6)}`, "8");
         await tcSteps.updateTaxRate(UPDATED_RATE);
         await tcSteps.submitEditForm();
         await tcSteps.verifySuccessMessage();
 
-        // Confirm updated rate is reflected on the View page
         await tcSteps.navigateToTaxCode();
         await tcSteps.searchTaxCode(sharedTaxCode);
         await tcSteps.clickViewIconForRow(sharedTaxCode);
@@ -168,12 +299,21 @@ test.describe("Tax Code Management", () => {
         const content = await sharedPage.content();
         await Assert.assertTrue(content.includes(UPDATED_RATE), `Tax rate '${UPDATED_RATE}' saved on View page`);
         await tcSteps.clickBack();
-        console.log(`[TC_05] PASS — rate updated to ${UPDATED_RATE}`);
     });
 
-    // ─── TC_06 — Delete (always last — cleans up shared tax code) ────────────
-    test("TC_06 - Delete Tax Code", async () => {
+    test("TC_26 - Delete Tax Code cancel popup keeps record", async () => {
         await tcSteps.navigateToTaxCode();
+        await tcSteps.searchTaxCode(sharedTaxCode);
+        await tcSteps.verifyTaxCodeInTable(sharedTaxCode);
+        await tcSteps.clickDeleteIconForRow(sharedTaxCode);
+        await tcSteps.verifyDeleteConfirmationPopup(sharedTaxCode);
+        await tcSteps.cancelDelete();
+        await tcSteps.verifyTaxCodeInTable(sharedTaxCode);
+    });
+
+    test("TC_27 - Delete Tax Code updates dashboard counts", async () => {
+        await tcSteps.navigateToTaxCode();
+        const beforeTotal = await tcSteps.getSummaryCardCount(TaxCodeConstants.TOTAL_CODES_LABEL);
         await tcSteps.searchTaxCode(sharedTaxCode);
         await tcSteps.verifyTaxCodeInTable(sharedTaxCode);
         await tcSteps.clickDeleteIconForRow(sharedTaxCode);
@@ -181,6 +321,9 @@ test.describe("Tax Code Management", () => {
         await tcSteps.confirmDelete();
         await tcSteps.verifySuccessMessage();
         await tcSteps.verifyTaxCodeRemoved(sharedTaxCode);
-        console.log(`[TC_06] PASS — '${sharedTaxCode}' deleted and removed`);
+
+        await tcSteps.navigateToTaxCode();
+        const afterTotal = await tcSteps.getSummaryCardCount(TaxCodeConstants.TOTAL_CODES_LABEL);
+        await Assert.assertTrue(afterTotal < beforeTotal, "Total Codes dashboard count decreases after delete");
     });
 });

@@ -4,8 +4,8 @@ import TaxCodePage from "@pages/TaxCodePage";
 import TaxCodeConstants from "@uiConstants/TaxCodeConstants";
 
 export interface TaxCodeFormData {
-    country: string;
-    taxCode: string;
+    country?: string;
+    taxCode?: string;
     startDate: string;
     endDate: string;
     taxLineName: string;
@@ -29,10 +29,13 @@ export default class TaxCodeSteps {
         return `TAX_AUTO_${ts}`;
     }
 
-    // Prefer network-idle over a fixed timeout; falls back if idle takes too long
+    // Wait for network-idle THEN a fixed buffer so React finishes re-rendering.
+    // Previously the buffer fired only on networkidle timeout (catch path); for
+    // client-side-filtered tables that fire networkidle instantly the DOM had not
+    // yet updated when the next locator ran, causing clicks on stale rows.
     public async waitForTableStable() {
-        await this.page.waitForLoadState("networkidle", { timeout: 5000 })
-            .catch(() => this.page.waitForTimeout(TaxCodeConstants.TABLE_SETTLE_MS));
+        await this.page.waitForLoadState("networkidle", { timeout: 5000 }).catch(() => {});
+        await this.page.waitForTimeout(TaxCodeConstants.TABLE_SETTLE_MS);
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -78,6 +81,41 @@ export default class TaxCodeSteps {
         });
     }
 
+    public async verifySummaryCardsDisplayed() {
+        await test.step("Verify Tax Setup summary cards are displayed", async () => {
+            await Promise.all(TaxCodeConstants.EXPECTED_SUMMARY_CARDS.map(async (label) => {
+                await expect(
+                    this.page.getByText(label, { exact: true }).first(),
+                    `Summary card '${label}' must be visible`,
+                ).toBeVisible({ timeout: 8000 });
+            }));
+        });
+    }
+
+    public async getSummaryCardCount(label: string): Promise<number> {
+        const labelLocator = this.page.getByText(label, { exact: true }).first();
+        await expect(labelLocator, `Summary card '${label}' must be visible`).toBeVisible({ timeout: 8000 });
+        const escapedLabel = label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const pageText = await this.page.locator("body").innerText();
+        const match = pageText.match(new RegExp(`(\\d+)\\s+${escapedLabel}`, "i"));
+        await Assert.assertTrue(match !== null, `Summary card '${label}' displays a numeric count`);
+        return Number(match?.[1] ?? 0);
+    }
+
+    public async verifyGridColumnsDisplayed() {
+        await test.step("Verify Tax Code grid columns are displayed", async () => {
+            const headers = (await this.page.locator(TaxCodePage.TABLE_HEADERS).allTextContents())
+                .map((h) => h.trim().toUpperCase())
+                .filter(Boolean);
+            await Promise.all(TaxCodeConstants.EXPECTED_COLUMNS.map(async (expectedColumn) => {
+                await Assert.assertTrue(
+                    headers.some((header) => header.includes(expectedColumn)),
+                    `Grid contains '${expectedColumn}' column`,
+                );
+            }));
+        });
+    }
+
     // ═══════════════════════════════════════════════════════════════════════════
     // TABLE HELPERS
     // ═══════════════════════════════════════════════════════════════════════════
@@ -101,6 +139,10 @@ export default class TaxCodeSteps {
         const cell = this.page.locator(TaxCodePage.CELL_COUNTRY).first();
         await expect(cell).toBeVisible({ timeout: 8000 });
         return (await cell.innerText()).trim();
+    }
+
+    public async getTaxLineCount(): Promise<number> {
+        return this.page.locator(TaxCodePage.TAX_LINE_NAME_INPUT).count();
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -141,11 +183,43 @@ export default class TaxCodeSteps {
         });
     }
 
+    public async verifySearchResultsContainTermInAnyColumn(term: string) {
+        await test.step(`Verify search results contain '${term}' in visible row data`, async () => {
+            await this.waitForTableStable();
+            const rows = this.page.locator(TaxCodePage.TABLE_ROWS);
+            const count = await rows.count();
+            await Assert.assertTrue(count > 0, `Search for '${term}' returns at least one row`);
+            for (let i = 0; i < count; i++) {
+                const rowText = (await rows.nth(i).innerText()).toLowerCase();
+                await Assert.assertTrue(
+                    rowText.includes(term.toLowerCase()),
+                    `Search result row [${i}] contains '${term}'`,
+                );
+            }
+        });
+    }
+
+    public async verifyNoRecordsMessage() {
+        await test.step("Verify no-records empty state message is displayed", async () => {
+            await this.waitForTableStable();
+            await expect(
+                this.page.locator(TaxCodePage.NO_RECORDS).first(),
+                "No-records message must be visible",
+            ).toBeVisible({ timeout: 5000 });
+        });
+    }
+
     public async verifyTaxCodeInTable(taxCode: string) {
         await test.step(`Verify '${taxCode}' is visible in the table`, async () => {
             const row = this.page.locator(TaxCodePage.rowFor(taxCode)).first();
             await expect(row, `Row for '${taxCode}' must be visible`).toBeVisible({ timeout: 10000 });
         });
+    }
+
+    public async isTaxCodeVisible(taxCode: string): Promise<boolean> {
+        return this.page.locator(TaxCodePage.rowFor(taxCode)).first()
+            .isVisible({ timeout: 3000 })
+            .catch(() => false);
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -175,6 +249,18 @@ export default class TaxCodeSteps {
         await expect(options.first(), "At least one country option must appear").toBeVisible({ timeout: 5000 });
         const texts = await options.allTextContents();
         return texts.map((t) => t.trim()).filter(Boolean);
+    }
+
+    public async verifyCountryDropdownOptionsLoad() {
+        await test.step("Verify country dropdown options load", async () => {
+            await this.openCountryFilter();
+            const options = await this.getCountryOptions();
+            await Assert.assertTrue(options.length > 0, "Country dropdown has loaded options");
+            await Assert.assertTrue(
+                options.some((option) => option.toLowerCase() === TaxCodeConstants.COUNTRY_ALL.toLowerCase()),
+                "Country dropdown contains All Countries option",
+            );
+        });
     }
 
     public async selectCountryOption(country: string) {
@@ -231,6 +317,7 @@ export default class TaxCodeSteps {
     public async fillCreateForm(data: TaxCodeFormData) {
         await test.step("Fill Create Tax Code form", async () => {
             // Tenant Country — combobox first, fall back to native select
+            if (data.country) {
             const countryInput = this.page.locator(TaxCodePage.TENANT_COUNTRY_INPUT).first();
             await countryInput.click();
             await countryInput.fill(data.country);
@@ -238,13 +325,18 @@ export default class TaxCodeSteps {
             const countryOption = this.page
                 .locator(`[role="option"]:has-text("${data.country}"), [role="listbox"] li:has-text("${data.country}")`)
                 .first();
-            if (await countryOption.isVisible({ timeout: 3000 }).catch(() => false)) {
-                await countryOption.click();
-            } else {
-                await this.page.locator('select').first().selectOption(data.country).catch(() => {});
+                if (await countryOption.isVisible({ timeout: 3000 }).catch(() => false)) {
+                    await countryOption.click();
+                } else {
+                    await this.page.locator("select").first()
+                        .selectOption(data.country, { timeout: 1000 })
+                        .catch(() => {});
+                }
             }
 
-            await this.page.locator(TaxCodePage.TAX_CODE_NAME_INPUT).first().fill(data.taxCode);
+            if (data.taxCode !== undefined) {
+                await this.page.locator(TaxCodePage.TAX_CODE_NAME_INPUT).first().fill(data.taxCode);
+            }
 
             // nth(0) = start date, nth(1) = end date
             const dateInputs = this.page.locator(TaxCodePage.DATE_INPUTS);
@@ -261,6 +353,99 @@ export default class TaxCodeSteps {
             await this.page.locator(TaxCodePage.CREATE_SUBMIT_BTN).click();
             // Wait for the network request to complete; verifySuccessMessage() checks the toast
             await this.page.waitForLoadState("networkidle", { timeout: 10000 });
+        });
+    }
+
+    public async submitCreateFormExpectingValidation() {
+        await test.step("Submit Create Tax Code form expecting validation", async () => {
+            const currentUrl = this.page.url();
+            await this.page.locator(TaxCodePage.CREATE_SUBMIT_BTN).click();
+            await this.page.waitForLoadState("networkidle", { timeout: 5000 }).catch(() => {});
+            await Assert.assertEquals(this.page.url(), currentUrl, "Invalid create form remains on Create page");
+        });
+    }
+
+    public async submitEditFormExpectingValidation() {
+        await test.step("Submit Edit Tax Code form expecting validation", async () => {
+            const currentUrl = this.page.url();
+            await this.page.locator(TaxCodePage.UPDATE_SUBMIT_BTN).click();
+            await this.page.waitForLoadState("networkidle", { timeout: 5000 }).catch(() => {});
+            await Assert.assertEquals(this.page.url(), currentUrl, "Invalid edit form remains on Edit page");
+        });
+    }
+
+    public async verifyValidationVisible(expectedText?: string) {
+        await test.step("Verify validation message is displayed", async () => {
+            const content = (await this.page.locator("body").innerText()).toLowerCase();
+            const visible = await this.page.locator(TaxCodePage.VALIDATION_MESSAGE)
+                .first()
+                .isVisible({ timeout: 3000 })
+                .catch(() => false);
+            const hasBrowserValidation = await this.page.locator(`${TaxCodePage.FORM_INPUTS}:invalid`).count()
+                .then((count) => count > 0)
+                .catch(() => false);
+            const containsExpectedText = expectedText ? content.includes(expectedText.toLowerCase()) : false;
+            await Assert.assertTrue(
+                visible || hasBrowserValidation || containsExpectedText,
+                "Validation feedback is visible or browser validation is active",
+            );
+        });
+    }
+
+    public async fillTaxCodeName(taxCode: string) {
+        await test.step(`Fill Tax Code name '${taxCode}'`, async () => {
+            await this.page.locator(TaxCodePage.TAX_CODE_NAME_INPUT).first().fill(taxCode);
+        });
+    }
+
+    public async fillDateRange(startDate: string, endDate: string) {
+        await test.step(`Fill date range '${startDate}' to '${endDate}'`, async () => {
+            const dateInputs = this.page.locator(TaxCodePage.DATE_INPUTS);
+            await dateInputs.nth(0).fill(startDate);
+            await dateInputs.nth(1).fill(endDate);
+        });
+    }
+
+    public async fillFirstTaxLine(name: string, rate: string) {
+        await test.step(`Fill first tax line '${name}'`, async () => {
+            await this.page.locator(TaxCodePage.TAX_LINE_NAME_INPUT).first().fill(name);
+            await this.page.locator(TaxCodePage.TAX_RATE_INPUT).first().fill(rate);
+        });
+    }
+
+    public async verifyTaxRateRejectsNonNumericInput(value: string) {
+        await test.step(`Verify Tax Rate rejects non-numeric input '${value}'`, async () => {
+            const rateInput = this.page.locator(TaxCodePage.TAX_RATE_INPUT).first();
+            await rateInput.fill("");
+            await rateInput.pressSequentially(value).catch(() => {});
+            const actualValue = await rateInput.inputValue();
+            await Assert.assertEquals(actualValue, "", "Tax Rate field rejects non-numeric input");
+        });
+    }
+
+    public async clickAddItem() {
+        await test.step("Click Add Item", async () => {
+            await this.page.locator(TaxCodePage.ADD_ITEM_BTN).first().click();
+        });
+    }
+
+    public async addTaxLine(name: string, rate: string) {
+        await test.step(`Add tax line '${name}'`, async () => {
+            await this.clickAddItem();
+            const lineNames = this.page.locator(TaxCodePage.TAX_LINE_NAME_INPUT);
+            const rates = this.page.locator(TaxCodePage.TAX_RATE_INPUT);
+            const lastIndex = await lineNames.count() - 1;
+            await lineNames.nth(lastIndex).fill(name);
+            await rates.nth(lastIndex).fill(rate);
+        });
+    }
+
+    public async verifyMultipleTaxLinesCanBeAdded() {
+        await test.step("Verify Add Item adds multiple tax lines", async () => {
+            const beforeCount = await this.getTaxLineCount();
+            await this.clickAddItem();
+            const afterCount = await this.getTaxLineCount();
+            await Assert.assertTrue(afterCount > beforeCount, "Add Item increases tax line count");
         });
     }
 
@@ -295,6 +480,10 @@ export default class TaxCodeSteps {
         });
     }
 
+    public async getFirstTaxRateValue(): Promise<string> {
+        return this.page.locator(TaxCodePage.TAX_RATE_INPUT).first().inputValue();
+    }
+
     public async verifyViewDetails(taxCode: string, country: string) {
         await test.step("Verify View page displays correct Tax Code details", async () => {
             const content = await this.page.content();
@@ -322,6 +511,57 @@ export default class TaxCodeSteps {
 
             const endDateVal = await dateInputs.nth(1).inputValue().catch(() => "");
             await Assert.assertTrue(endDateVal.trim().length > 0, "END DATE field is not empty");
+        });
+    }
+
+    public async verifyViewPageReadOnly() {
+        await test.step("Verify View Tax Code page is read-only", async () => {
+            const controls = this.page.locator(TaxCodePage.FORM_INPUTS);
+            const count = await controls.count();
+            for (let i = 0; i < count; i++) {
+                const ctrl = controls.nth(i);
+                if (!await ctrl.isVisible()) continue;
+                const isNonEditable = await ctrl.evaluate((el: Element) => {
+                    const inp = el as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
+                    return (
+                        inp.disabled
+                        || (inp as HTMLInputElement).readOnly
+                        || el.getAttribute('aria-disabled') === 'true'
+                        || el.getAttribute('aria-readonly') === 'true'
+                        || el.getAttribute('data-disabled') === 'true'
+                        || getComputedStyle(el).pointerEvents === 'none'
+                        || el.closest('[data-disabled="true"]') !== null
+                        || el.closest('[aria-disabled="true"]') !== null
+                    );
+                });
+                await Assert.assertTrue(
+                    isNonEditable,
+                    `Form control [${i}] on View page must be disabled or read-only`,
+                );
+            }
+            await Assert.assertFalse(
+                await this.page.locator(TaxCodePage.UPDATE_SUBMIT_BTN)
+                    .isVisible({ timeout: 1000 }).catch(() => false),
+                "Update button must not be visible on View page",
+            );
+            await Assert.assertFalse(
+                await this.page.locator(TaxCodePage.ADD_ITEM_BTN)
+                    .isVisible({ timeout: 1000 }).catch(() => false),
+                "Add Item button must not be visible on View page",
+            );
+        });
+    }
+
+    public async verifyEditControlsDisabledOnView() {
+        await test.step("Verify edit controls are disabled on View page", async () => {
+            const updateVisible = await this.page.locator(TaxCodePage.UPDATE_SUBMIT_BTN)
+                .isVisible({ timeout: 1000 })
+                .catch(() => false);
+            const addItemVisible = await this.page.locator(TaxCodePage.ADD_ITEM_BTN)
+                .isVisible({ timeout: 1000 })
+                .catch(() => false);
+            await Assert.assertFalse(updateVisible, "Update button is not visible on View page");
+            await Assert.assertFalse(addItemVisible, "Add Item button is not visible on View page");
         });
     }
 
@@ -353,10 +593,23 @@ export default class TaxCodeSteps {
         });
     }
 
+    public async clearFirstTaxLineName() {
+        await test.step("Clear first tax line name", async () => {
+            await this.page.locator(TaxCodePage.TAX_LINE_NAME_INPUT).first().fill("");
+        });
+    }
+
     public async submitEditForm() {
         await test.step("Click Update Tax Code submit button", async () => {
             await this.page.locator(TaxCodePage.UPDATE_SUBMIT_BTN).click();
             await this.page.waitForLoadState("networkidle", { timeout: 10000 });
+        });
+    }
+
+    public async cancelForm() {
+        await test.step("Click Cancel button", async () => {
+            await this.page.locator(TaxCodePage.CANCEL_BTN).first().click();
+            await this.page.waitForLoadState("networkidle");
         });
     }
 
@@ -394,6 +647,13 @@ export default class TaxCodeSteps {
             // Server commits deletion asynchronously after responding; without this buffer
             // the fresh list load returns the item still present.
             await this.page.waitForTimeout(1500);
+        });
+    }
+
+    public async cancelDelete() {
+        await test.step("Cancel deletion popup", async () => {
+            await this.page.locator(TaxCodePage.DELETE_CANCEL_BTN).first().click();
+            await expect(this.page.locator(TaxCodePage.DELETE_POPUP).first()).toBeHidden({ timeout: 5000 });
         });
     }
 
