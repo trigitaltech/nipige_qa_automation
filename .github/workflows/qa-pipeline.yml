@@ -1,0 +1,199 @@
+name: QA Automation Pipeline
+
+on:
+  push:
+    branches: [main]
+  # pull_request:
+  #   branches: [main, master, develop]
+  workflow_dispatch:
+    inputs:
+      test_suite:
+        description: "Excel sheet name to use as test suite (e.g. Regression)"
+        required: false
+        default: "Regression"
+      browser:
+        description: "Browser to run tests on"
+        required: false
+        default: "chrome"
+        type: choice
+        options:
+          - chrome
+          - firefox
+          - edge
+
+jobs:
+  run-api-tests:
+    name: "API Tests (REST + SOAP)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    env:
+      # Browser — headless on CI; chrome maps to Chromium in Playwright
+      BROWSER: chrome
+      TEST_TIMEOUT: "20"
+      BROWSER_LAUNCH_TIMEOUT: "0"
+      ACTION_TIMEOUT: "1"
+      NAVIGATION_TIMEOUT: "2"
+      RETRIES: "1"
+      PARALLEL_THREAD: "2"
+      BASE_URL: "http://advantageonlineshopping.com"
+      SOAP_API_BASE_URL: "http://www.advantageonlineshopping.com:80"
+      REST_API_BASE_URL: "https://fakestoreapi.com"
+      # TEST_NAME is used only for the 'local' project; not needed here
+      TEST_NAME: ""
+      # Link used by reporter
+      LINK: "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium --with-deps
+
+      # ── .env is committed to the repo for now ─────────────────────────
+      # Later: replace this step with GitHub Secrets (see commented block below)
+      - name: Verify .env exists
+        run: |
+          if [ ! -f .env ]; then
+            echo "ERROR: .env file not found. Copy .env.example to .env and fill in your values, then commit it (git add -f .env)."
+            exit 1
+          fi
+          echo ".env found."
+
+      # ── Run API-only tests individually (no DB, no image compare) ──────
+      # These tests run purely over HTTP so they're the most CI-friendly.
+      - name: Run REST API Tests
+        run: npx playwright test src/tests/RESTUserTest.spec.ts --project=local
+        env:
+          TEST_NAME: RESTUserTest
+
+      - name: Run SOAP API Tests
+        run: npx playwright test src/tests/SOAPAccountServiceTest.spec.ts --project=local
+        env:
+          TEST_NAME: SOAPAccountServiceTest
+
+      # ── Upload test results ────────────────────────────────────────────
+      - name: Upload Playwright HTML Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-html-report
+          path: test-results/report/
+          retention-days: 14
+
+      - name: Upload JUnit XML Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: junit-results
+          path: test-results/results/results.xml
+          retention-days: 14
+
+      - name: Upload Execution Logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: execution-logs
+          path: test-results/logs/
+          retention-days: 14
+
+      - name: Upload Failure Artifacts (screenshots + videos)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: failure-artifacts
+          path: test-results/failure/
+          retention-days: 7
+
+  run-ui-tests:
+    name: "UI Tests (Advantage Online Shopping)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    # UI tests hit a live public demo site — keep them non-blocking on PRs
+    # by setting continue-on-error. Remove this line if you want them to block.
+    continue-on-error: true
+
+    env:
+      BROWSER: chrome
+      TEST_TIMEOUT: "20"
+      BROWSER_LAUNCH_TIMEOUT: "0"
+      ACTION_TIMEOUT: "1"
+      NAVIGATION_TIMEOUT: "2"
+      RETRIES: "1"
+      PARALLEL_THREAD: "1"
+      BASE_URL: "http://advantageonlineshopping.com"
+      SOAP_API_BASE_URL: "http://www.advantageonlineshopping.com:80"
+      REST_API_BASE_URL: "https://fakestoreapi.com"
+      TEST_NAME: ""
+      LINK: "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium --with-deps
+
+      # ── .env is committed to the repo for now ─────────────────────────
+      - name: Verify .env exists
+        run: |
+          if [ ! -f .env ]; then
+            echo "ERROR: .env file not found. Commit your .env file using: git add -f .env"
+            exit 1
+          fi
+          echo ".env found."
+
+      - name: Run Login Tests
+        run: npx playwright test src/tests/LoginTest.spec.ts --project=local
+        env:
+          TEST_NAME: LoginTest
+
+      - name: Run Create Account Tests
+        run: npx playwright test src/tests/CreateAccountTest.spec.ts --project=local
+        env:
+          TEST_NAME: CreateAccountTest
+
+      - name: Run Contact Us Tests
+        run: npx playwright test src/tests/ContactUsTest.spec.ts --project=local
+        env:
+          TEST_NAME: ContactUsTest
+
+      - name: Run Download Tests
+        run: npx playwright test src/tests/DownloadTest.spec.ts --project=local
+        env:
+          TEST_NAME: DownloadTest
+
+      - name: Upload UI Test HTML Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-playwright-html-report
+          path: test-results/report/
+          retention-days: 14
+
+      - name: Upload UI Failure Artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-failure-artifacts
+          path: test-results/failure/
+          retention-days: 7
