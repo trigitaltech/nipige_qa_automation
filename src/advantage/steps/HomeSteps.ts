@@ -1,151 +1,158 @@
 import test, { Page, expect } from "@playwright/test";
 import UIActions from "@uiActions/UIActions";
+import Assert from "@asserts/Assert";
+import CommonConstants from "@uiConstants/CommonConstants";
 import HomePageConstants from "@uiConstants/HomePageConstants";
 import HomePage from "@pages/HomePage";
-import Allure from "@allure";
 
-export default class HomeSteps {
+export default class HomeSteps {    
     private ui: UIActions;
 
     constructor(private page: Page) {
         this.ui = new UIActions(page);
     }
-
-    public async launchNipigeLoginApplication() {
-        await test.step(`Launching the Nipige login page`, async () => {
-            const baseUrl = process.env.BASE_URL as string | undefined;
-            if (!baseUrl) {
-                throw new Error("process.env.BASE_URL is required but was not set");
-            }
-            const loginUrl = new URL("/login", baseUrl).toString();
-            await this.ui.goto(loginUrl, HomePageConstants.HOME_PAGE);
+    /**
+     * Launch the Application
+     */
+    public async launchApplication() {
+        await test.step(`Launching the application`, async () => {
+            await this.ui.goto(process.env.BASE_URL, HomePageConstants.HOME_PAGE);
         });
     }
-
-    public async loginAsSeller(email: string, password: string, tenant: string) {
-        await test.step(`Login to Nipige as seller ${email} for tenant ${tenant}`, async () => {
-            await expect(this.page.locator(HomePage.NIPIGE_LOGIN_HEADING)).toBeVisible();
-            await this.ui.editBox(HomePage.NIPIGE_EMAIL_TEXTBOX, HomePageConstants.NIPIGE_EMAIL_TEXTBOX).fill(email);
-            await this.ui.editBox(HomePage.NIPIGE_PASSWORD_TEXTBOX, HomePageConstants.NIPIGE_PASSWORD_TEXTBOX).fill(password);
-            const tenantListResponse = this.page.waitForResponse(
-                response => response.url().includes("/tenant/list-ids"),
-                { timeout: 15_000 }
-            ).catch(() => null);
-            await this.ui.element(HomePage.NIPIGE_SELLER_ROLE_BUTTON, HomePageConstants.NIPIGE_SELLER_ROLE_BUTTON).click();
-            await tenantListResponse;
-            await this.selectNipigeTenant(tenant);
-            await this.ui.element(HomePage.NIPIGE_LOGIN_BUTTON, HomePageConstants.NIPIGE_LOGIN_BUTTON).click();
+    /**
+     * Log into the application
+     * @param userName 
+     * @param password 
+     */
+    public async login(userName: string, password: string) {
+        await test.step(`Login to application credentials as ${userName} & ${password}`, async () => {
+            await this.ui.element(HomePage.USER_ICON, HomePageConstants.USER_ICON).click();
+            await this.enterLoginDetails(userName, password);
+        });        
+    }
+    /**
+     * Enter login details
+     * @param userName 
+     * @param password 
+     */
+    public async enterLoginDetails(userName: string, password: string) {
+        await test.step(`Enter login credentials as ${userName} & ${password}`, async () => {
+            await this.ui.editBox(HomePage.USER_NAME_TEXTBOX, HomePageConstants.USER_NAME).fill(userName);
+            await this.ui.editBox(HomePage.PASSWORD_TEXTBOX, HomePageConstants.PASSWORD).fill(password);
+            await this.ui.checkbox(HomePage.REMEMBER_ME_CHECKBOX, HomePageConstants.REMEMBER_ME_CHECKBOX).check();
+            await this.ui.element(HomePage.SIGN_IN_BUTTON, HomePageConstants.SIGN_IN_BUTTON).click();
         });
     }
-
-    public async loginAsAdmin(email: string, password: string, tenant: string) {
-        await test.step(`Login to Nipige with wrong role for ${email}`, async () => {
-            await expect(this.page.locator(HomePage.NIPIGE_LOGIN_HEADING)).toBeVisible();
-            await this.ui.editBox(HomePage.NIPIGE_EMAIL_TEXTBOX, HomePageConstants.NIPIGE_EMAIL_TEXTBOX).fill(email);
-            await this.ui.editBox(HomePage.NIPIGE_PASSWORD_TEXTBOX, HomePageConstants.NIPIGE_PASSWORD_TEXTBOX).fill(password);
-            const wrongRoleButton = this.page.locator(HomePage.NIPIGE_ADMIN_ROLE_BUTTON).first();
-            if (await wrongRoleButton.count() > 0) {
-                const tenantListResponse = this.page.waitForResponse(
-                    response => response.url().includes("/tenant/list-ids"),
-                    { timeout: 15_000 }
-                ).catch(() => null);
-                await wrongRoleButton.click();
-                await tenantListResponse;
-                await this.selectNipigeTenant(tenant);
+    /**
+     * Validate logged in user
+     * @param userName 
+     */
+    public async validateLogin(userName: string) {
+        await test.step(`Verify that user is successfully logged in as ${userName}`, async () => {
+            const loggedInUser = this.page.locator(HomePage.LOGGED_IN_USER);
+            const signInError = this.page.locator(HomePage.SIGN_IN_ERROR_MESSAGE);
+            // Wait for the app to settle into EITHER a logged-in or a failed state, so an
+            // unsuccessful login fails fast with a clear reason instead of a long visibility timeout.
+            const LOGIN_STATE_TIMEOUT_MS = 15_000;
+            await expect(loggedInUser.or(signInError).first(),
+                `Neither the logged-in user nor a sign-in error appeared for '${userName}'`)
+                .toBeVisible({ timeout: LOGIN_STATE_TIMEOUT_MS });
+            if (await signInError.isVisible()) {
+                throw new Error(`Login failed for '${userName}': ${(await signInError.innerText()).trim()}`);
             }
-            await this.ui.element(HomePage.NIPIGE_LOGIN_BUTTON, HomePageConstants.NIPIGE_LOGIN_BUTTON).click();
+            await expect(loggedInUser, `Logged-in username for '${userName}'`).toHaveText(userName);
         });
     }
-
-    private async selectNipigeTenant(tenant: string) {
-        await test.step(`Select Nipige tenant ${tenant}`, async () => {
-            if (!tenant) return; // empty tenant — skip selection; login will show validation error
-
-            const nativeSelect = this.page.locator("select").first();
-            try {
-                await nativeSelect.waitFor({ state: "visible", timeout: 5_000 });
-                await nativeSelect.selectOption({ label: tenant });
-                return;
-            } catch { /* no native select — try combobox */ }
-
-            const tenantDropdown = this.page.getByRole("combobox").first();
-            try {
-                await tenantDropdown.waitFor({ state: "visible", timeout: 5_000 });
-                await tenantDropdown.click();
-                await this.page.getByRole("option", { name: tenant }).click();
-            } catch {
-                // close the dropdown if it opened but selection failed
-                await this.page.keyboard.press("Escape");
-            }
+    /**
+     * Validate invalid login
+     * @param errorMessage 
+     */
+    public async validateInvalidLogin(errorMessage: string) {
+        await test.step(`Verify that error message ${errorMessage}`, async () => {
+            const user = await this.ui.element(HomePage.SIGN_IN_ERROR_MESSAGE, HomePageConstants.SIGN_IN_ERROR_MESSAGE)
+                .getTextContent();
+            await Assert.assertEquals(user, errorMessage, HomePageConstants.SIGN_IN_ERROR_MESSAGE);
         });
     }
-
-    public async validateNipigeLogin() {
-        await test.step(`Verify that Nipige login is successful`, async () => {
-            await expect(this.page.getByRole("button", { name: /Loading/i })).toBeHidden({ timeout: 30_000 });
-
-            const errorTexts = await this.page.locator(HomePage.NIPIGE_LOGIN_ERROR).allInnerTexts();
-            const visibleError = errorTexts.map(text => text.trim()).find(text => text.length > 0);
-            if (visibleError) {
-                throw new Error(`Nipige login failed: ${visibleError}`);
-            }
-
-            await expect(this.page.locator(HomePage.NIPIGE_LOGIN_HEADING)).toBeHidden({ timeout: 20_000 });
+    /**
+     * Log out of the application
+     */
+    public async logout() {
+        await test.step(`Logged out of application`, async () => {
+            await this.ui.pauseInSecs(CommonConstants.TWO);
+            await this.ui.element(HomePage.LOGGED_IN_USER, HomePageConstants.USER_NAME).click();
+            await this.ui.element(HomePage.SIGN_OUT_LINK, HomePageConstants.SIGN_OUT_LINK).click();
+            await this.ui.pauseInSecs(CommonConstants.TWO);
         });
     }
-
-    public async validateInvalidNipigeLogin(expectedErrorMessage?: string) {
-        await test.step(`Verify that Nipige login failed with error message`, async () => {
-            await expect(this.page.locator(HomePage.NIPIGE_LOGIN_HEADING)).toBeVisible({ timeout: 20_000 });
-
-            const specificInvalidLocator = this.page.locator(HomePage.SIGN_IN_ERROR_MESSAGE);
-            const hasSpecific = await specificInvalidLocator.first().isVisible().catch(() => false);
-
-            let actualErrorMessage = "";
-            let usedLocator = this.page.locator(HomePage.NIPIGE_LOGIN_ERROR).first();
-
-            if (hasSpecific) {
-                usedLocator = specificInvalidLocator.first();
-                await expect(usedLocator).toBeVisible({ timeout: 10_000 });
-                actualErrorMessage = (await usedLocator.innerText()).trim();
-            } else {
-                const allErrorTexts = await this.page.locator(HomePage.NIPIGE_LOGIN_ERROR).allInnerTexts();
-                actualErrorMessage = allErrorTexts.map(t => t.trim()).find(t => t.length > 0) ?? "";
-                await expect(this.page.locator(HomePage.NIPIGE_LOGIN_ERROR).first()).toBeVisible({ timeout: 10_000 });
-            }
-
-            console.log(`\n========================================`);
-            console.log(`  Login Error Message: "${actualErrorMessage}"`);
-            console.log(`========================================\n`);
-
-            await Allure.attachText("Login Error Message", actualErrorMessage);
-
-            if (expectedErrorMessage) {
-                await expect(usedLocator).toContainText(expectedErrorMessage);
-            } else {
-                await expect(usedLocator).toHaveText(/.+/);
-            }
+    /**
+     * Navigate to Create Account page
+     */
+    public async navigateToCreateAccount() {
+        await test.step(`Navigate to Create Account page`, async () => {
+            await this.ui.element(HomePage.USER_ICON, HomePageConstants.USER_ICON).click();
+            await this.ui.element(HomePage.CREATE_NEW_ACCOUNT_LINK, HomePageConstants.CREATE_NEW_ACCOUNT_LINK).click();
         });
     }
-
-    public async navigateToOrderManagement() {
-        await test.step(`Navigate to Order Management`, async () => {
-            await this.page.waitForLoadState('networkidle', { timeout: 20_000 }).catch(() => null);
-
-            const orderManagementLink = this.page.getByRole("link", { name: /order management/i }).first();
-            if (await orderManagementLink.count() > 0) {
-                await orderManagementLink.click();
-            } else {
-                const orderManagementButton = this.page.getByRole("button", { name: /order management/i }).first();
-                if (await orderManagementButton.count() > 0) {
-                    await orderManagementButton.click();
-                } else {
-                    await this.ui.element(HomePage.NIPIGE_ORDER_MANAGEMENT_LINK,
-                        HomePageConstants.NIPIGE_ORDER_MANAGEMENT_LINK).click();
-                }
-            }
-            await expect(this.page.locator(HomePage.NIPIGE_ORDER_MANAGEMENT_STAT_CARD).first())
-                .toBeVisible({ timeout: 60_000 });
+    /**
+     * Enters details into Contact Us
+     * @param category 
+     * @param product 
+     * @param email 
+     * @param subject 
+     */
+    public async enterContactUsDetails(category: string, product: string, email: string, subject: string) {
+        await test.step(`Entering Contact Us details`, async () => {
+            await this.ui.dropdown(HomePage.CATEGORY_DROPDOWN, HomePageConstants.CATEGORY_DROPDOWN)
+                .selectByVisibleText(category);
+            await this.ui.dropdown(HomePage.PRODUCT_DROPDOWN, HomePageConstants.PRODUCT_DROPDOWN)
+                .selectByVisibleText(product);
+            await this.ui.editBox(HomePage.EMAIL_TEXTBOX, HomePageConstants.EMAIL_TEXTBOX).fill(email);
+            await this.ui.editBox(HomePage.SUBJECT_TEXTAREA, HomePageConstants.SUBJECT_TEXTAREA).fill(subject);
         });
+    }
+    /**
+     * Click on Send button of Contact Us
+     */
+    public async sendMessage() {
+        await test.step(`Click on Send button of Contact Us`, async () => {
+            await this.ui.element(HomePage.SEND_BUTTON, HomePageConstants.SEND_BUTTON).click();
+        });
+    }
+    /**
+     * Verify the success message of Contact Us
+     * @param message 
+     */
+    public async verifySuccessMessage(message: string) {
+        await test.step(`Verifying Success Message of Contact Us`, async () => {
+            const actualMessage = await this.ui.element(HomePage.CONTACT_US_MESSAGE,
+                HomePageConstants.CONTACT_US_MESSAGE).getTextContent();
+            await Assert.assertEquals(actualMessage, message, HomePageConstants.CONTACT_US_MESSAGE);
+        });
+    }
+    /**
+     * Search for Product
+     * @param product 
+     */
+    public async searchProduct(product: string) {
+        await test.step(`Searching for product '${product}'`, async () => {
+            await this.ui.element(HomePage.SEARCH_ICON, HomePageConstants.SEARCH_ICON).click();
+            await (await this.ui.editBox(HomePage.SEARCH_TEXTBOX, HomePageConstants.SEARCH_TEXTBOX).type(product))
+                .keyPress(HomePageConstants.ENTER_KEY);
+            await this.ui.element(HomePage.SEARCH_CLOSE_IMAGE, HomePageConstants.SEARCH_CLOSE_IMAGE).click();
+        });
+    }
+    /**
+     * Navigate to Management Console screen
+     */
+    public async navigateToManagementConsole() {
+        let newPage: Page;
+        await test.step(`Navigate to Management Console screen`, async () => {
+            await this.ui.waitForLoadingImage();
+            await this.ui.element(HomePage.HELP_ICON, HomePageConstants.HELP_ICON).click();
+            newPage = await this.ui.switchToNewWindow(HomePage.MANAGEMENT_CONSOLE_LINK,
+                HomePageConstants.MANAGEMENT_CONSOLE_LINK);
+        });
+        return newPage;
     }
 }

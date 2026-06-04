@@ -1,4 +1,3 @@
-import fs from "fs";
 import { test, Page } from "@playwright/test";
 import CommonConstants from "../../constants/CommonConstants";
 import HTMLConstants from "../../constants/HTMLConstants";
@@ -273,31 +272,17 @@ export default class UIActions {
    * @param description description of the element
    * @returns downloaded file name
    */
-  public async downloadFile(selector: string, description: string, clickOptions?: Parameters<Page['click']>[1]): Promise<string> {
+  public async downloadFile(selector: string, description: string): Promise<string> {
     let fileName: string;
     await test.step(`Downloading ${description} file`, async () => {
-      const downloadFolder = CommonConstants.DOWNLOAD_PATH;
-      const existingFiles = fs.existsSync(downloadFolder)
-        ? new Set(fs.readdirSync(downloadFolder))
-        : new Set<string>();
-
-      await this.page.locator(selector).click(clickOptions);
-      const download = await this.page.waitForEvent('download', { timeout: 5000 }).catch(() => undefined);
-
-      if (download) {
-        fileName = download.suggestedFilename();
-        const filePath = `${downloadFolder}${fileName}`;
-        await download.saveAs(filePath);
-        await download.delete();
-      } else {
-        await this.page.waitForTimeout(5000);
-        const afterFiles = fs.existsSync(downloadFolder) ? fs.readdirSync(downloadFolder) : [];
-        const newFiles = afterFiles.filter(file => !existingFiles.has(file));
-        if (newFiles.length === 0) {
-          throw new Error(`Download did not start for ${description} and no new file appeared in ${downloadFolder}`);
-        }
-        fileName = newFiles.sort().pop() as string;
-      }
+      const [download] = await Promise.all([
+        this.page.waitForEvent('download'),
+        await this.page.locator(selector).click({ modifiers: ["Alt"] }),
+      ]);
+      fileName = download.suggestedFilename();
+      const filePath = `${CommonConstants.DOWNLOAD_PATH}${fileName}`;
+      await download.saveAs(filePath);
+      await download.delete();
     });
     return fileName;
   }

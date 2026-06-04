@@ -1,4 +1,5 @@
 import { test, expect, Locator, Page } from "@playwright/test";
+import ImageComparator from "@utils/ImageComparator";
 import CommonConstants from "framework/constants/CommonConstants";
 import * as fs from "fs";
 
@@ -348,6 +349,25 @@ export default class UIElementActions {
         fs.mkdirSync(screenshotDir, { recursive: true });
       }
       await this.getLocator().screenshot({ path: `${screenshotDir}/${fileName}`, mask: maskSelectors.map(selector => this.page.locator(selector).first()) });
+    });
+  }
+  /**
+   * Compares and validates an element’s screenshot against its baseline.
+   * Captures the screenshot and saves it in ./test-results/image/actual.
+   * If a baseline image does not exist, one is automatically created in ./src/resources/baselineImages and the test is considered passed. This ensures that the first run always establishes a baseline for future comparisons.
+   * If differences are detected, a diff image highlighting the changes is generated and stored in ./test-results/image/diffs.
+   * @param fileName name of the file in baseline folder to compare
+   * @param maskSelectors selectors to mask on the screenshot
+   * @param misMatchTolerance tolerance level for image comparison in percentage, default is 0.00
+   */
+  public async compareAndValidateElementScreenshot(fileName: string, maskSelectors: string[] = [], misMatchTolerance = 0.00) {
+    const actualImageName = fileName.replace('.png', `_${new Date().getDate()}.png`);
+    await this.captureElementScreenshot(CommonConstants.ACTUAL_IMAGE_PATH, actualImageName, maskSelectors);
+    await test.step(`Comparing screenshot of ${this.description}`, async () => {
+      const result = await ImageComparator.compareImages(CommonConstants.BASELINE_IMAGE_PATH, fileName, CommonConstants.ACTUAL_IMAGE_PATH, actualImageName, misMatchTolerance);
+      if (!result.isSame) {
+        throw new Error(`Screenshot comparison failed for ${this.description}. MisMatch Percentage: ${result.misMatchPercentage}`);
+      }
     });
   }
 }

@@ -6,8 +6,8 @@
  * suite deterministic: each role test always uses the same configured account.
  *
  * Required .env keys (see .env.example):
- *   TENANT_EMAIL / TENANT_PASSWORD / TENANT_NAME
- *   SELLER_EMAIL / SELLER_PASSWORD / SELLER_TENANT
+ *   TENANT_EMAIL / TENANT_PASSWORD / TENANT_ID
+ *   SELLER_EMAIL / SELLER_PASSWORD
  *   DELIVERY_EMAIL / DELIVERY_PASSWORD
  *   USER_EMAIL / USER_PASSWORD
  */
@@ -23,7 +23,7 @@ export interface Credential {
     role: Role;
     email: string;
     password: string;
-    tenant?: string;
+    tenantId?: string;
 }
 
 /**
@@ -47,9 +47,9 @@ function required(name: string): string {
 export function getCredential(role: Role): Credential {
     switch (role) {
         case Role.TENANT:
-            return { role, email: required("TENANT_EMAIL"), password: required("TENANT_PASSWORD"), tenant: process.env.TENANT_NAME };
+            return { role, email: required("TENANT_EMAIL"), password: required("TENANT_PASSWORD"), tenantId: process.env.TENANT_ID };
         case Role.SELLER:
-            return { role, email: required("SELLER_EMAIL"), password: required("SELLER_PASSWORD"), tenant: required("SELLER_TENANT") };
+            return { role, email: required("SELLER_EMAIL"), password: required("SELLER_PASSWORD") };
         case Role.DELIVERY:
             return { role, email: required("DELIVERY_EMAIL"), password: required("DELIVERY_PASSWORD") };
         case Role.USER:
