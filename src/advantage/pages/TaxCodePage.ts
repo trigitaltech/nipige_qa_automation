@@ -8,8 +8,17 @@
  *   • Action icons per row: view (eye), edit (pencil), delete (trash) — nth 0/1/last
  */
 export default class TaxCodePage {
-    // ── Navigation ────────────────────────────────────────────────────────────
+    // ── Direct navigation path ────────────────────────────────────────────────
     static readonly TAX_CODE_PATH = "setup/taxcode";
+
+    // ── Home page & sidebar indicators (used by TC_01 E2E flow) ──────────────
+    static readonly PROFILE_MENU = 'button[aria-haspopup="true"]';
+    static readonly HOME_GREETING = 'h1[class*="tracking-tight"]';
+    static readonly SIDEBAR_NAV = 'nav.flex-1';
+    // Setup is a collapsible button near the bottom of the sidebar nav
+    static readonly SETUP_MENU_BTN = 'nav button:has-text("Setup")';
+    // Tax Code submenu link — only in DOM after Setup is expanded
+    static readonly TAX_CODE_SUBMENU_LINK = 'a[href="/setup/taxcode"]';
 
     // ── Page headings ─────────────────────────────────────────────────────────
     static readonly PAGE_HEADING = ':is(h1,h2,h3):has-text("Tax Setup")';
@@ -68,6 +77,15 @@ export default class TaxCodePage {
     // ── Pagination ────────────────────────────────────────────────────────────
     static readonly NEXT_BTN = 'li[data-slot="pagination-item"]:has-text("Next"), button:has-text("Next")';
     static readonly PREV_BTN = 'li[data-slot="pagination-item"]:has-text("Previous"), button:has-text("Previous")';
+    // Composite next-page selector used by countAllListingRecords — covers aria-label
+    // links (HeroUI/NextUI), slot-based items, and plain Next buttons.
+    static readonly NEXT_PAGE_BTN = [
+        'a[aria-label="Go to next page"]',
+        'button[aria-label="Go to next page"]',
+        'li[data-slot="pagination-item"]:has-text("Next") > a',
+        'li[data-slot="pagination-item"]:has-text("Next") > button',
+        'button:has-text("Next")',
+    ].join(", ");
 
     // ── Navigation buttons ────────────────────────────────────────────────────
     static readonly BACK_BTN = 'button:has-text("Back"), a:has-text("Back")';
