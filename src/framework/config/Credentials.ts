@@ -56,8 +56,16 @@ export function getCredential(role: Role): Credential {
                 password: process.env.ADMIN_PASSWORD || adminRow.Password,
             };
         }
-        case Role.TENANT:
-            return { role, email: required("TENANT_EMAIL"), password: required("TENANT_PASSWORD"), tenantId: process.env.TENANT_ID };
+        case Role.TENANT: {
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            const tenantRow = require("@utils/ExcelUtil").default.getTestData("LoginTest", "TC01_ValidLogin");
+            return {
+                role,
+                email: process.env.TENANT_EMAIL || tenantRow.UserName,
+                password: process.env.TENANT_PASSWORD || tenantRow.Password,
+                tenantId: process.env.TENANT_ID,
+            };
+        }
         case Role.SELLER:
             return { role, email: required("SELLER_EMAIL"), password: required("SELLER_PASSWORD") };
         case Role.DELIVERY:
