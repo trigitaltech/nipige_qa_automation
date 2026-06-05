@@ -115,12 +115,26 @@ export default class FreshCartSteps {
         let ticketId = "";
         await test.step(`Capture ${FreshCartConstants.FIRST_TICKET_ID_CELL}`, async () => {
             await this.page.reload({ waitUntil: "networkidle" });
-            await this.ui.element(FreshCartPage.FIRST_TICKET_ID_CELL,
-                FreshCartConstants.FIRST_TICKET_ID_CELL).waitTillVisible(10);
-            ticketId = await this.ui.element(FreshCartPage.FIRST_TICKET_ID_CELL,
-                FreshCartConstants.FIRST_TICKET_ID_CELL).getTextContent();
+
+            // Locate the row that contains both the automation description AND is OPEN —
+            // this uniquely identifies the ticket created in the current run
+            const targetRow = this.page.locator(
+                'ul.divide-y > li:has-text("Ticket created by automation framework."):has-text("OPEN")'
+            ).first();
+            await targetRow.waitFor({ state: "visible", timeout: 15_000 });
+
+            // Read the SR number from that specific row
+            const rowText = await targetRow.innerText();
+            const match = rowText.match(/SR\d+/);
+            if (!match) {
+                throw new Error(`No SR number found in the OPEN automation row. Row text: ${rowText}`);
+            }
+            ticketId = match[0];
+            if (!ticketId.startsWith("SR")) {
+                throw new Error(`Invalid ticket id captured: ${ticketId}`);
+            }
         });
-        return ticketId.trim();
+        return ticketId;
     }
 
     /**
