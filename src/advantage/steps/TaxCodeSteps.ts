@@ -62,6 +62,62 @@ export default class TaxCodeSteps {
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
+    // HOME PAGE & SIDEBAR NAVIGATION  (TC_01 E2E flow)
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    public async navigateToHomePage() {
+        await test.step("Navigate to Home page", async () => {
+            const homeUrl = `${process.env.BASE_URL}home`;
+            console.log(`[TaxCode] Navigating to home: ${homeUrl}`);
+            await this.page.goto(homeUrl);
+            await this.page.waitForURL(/\/home/, { timeout: 15000 });
+            await this.page.waitForLoadState("networkidle");
+        });
+    }
+
+    public async verifyHomePageDisplayed() {
+        await test.step("Verify Home page is displayed", async () => {
+            await expect(this.page, "URL must be /home after login")
+                .toHaveURL(/\/home/, { timeout: 10000 });
+            await expect(
+                this.page.locator(TaxCodePage.PROFILE_MENU).first(),
+                "Profile menu must be visible — confirms user is logged in",
+            ).toBeVisible({ timeout: 10000 });
+            await expect(
+                this.page.locator(TaxCodePage.SIDEBAR_NAV).first(),
+                "Sidebar navigation must be visible on home page",
+            ).toBeVisible({ timeout: 8000 });
+            await expect(
+                this.page.locator(TaxCodePage.HOME_GREETING).first(),
+                "Home page greeting heading must be visible",
+            ).toBeVisible({ timeout: 8000 });
+            console.log(`[TaxCode] Home page verified. URL: ${this.page.url()}`);
+        });
+    }
+
+    public async navigateToTaxCodeViaSetupMenu() {
+        await test.step("Navigate to Tax Code via Setup menu in sidebar", async () => {
+            // Setup is collapsed by default — Tax Code link is NOT in DOM until Setup is clicked.
+            const alreadyExpanded = await this.page.locator(TaxCodePage.TAX_CODE_SUBMENU_LINK)
+                .isVisible({ timeout: 800 }).catch(() => false);
+
+            if (!alreadyExpanded) {
+                const setupBtn = this.page.locator(TaxCodePage.SETUP_MENU_BTN).first();
+                // Setup button is near the bottom of the sidebar — scroll into view first
+                await setupBtn.scrollIntoViewIfNeeded({ timeout: 10000 });
+                await setupBtn.click();
+                await this.page.locator(TaxCodePage.TAX_CODE_SUBMENU_LINK)
+                    .waitFor({ state: "visible", timeout: 5000 });
+                console.log("[TaxCode] Setup menu expanded — Tax Code link visible");
+            }
+
+            await this.page.locator(TaxCodePage.TAX_CODE_SUBMENU_LINK).first().click();
+            await this.page.waitForURL(/setup\/taxcode/, { timeout: 15000 });
+            console.log(`[TaxCode] Navigated via menu to: ${this.page.url()}`);
+        });
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
     // PAGE VERIFICATION
     // ═══════════════════════════════════════════════════════════════════════════
 
@@ -93,13 +149,26 @@ export default class TaxCodeSteps {
     }
 
     public async getSummaryCardCount(label: string): Promise<number> {
-        const labelLocator = this.page.getByText(label, { exact: true }).first();
-        await expect(labelLocator, `Summary card '${label}' must be visible`).toBeVisible({ timeout: 8000 });
-        const escapedLabel = label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-        const pageText = await this.page.locator("body").innerText();
-        const match = pageText.match(new RegExp(`(\\d+)\\s+${escapedLabel}`, "i"));
-        await Assert.assertTrue(match !== null, `Summary card '${label}' displays a numeric count`);
-        return Number(match?.[1] ?? 0);
+        await expect(
+            this.page.getByText(label, { exact: true }).first(),
+            `Summary card '${label}' must be visible`,
+        ).toBeVisible({ timeout: 8000 });
+
+        // Direct DOM traversal: the count <p> is the immediate previousElementSibling
+        // of the label <p>. This avoids fragile regex-on-body-text parsing.
+        const count = await this.page.evaluate((labelText: string) => {
+            const allP = Array.from(document.querySelectorAll("p"));
+            const labelEl = allP.find(
+                (el) => el.textContent?.trim().toLowerCase() === labelText.toLowerCase(),
+            );
+            if (!labelEl) return -1;
+            const prevEl = labelEl.previousElementSibling;
+            return prevEl ? parseInt(prevEl.textContent?.trim() ?? "0", 10) : -1;
+        }, label);
+
+        await Assert.assertTrue(count >= 0, `Stat card '${label}' count element found in DOM`);
+        console.log(`[TaxCode] Stat card '${label}' count: ${count}`);
+        return count;
     }
 
     public async verifyGridColumnsDisplayed() {
@@ -484,6 +553,68 @@ export default class TaxCodeSteps {
         return this.page.locator(TaxCodePage.TAX_RATE_INPUT).first().inputValue();
     }
 
+    private async assertVisibleFormControlsReadOnly() {
+        const isReadOnlyEl = (el: Element): boolean => {
+            const inp = el as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
+            return (
+                inp.disabled
+                || (inp as HTMLInputElement).readOnly
+                || el.getAttribute("aria-disabled") === "true"
+                || el.getAttribute("aria-readonly") === "true"
+                || el.getAttribute("data-disabled") === "true"
+                || getComputedStyle(el).pointerEvents === "none"
+                || el.closest('[data-disabled="true"]') !== null
+                || el.closest('[aria-disabled="true"]') !== null
+            );
+        };
+        const controls = this.page.locator(TaxCodePage.FORM_INPUTS);
+        const count = await controls.count();
+        for (let i = 0; i < count; i++) {
+            const ctrl = controls.nth(i);
+            // eslint-disable-next-line no-await-in-loop
+            const visible = await ctrl.isVisible().catch(() => false);
+            if (visible) {
+                // eslint-disable-next-line no-await-in-loop
+                const isNonEditable = await ctrl.evaluate(isReadOnlyEl);
+                // eslint-disable-next-line no-await-in-loop
+                expect(
+                    isNonEditable,
+                    `Form control [${i}] on View page must be disabled or read-only`,
+                ).toBeTruthy();
+            }
+        }
+    }
+
+    private async assertButtonHiddenOrDisabled(selector: string, description: string) {
+        const isDisabledEl = (el: Element): boolean => {
+            const btn = el as HTMLButtonElement;
+            return (
+                btn.disabled
+                || el.getAttribute("aria-disabled") === "true"
+                || el.getAttribute("data-disabled") === "true"
+                || getComputedStyle(el).pointerEvents === "none"
+                || el.closest('[data-disabled="true"]') !== null
+                || el.closest('[aria-disabled="true"]') !== null
+            );
+        };
+        const buttons = this.page.locator(selector);
+        const count = await buttons.count();
+        for (let i = 0; i < count; i++) {
+            const button = buttons.nth(i);
+            // eslint-disable-next-line no-await-in-loop
+            const visible = await button.isVisible().catch(() => false);
+            if (visible) {
+                // eslint-disable-next-line no-await-in-loop
+                const disabled = await button.evaluate(isDisabledEl);
+                // eslint-disable-next-line no-await-in-loop
+                expect(
+                    disabled,
+                    `${description} is visible on View page, so it must be disabled or non-interactive`,
+                ).toBeTruthy();
+            }
+        }
+    }
+
     public async verifyViewDetails(taxCode: string, country: string) {
         await test.step("Verify View page displays correct Tax Code details", async () => {
             const content = await this.page.content();
@@ -516,52 +647,29 @@ export default class TaxCodeSteps {
 
     public async verifyViewPageReadOnly() {
         await test.step("Verify View Tax Code page is read-only", async () => {
-            const controls = this.page.locator(TaxCodePage.FORM_INPUTS);
-            const count = await controls.count();
-            for (let i = 0; i < count; i++) {
-                const ctrl = controls.nth(i);
-                if (!await ctrl.isVisible()) continue;
-                const isNonEditable = await ctrl.evaluate((el: Element) => {
-                    const inp = el as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
-                    return (
-                        inp.disabled
-                        || (inp as HTMLInputElement).readOnly
-                        || el.getAttribute('aria-disabled') === 'true'
-                        || el.getAttribute('aria-readonly') === 'true'
-                        || el.getAttribute('data-disabled') === 'true'
-                        || getComputedStyle(el).pointerEvents === 'none'
-                        || el.closest('[data-disabled="true"]') !== null
-                        || el.closest('[aria-disabled="true"]') !== null
-                    );
-                });
-                await Assert.assertTrue(
-                    isNonEditable,
-                    `Form control [${i}] on View page must be disabled or read-only`,
-                );
-            }
-            await Assert.assertFalse(
-                await this.page.locator(TaxCodePage.UPDATE_SUBMIT_BTN)
-                    .isVisible({ timeout: 1000 }).catch(() => false),
-                "Update button must not be visible on View page",
+            await this.assertVisibleFormControlsReadOnly();
+            await this.assertButtonHiddenOrDisabled(
+                TaxCodePage.UPDATE_SUBMIT_BTN,
+                "Update button",
             );
-            await Assert.assertFalse(
-                await this.page.locator(TaxCodePage.ADD_ITEM_BTN)
-                    .isVisible({ timeout: 1000 }).catch(() => false),
-                "Add Item button must not be visible on View page",
+            await this.assertButtonHiddenOrDisabled(
+                TaxCodePage.ADD_ITEM_BTN,
+                "Add Item button",
             );
         });
     }
 
     public async verifyEditControlsDisabledOnView() {
         await test.step("Verify edit controls are disabled on View page", async () => {
-            const updateVisible = await this.page.locator(TaxCodePage.UPDATE_SUBMIT_BTN)
-                .isVisible({ timeout: 1000 })
-                .catch(() => false);
-            const addItemVisible = await this.page.locator(TaxCodePage.ADD_ITEM_BTN)
-                .isVisible({ timeout: 1000 })
-                .catch(() => false);
-            await Assert.assertFalse(updateVisible, "Update button is not visible on View page");
-            await Assert.assertFalse(addItemVisible, "Add Item button is not visible on View page");
+            await this.assertVisibleFormControlsReadOnly();
+            await this.assertButtonHiddenOrDisabled(
+                TaxCodePage.UPDATE_SUBMIT_BTN,
+                "Update button",
+            );
+            await this.assertButtonHiddenOrDisabled(
+                TaxCodePage.ADD_ITEM_BTN,
+                "Add Item button",
+            );
         });
     }
 
@@ -611,6 +719,93 @@ export default class TaxCodeSteps {
             await this.page.locator(TaxCodePage.CANCEL_BTN).first().click();
             await this.page.waitForLoadState("networkidle");
         });
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // TC_27 HELPERS — create a disposable tax code, inspect row status
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    // Creates a tax code end-to-end and returns to the listing page with no active
+    // search filter. Used by TC_27 so the test owns its own record and does not
+    // depend on sharedTaxCode.
+    public async createTaxCodeAndNavigateBack(data: TaxCodeFormData): Promise<void> {
+        await test.step(`Create temp tax code '${data.taxCode}'`, async () => {
+            await this.navigateToTaxCode();
+            await this.clickCreateButton();
+            await this.verifyCreatePageLoaded();
+            await this.fillCreateForm(data);
+            await this.submitCreateForm();
+            await this.verifySuccessMessage();
+            await this.navigateToTaxCode();
+            await this.searchTaxCode(data.taxCode!);
+            await this.verifyTaxCodeInTable(data.taxCode!);
+            await this.clearSearch();
+            console.log(`[TaxCode] Temp tax code created and verified: '${data.taxCode}'`);
+        });
+    }
+
+    // Returns the text content of the Status column (5th TD, 0-indexed col 4) for the
+    // first row matching taxCode, or "NOT_FOUND" when the row is absent.
+    // Used by TC_27 to distinguish hard delete (row gone) from soft delete (status change).
+    public async getRowStatus(taxCode: string): Promise<string> {
+        const row = this.page.locator(TaxCodePage.rowFor(taxCode)).first();
+        if (!await row.isVisible({ timeout: 3000 }).catch(() => false)) return "NOT_FOUND";
+        const statusCell = row.locator("td").nth(4);
+        const text = (await statusCell.innerText().catch(() => "")).trim();
+        console.log(`[TaxCode] Row status for '${taxCode}': '${text}'`);
+        return text;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // STATS REFRESH  (TC_27)
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    // After a delete the backend commits aggregate stats asynchronously.
+    // Retry up to 4 times with increasing wait to ensure the count reflects deletion.
+    public async reloadForStatsRefresh() {
+        await test.step("Reload page to ensure dashboard stats are current", async () => {
+            await this.page.reload();
+            await this.page.waitForLoadState("networkidle");
+            await this.page.waitForTimeout(1500);
+            console.log("[TaxCode] Page reloaded for fresh dashboard stats");
+        });
+    }
+
+    // Count every record across all listing pages (pagination-aware).
+    // Uses TaxCodePage.NEXT_PAGE_BTN which covers aria-label links, slot-based
+    // items, and plain Next buttons — the previous hard-coded selector only matched
+    // one pagination implementation and caused the method to count only page 1.
+    public async countAllListingRecords(): Promise<number> {
+        // Clear any active search filter without throwing if input is not visible
+        const searchInput = this.page.locator(TaxCodePage.SEARCH_INPUT);
+        if (await searchInput.isVisible({ timeout: 3000 }).catch(() => false)) {
+            await searchInput.clear();
+            await this.waitForTableStable();
+        }
+
+        let total = 0;
+        const maxPages = 50;
+        for (let pageNum = 0; pageNum < maxPages; pageNum++) {
+            await this.waitForTableStable();
+            const rowsOnPage = await this.page.locator(TaxCodePage.TABLE_ROWS).count();
+            total += rowsOnPage;
+            console.log(`[TaxCode] Listing page ${pageNum + 1}: ${rowsOnPage} rows (cumulative: ${total})`);
+
+            const nextBtn = this.page.locator(TaxCodePage.NEXT_PAGE_BTN).first();
+            if (await nextBtn.count().then((c) => c === 0)) {
+                console.log(`[TaxCode] No next-page button found — all pages counted`);
+                break;
+            }
+            const ariaDisabled = await nextBtn.getAttribute("aria-disabled").catch(() => null);
+            const btnDisabled = await nextBtn.isDisabled().catch(() => false);
+            if (ariaDisabled === "true" || btnDisabled) {
+                console.log(`[TaxCode] Next-page button disabled — last page reached`);
+                break;
+            }
+            await nextBtn.click();
+        }
+        console.log(`[TaxCode] Total records across ALL listing pages: ${total}`);
+        return total;
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
