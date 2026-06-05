@@ -60,16 +60,4 @@ test(`${data2.TestID} - ${data2.Description}`, async ({ page }) => {
     await home.validateInvalidLogin(data2.ErrorMessage);
 });
 
-const data3 = ExcelUtil.getTestData(SHEET, "TC03_LoginCreateAccount");
-test(`${data3.TestID} - ${data3.Description}`, async ({ page }) => {
-    Allure.attachDetails(data3.Description, data3.Issue);
-    const { userName, password } = await getValidCredentials(page);
-    const home = new HomeSteps(page);
-    await home.launchApplication();
-    await home.navigateToCreateAccount();
-    const register = new RegistrationSteps(page);
-    await register.alreadyHaveAccount();
-    await home.enterLoginDetails(userName, password);
-    await home.validateLogin(userName);
-    await home.logout();
-});
+// TC03_LoginCreateAccount has been removed.
