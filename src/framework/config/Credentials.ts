@@ -47,8 +47,15 @@ function required(name: string): string {
  */
 export function getCredential(role: Role): Credential {
     switch (role) {
-        case Role.ADMIN:
-            return { role, email: required("ADMIN_EMAIL"), password: required("ADMIN_PASSWORD") };
+        case Role.ADMIN: {
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            const adminRow = require("@utils/ExcelUtil").default.getTestData("Admin Login", "TC01_AdminValidLogin");
+            return {
+                role,
+                email: process.env.ADMIN_EMAIL || adminRow.UserName,
+                password: process.env.ADMIN_PASSWORD || adminRow.Password,
+            };
+        }
         case Role.TENANT:
             return { role, email: required("TENANT_EMAIL"), password: required("TENANT_PASSWORD"), tenantId: process.env.TENANT_ID };
         case Role.SELLER:
