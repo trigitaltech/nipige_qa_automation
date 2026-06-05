@@ -42,10 +42,11 @@ export default class FreshCartPage {
     static readonly SUBMIT_TICKET_BUTTON = 'button:has-text("Submit Ticket")';
 
     // ── Support Tickets listing ───────────────────────────────────────────────
-    // FreshCart uses ul.divide-y > li rows. Newest ticket is last-child (oldest-first sort).
-    // Scoped to <p> inside <a> to read only the SR number, not the full row text.
-    static readonly OPEN_TICKET_ID_CELL  = 'ul.divide-y > li:last-child a p';
-    static readonly FIRST_TICKET_ID_CELL = 'ul.divide-y > li:last-child a p';
+    // All <p> elements across all rows — SR numbers are among these, identified by "SR" prefix
+    static readonly ALL_ROW_PARAGRAPHS     = 'ul.divide-y > li a p';
+    // Fallback single-row selectors
+    static readonly OPEN_TICKET_ID_CELL    = 'ul.divide-y > li:last-child a p';
+    static readonly FIRST_TICKET_ID_CELL   = 'ul.divide-y > li:last-child a p';
 
     // ── Support Tickets listing — status verification ─────────────────────────
     // TODO: replace with real selector once debug log reveals the actual DOM structure.
