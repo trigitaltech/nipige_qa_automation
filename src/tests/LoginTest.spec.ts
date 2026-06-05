@@ -160,7 +160,7 @@ for (const scenario of scenarios) {
             data.persona || ""
         );
 
-        if (data.TestID === "TC01_ValidLogin") {
+        if (data.TestID === "TC01_ValidLogin" || data.TestID === "TC03_LoginCreateAccount") {
 
             await home.validateLogin(data.UserName);
 
