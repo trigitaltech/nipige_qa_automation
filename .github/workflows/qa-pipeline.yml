@@ -2,9 +2,7 @@ name: QA Automation Pipeline
 
 on:
   push:
-    branches: [main, master, develop]
-  pull_request:
-    branches: [main, master, develop]
+    branches: [main]
   workflow_dispatch:
     inputs:
       test_suite:
@@ -26,20 +24,7 @@ jobs:
     name: "API Tests (REST + SOAP)"
     runs-on: ubuntu-latest
     timeout-minutes: 30
-
-    env:
-      BROWSER: chrome
-      TEST_TIMEOUT: "20"
-      BROWSER_LAUNCH_TIMEOUT: "0"
-      ACTION_TIMEOUT: "1"
-      NAVIGATION_TIMEOUT: "2"
-      RETRIES: "1"
-      PARALLEL_THREAD: "2"
-      BASE_URL: "http://advantageonlineshopping.com"
-      SOAP_API_BASE_URL: "http://www.advantageonlineshopping.com:80"
-      REST_API_BASE_URL: "https://fakestoreapi.com"
-      TEST_NAME: ""
-      LINK: "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+    # No env: block here — all values come from the committed .env file
 
     steps:
       - name: Checkout repository
@@ -57,25 +42,21 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install chromium --with-deps
 
-      - name: Verify .env exists
+      - name: Verify .env and show BASE_URL
         run: |
           if [ ! -f .env ]; then
-            echo "ERROR: .env file not found. Copy .env.example to .env and fill in your values, then commit it (git add -f .env)."
+            echo "ERROR: .env file not found."
             exit 1
           fi
           echo ".env found."
+          echo "BASE_URL = $(grep '^BASE_URL' .env)"
 
-      # ── CI patches for playwright.config.ts ───────────────────────────
-      # 1. headless:false → headless:true  (GitHub has no display/XServer)
-      # 2. --start-maximized → --window-size=1920,1080  (no OS to maximize against)
-      # 3. viewport:null → viewport:{width:1920,height:1080}  (prevents zero-size viewport)
-      - name: Patch Playwright config for CI
+      - name: Patch Playwright config for headless CI
         run: |
           sed -i 's/headless: false/headless: true/g' playwright.config.ts
           sed -i 's/"--start-maximized"/"--window-size=1920,1080"/g' playwright.config.ts
           sed -i 's/viewport: null/viewport: { width: 1920, height: 1080 }/g' playwright.config.ts
-          echo "Patched playwright.config.ts for CI"
-          grep -n "headless\|viewport\|window-size" playwright.config.ts
+          echo "Patched OK"
 
       - name: Run REST API Tests
         run: npx playwright test src/tests/RESTUserTest.spec.ts --project=local
@@ -87,57 +68,36 @@ jobs:
         env:
           TEST_NAME: SOAPAccountServiceTest
 
-      - name: Upload Playwright HTML Report
+      - name: Upload HTML Report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-html-report
+          name: api-html-report
           path: test-results/report/
-          retention-days: 14
-
-      - name: Upload JUnit XML Results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: junit-results
-          path: test-results/results/results.xml
           retention-days: 14
 
       - name: Upload Execution Logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: execution-logs
+          name: api-logs
           path: test-results/logs/
           retention-days: 14
 
-      - name: Upload Failure Artifacts (screenshots + videos)
+      - name: Upload Failure Artifacts
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: failure-artifacts
+          name: api-failure-artifacts
           path: test-results/failure/
           retention-days: 7
 
   run-ui-tests:
-    name: "UI Tests (Advantage Online Shopping)"
+    name: "UI Tests (Nipige App)"
     runs-on: ubuntu-latest
     timeout-minutes: 45
     continue-on-error: true
-
-    env:
-      BROWSER: chrome
-      TEST_TIMEOUT: "20"
-      BROWSER_LAUNCH_TIMEOUT: "0"
-      ACTION_TIMEOUT: "1"
-      NAVIGATION_TIMEOUT: "2"
-      RETRIES: "1"
-      PARALLEL_THREAD: "1"
-      BASE_URL: "http://advantageonlineshopping.com"
-      SOAP_API_BASE_URL: "http://www.advantageonlineshopping.com:80"
-      REST_API_BASE_URL: "https://fakestoreapi.com"
-      TEST_NAME: ""
-      LINK: "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+    # No env: block here — all values come from the committed .env file
 
     steps:
       - name: Checkout repository
@@ -155,26 +115,21 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install chromium --with-deps
 
-      - name: Verify .env exists
+      - name: Verify .env and show BASE_URL
         run: |
           if [ ! -f .env ]; then
-            echo "ERROR: .env file not found. Commit your .env file using: git add -f .env"
+            echo "ERROR: .env file not found."
             exit 1
           fi
           echo ".env found."
+          echo "BASE_URL = $(grep '^BASE_URL' .env)"
 
-      # ── CI patches for playwright.config.ts ───────────────────────────
-      # 1. headless:false → headless:true  (GitHub has no display/XServer)
-      # 2. --start-maximized → --window-size=1920,1080  (no OS to maximize against)
-      # 3. viewport:null → viewport:{width:1920,height:1080}  (prevents zero-size viewport
-      #    which causes dropdowns/modals to render off-screen or not at all)
-      - name: Patch Playwright config for CI
+      - name: Patch Playwright config for headless CI
         run: |
           sed -i 's/headless: false/headless: true/g' playwright.config.ts
           sed -i 's/"--start-maximized"/"--window-size=1920,1080"/g' playwright.config.ts
           sed -i 's/viewport: null/viewport: { width: 1920, height: 1080 }/g' playwright.config.ts
-          echo "Patched playwright.config.ts for CI"
-          grep -n "headless\|viewport\|window-size" playwright.config.ts
+          echo "Patched OK"
 
       - name: Run Login Tests
         run: npx playwright test src/tests/LoginTest.spec.ts --project=local
@@ -196,15 +151,15 @@ jobs:
         env:
           TEST_NAME: DownloadTest
 
-      - name: Upload UI Test HTML Report
+      - name: Upload HTML Report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ui-playwright-html-report
+          name: ui-html-report
           path: test-results/report/
           retention-days: 14
 
-      - name: Upload UI Failure Artifacts
+      - name: Upload Failure Artifacts
         if: failure()
         uses: actions/upload-artifact@v4
         with:
