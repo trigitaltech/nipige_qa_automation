@@ -13,6 +13,7 @@
  */
 
 export enum Role {
+    ADMIN = "ADMIN",
     TENANT = "TENANT",
     SELLER = "SELLER",
     DELIVERY = "DELIVERY",
@@ -46,6 +47,8 @@ function required(name: string): string {
  */
 export function getCredential(role: Role): Credential {
     switch (role) {
+        case Role.ADMIN:
+            return { role, email: required("ADMIN_EMAIL"), password: required("ADMIN_PASSWORD") };
         case Role.TENANT:
             return { role, email: required("TENANT_EMAIL"), password: required("TENANT_PASSWORD"), tenantId: process.env.TENANT_ID };
         case Role.SELLER:
