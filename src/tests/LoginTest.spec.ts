@@ -133,14 +133,13 @@ import { test } from "@base-test";
 import Allure from "@allure";
 import ExcelUtil from "@utils/ExcelUtil";
 
-const SHEET = "LoginTest";
+const SHEET = "Admin App";
 
 const scenarios = [
     "TC01_ValidLogin",
     "TC02_InValidLogin",
-    "TC03_BlankEmail",
-    "TC04_BlankPassword",
-    "TC05_BlankRole"
+    "TC03_LoginCreateAccount",
+    "TC04_InvalidUsername",
 ];
 
 for (const scenario of scenarios) {
