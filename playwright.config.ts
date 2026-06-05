@@ -40,6 +40,7 @@ const config: PlaywrightTestConfig = {
     ["allure-playwright", {
       detail: false,
       suiteTitle: false,
+      resultsDir: "./allure-results",
       environmentInfo: {
         OS: process.platform.toUpperCase(),
         BROWSER: process.env.BROWSER.toUpperCase(),
