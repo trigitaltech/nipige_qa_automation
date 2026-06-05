@@ -7,6 +7,7 @@
  *
  * Required .env keys (see .env.example):
  *   TENANT_EMAIL / TENANT_PASSWORD / TENANT_ID
+ *   BULK_PROMOTION_TENANT_EMAIL / BULK_PROMOTION_TENANT_PASSWORD
  *   SELLER_EMAIL / SELLER_PASSWORD
  *   DELIVERY_EMAIL / DELIVERY_PASSWORD
  *   USER_EMAIL / USER_PASSWORD
@@ -14,6 +15,7 @@
 
 export enum Role {
     ADMIN = "ADMIN",
+    BULK_PROMOTION_TENANT = "BULK_PROMOTION_TENANT",
     TENANT = "TENANT",
     SELLER = "SELLER",
     DELIVERY = "DELIVERY",
@@ -56,6 +58,8 @@ export function getCredential(role: Role): Credential {
                 password: process.env.ADMIN_PASSWORD || adminRow.Password,
             };
         }
+        case Role.BULK_PROMOTION_TENANT:
+            return { role, email: required("BULK_PROMOTION_TENANT_EMAIL"), password: required("BULK_PROMOTION_TENANT_PASSWORD") };
         case Role.TENANT: {
             // eslint-disable-next-line @typescript-eslint/no-var-requires
             const tenantRow = require("@utils/ExcelUtil").default.getTestData("LoginTest", "TC01_ValidLogin");
