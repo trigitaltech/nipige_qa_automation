@@ -56,7 +56,7 @@ test(`${data2.TestID} - ${data2.Description}`, async ({ page }) => {
     Allure.attachDetails(data2.Description, data2.Issue);
     const home = new HomeSteps(page);
     await home.launchApplication();
-    await home.login(data2.UserName, data2.Password);
+    await home.login(data2.UserName, data2.Password, data2.persona);
     await home.validateInvalidLogin(data2.ErrorMessage);
 });
 
