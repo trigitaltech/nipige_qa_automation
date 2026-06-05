@@ -18,7 +18,7 @@ export default class FreshCartSteps {
     public async loginToFreshCart() {
         await test.step(`Login to ${FreshCartConstants.LOGIN_PAGE}`, async () => {
             // eslint-disable-next-line @typescript-eslint/no-var-requires
-            const freshCartRow = require("@utils/ExcelUtil").default.getTestData("LoginTest", "TC05_FreshCartLogin");
+            const freshCartRow = require("@utils/ExcelUtil").default.getTestData("Admin App", "TC05_FreshCartLogin");
             const url = process.env.FRESHCART_URL || "https://freshcart-usa.nipige.com/login";
             const email = process.env.FRESHCART_EMAIL || freshCartRow.UserName;
             const password = process.env.FRESHCART_PASSWORD || freshCartRow.Password;
@@ -115,9 +115,10 @@ export default class FreshCartSteps {
         let ticketId = "";
         await test.step(`Capture ${FreshCartConstants.FIRST_TICKET_ID_CELL}`, async () => {
             await this.page.reload({ waitUntil: "networkidle" });
-            await this.ui.element(FreshCartPage.FIRST_TICKET_ID_CELL,
+            // Read the first row that is NOT closed — this is the newly created OPEN ticket
+            await this.ui.element(FreshCartPage.OPEN_TICKET_ID_CELL,
                 FreshCartConstants.FIRST_TICKET_ID_CELL).waitTillVisible(10);
-            ticketId = await this.ui.element(FreshCartPage.FIRST_TICKET_ID_CELL,
+            ticketId = await this.ui.element(FreshCartPage.OPEN_TICKET_ID_CELL,
                 FreshCartConstants.FIRST_TICKET_ID_CELL).getTextContent();
         });
         return ticketId.trim();
