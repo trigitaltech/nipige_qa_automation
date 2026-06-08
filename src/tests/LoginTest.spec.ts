@@ -56,7 +56,9 @@ test(`${data2.TestID} - ${data2.Description}`, async ({ page }) => {
     Allure.attachDetails(data2.Description, data2.Issue);
     const home = new HomeSteps(page);
     await home.launchApplication();
-    await home.login(data2.UserName, data2.Password);
+    // Nipige requires choosing a "Login as" role before it validates credentials; without it the
+    // app stops at "Please select login way" instead of returning the invalid-credentials error.
+    await home.login(data2.UserName, data2.Password, data2.persona);
     await home.validateInvalidLogin(data2.ErrorMessage);
 });
 
@@ -72,4 +74,38 @@ test(`${data3.TestID} - ${data3.Description}`, async ({ page }) => {
     await home.enterLoginDetails(userName, password);
     await home.validateLogin(userName);
     await home.logout();
+});
+const data4 = ExcelUtil.getTestData(SHEET, "TC04_ValidSellerLogin");
+
+test(`${data4.TestID} - ${data4.Description}`, async ({ page }) => {
+    Allure.attachDetails(data4.Description, data4.Issue);
+
+    const home = new HomeSteps(page);
+
+    await home.launchApplication();
+    await home.login(
+        data4.UserName,
+        data4.Password,
+        data4.persona
+    );
+
+    await home.validateLogin(data4.UserName);
+    await home.logout();
+});
+
+const data5 = ExcelUtil.getTestData(SHEET, "TC05_InvalidSellerLogin");
+
+test(`${data5.TestID} - ${data5.Description}`, async ({ page }) => {
+    Allure.attachDetails(data5.Description, data5.Issue);
+
+    const home = new HomeSteps(page);
+
+    await home.launchApplication();
+    await home.login(
+        data5.UserName,
+        data5.Password,
+        data5.persona
+    );
+
+    await home.validateInvalidLogin(data5.ErrorMessage);
 });

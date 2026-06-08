@@ -26,10 +26,13 @@ export default class HomeSteps {
      * @param persona optional "Login as" role to select before submitting (e.g. "tenant",
      *                "seller"). The Nipige login screen requires picking the role the account
      *                belongs to; omit it for screens/flows that do not present role buttons.
+     * @param tenant optional tenant to select from the "Select Tenant" dropdown. Omit it to use
+     *               the persona's default tenant (see {@link HomePage.PERSONA_TENANTS}); pass a
+     *               value only to override that default for a specific test.
      */
-    public async login(userName: string, password: string, persona?: string) {
+    public async login(userName: string, password: string, persona?: string, tenant?: string) {
         await test.step(`Login as ${userName}${persona ? ` with role '${persona}'` : ""}`, async () => {
-            await this.enterLoginDetails(userName, password, persona);
+            await this.enterLoginDetails(userName, password, persona, tenant);
         });
     }
     /**
@@ -37,15 +40,37 @@ export default class HomeSteps {
      * @param userName email address / username
      * @param password account password
      * @param persona optional "Login as" role to select before submitting
+     * @param tenant optional tenant override; defaults to the persona's configured tenant
      */
-    public async enterLoginDetails(userName: string, password: string, persona?: string) {
+    public async enterLoginDetails(userName: string, password: string, persona?: string, tenant?: string) {
         await test.step(`Enter login credentials as ${userName}`, async () => {
             await this.ui.editBox(HomePage.USER_NAME_TEXTBOX, HomePageConstants.USER_NAME).fill(userName);
             await this.ui.editBox(HomePage.PASSWORD_TEXTBOX, HomePageConstants.PASSWORD).fill(password);
             if (persona) {
                 await this.selectLoginRole(persona);
+                // Tenant-scoped personas (e.g. Seller) reveal a "Select Tenant" dropdown once their
+                // role is chosen, and the app blocks login until a tenant is picked. An explicit
+                // override wins; otherwise fall back to the persona's configured tenant. Personas
+                // that are not tenant-scoped (e.g. Tenant) resolve to undefined and are skipped.
+                const tenantToSelect = tenant ?? HomePage.tenantFor(persona);
+                if (tenantToSelect) {
+                    await this.selectTenant(tenantToSelect);
+                }
             }
             await this.ui.element(HomePage.SIGN_IN_BUTTON, HomePageConstants.SIGN_IN_BUTTON).click();
+        });
+    }
+    /**
+     * Selects a tenant from the "Select Tenant" dropdown that tenant-scoped personas must set
+     * before logging in. The control is a custom dropdown, so it is opened by clicking it and
+     * the tenant is then chosen from the rendered option list.
+     * @param tenant exact tenant name as shown in the dropdown (e.g. "Fresh Cart")
+     */
+    private async selectTenant(tenant: string) {
+        await test.step(`Select '${tenant}' from the tenant dropdown`, async () => {
+            await this.ui.element(HomePage.TENANT_DROPDOWN, HomePageConstants.TENANT_DROPDOWN).click();
+            await this.ui.element(HomePage.tenantOption(tenant),
+                `${HomePageConstants.TENANT_OPTION} (${tenant})`).click();
         });
     }
     /**

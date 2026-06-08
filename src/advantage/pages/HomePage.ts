@@ -22,6 +22,45 @@ export default class HomePage {
     static loginAsRole(role: string): string {
         return `button:text-is("${role}")`;
     }
+
+    /**
+     * Some "Login as" personas are scoped to a specific tenant. After their role button is
+     * selected the login screen reveals a "Select Tenant" dropdown that must be set before
+     * submitting, otherwise the app rejects the login with a "Please select a tenant" toast.
+     *
+     * This map declares which tenant each persona logs in under. A persona that is NOT listed
+     * here (e.g. "tenant") does not require a tenant selection and is left untouched.
+     * To support a new tenant-scoped persona, add a single entry — no other code changes needed.
+     */
+    static readonly PERSONA_TENANTS: Readonly<Record<string, string>> = {
+        seller: "FreshCart",
+    };
+
+    /**
+     * Returns the tenant a persona must log in under, or undefined when the persona is not
+     * tenant-scoped. Persona keys are matched case-insensitively against {@link PERSONA_TENANTS}.
+     * @param persona persona as stored in the test data (e.g. "seller")
+     */
+    static tenantFor(persona: string): string | undefined {
+        return HomePage.PERSONA_TENANTS[persona.trim().toLowerCase()];
+    }
+
+    // The "Select Tenant" control is a custom (non-native) dropdown: it renders a placeholder
+    // and a popup listbox rather than an <option> list, so it is driven by click-to-open +
+    // click-the-option rather than Playwright's selectOption(). It exposes role="combobox",
+    // which is unambiguous — unlike the "Select Tenant" text, which also appears as the field
+    // label above the control.
+    static readonly TENANT_DROPDOWN = '[role="combobox"]';
+
+    /**
+     * Builds the selector for a tenant entry inside the opened "Select Tenant" dropdown list.
+     * The options render in a portal listbox with role="option", so we scope to that role to
+     * avoid colliding with the same text elsewhere on the page (e.g. a confirmation toast).
+     * @param tenant exact tenant name as shown in the list, e.g. "FreshCart"
+     */
+    static tenantOption(tenant: string): string {
+        return `[role="option"]:has-text("${tenant}")`;
+    }
     static readonly CREATE_NEW_ACCOUNT_LINK = "[translate='CREATE_NEW_ACCOUNT']";
     static readonly CATEGORY_DROPDOWN = "[name='categoryListboxContactUs']";
     static readonly PRODUCT_DROPDOWN = "[name='productListboxContactUs']";
