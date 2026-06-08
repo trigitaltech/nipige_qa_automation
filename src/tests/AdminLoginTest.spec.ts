@@ -4,9 +4,9 @@ import Allure from "@allure";
 import ExcelUtil from "@utils/ExcelUtil";
 import { getCredential, Role } from "@config/Credentials";
 
-const SHEET = "Admin Login";
+const SHEET = "Admin App";
 
-const data1 = ExcelUtil.getTestData(SHEET, "TC01_AdminValidLogin");
+const data1 = ExcelUtil.getTestData(SHEET, "TC06_AdminValidLogin");
 test(`${data1.TestID} - ${data1.Description}`, async ({ page }) => {
     Allure.attachDetails(data1.Description, data1.Issue);
     const credential = getCredential(Role.ADMIN);
@@ -17,7 +17,7 @@ test(`${data1.TestID} - ${data1.Description}`, async ({ page }) => {
     await home.logout();
 });
 
-const data2 = ExcelUtil.getTestData(SHEET, "TC02_AdminInvalidUsername");
+const data2 = ExcelUtil.getTestData(SHEET, "TC07_AdminInvalidUsername");
 test(`${data2.TestID} - ${data2.Description}`, async ({ page }) => {
     Allure.attachDetails(data2.Description, data2.Issue);
     const home = new HomeSteps(page);
@@ -26,7 +26,7 @@ test(`${data2.TestID} - ${data2.Description}`, async ({ page }) => {
     await home.validateInvalidLogin(data2.ErrorMessage);
 });
 
-const data3 = ExcelUtil.getTestData(SHEET, "TC03_AdminInvalidPassword");
+const data3 = ExcelUtil.getTestData(SHEET, "TC08_AdminInvalidPassword");
 test(`${data3.TestID} - ${data3.Description}`, async ({ page }) => {
     Allure.attachDetails(data3.Description, data3.Issue);
     const home = new HomeSteps(page);
@@ -35,7 +35,7 @@ test(`${data3.TestID} - ${data3.Description}`, async ({ page }) => {
     await home.validateInvalidLogin(data3.ErrorMessage);
 });
 
-const data4 = ExcelUtil.getTestData(SHEET, "TC04_AdminInvalidUsernameAndPassword");
+const data4 = ExcelUtil.getTestData(SHEET, "TC09_AdminInvalidUsernameAndPassword");
 test(`${data4.TestID} - ${data4.Description}`, async ({ page }) => {
     Allure.attachDetails(data4.Description, data4.Issue);
     const home = new HomeSteps(page);
