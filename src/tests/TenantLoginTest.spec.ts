@@ -138,9 +138,8 @@ const SHEET = "LoginTest";
 const scenarios = [
     "TC01_ValidLogin",
     "TC02_InValidLogin",
-    "TC03_BlankEmail",
-    "TC04_BlankPassword",
-    "TC05_BlankRole"
+    "TC03_LoginCreateAccount",
+    "TC04_InvalidUsername",
 ];
 
 for (const scenario of scenarios) {
@@ -161,7 +160,7 @@ for (const scenario of scenarios) {
             data.persona || ""
         );
 
-        if (data.TestID === "TC01_ValidLogin") {
+        if (data.TestID === "TC01_ValidLogin" || data.TestID === "TC03_LoginCreateAccount") {
 
             await home.validateLogin(data.UserName);
 

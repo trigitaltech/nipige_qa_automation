@@ -10,9 +10,13 @@
  *   SELLER_EMAIL / SELLER_PASSWORD
  *   DELIVERY_EMAIL / DELIVERY_PASSWORD
  *   USER_EMAIL / USER_PASSWORD
+ * Optional overrides (fall back to Excel "LoginTest" sheet):
+ *   BULK_PROMOTION_TENANT_EMAIL / BULK_PROMOTION_TENANT_PASSWORD
  */
 
 export enum Role {
+    ADMIN = "ADMIN",
+    BULK_PROMOTION_TENANT = "BULK_PROMOTION_TENANT",
     TENANT = "TENANT",
     SELLER = "SELLER",
     DELIVERY = "DELIVERY",
@@ -46,8 +50,34 @@ function required(name: string): string {
  */
 export function getCredential(role: Role): Credential {
     switch (role) {
-        case Role.TENANT:
-            return { role, email: required("TENANT_EMAIL"), password: required("TENANT_PASSWORD"), tenantId: process.env.TENANT_ID };
+        case Role.ADMIN: {
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            const adminRow = require("@utils/ExcelUtil").default.getTestData("LoginTest", "TC06_AdminValidLogin");
+            return {
+                role,
+                email: process.env.ADMIN_EMAIL || adminRow.UserName,
+                password: process.env.ADMIN_PASSWORD || adminRow.Password,
+            };
+        }
+        case Role.BULK_PROMOTION_TENANT: {
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            const bulkRow = require("@utils/ExcelUtil").default.getTestData("LoginTest", "TC10_BulkPromotionTenantLogin");
+            return {
+                role,
+                email: process.env.BULK_PROMOTION_TENANT_EMAIL || bulkRow.UserName,
+                password: process.env.BULK_PROMOTION_TENANT_PASSWORD || bulkRow.Password,
+            };
+        }
+        case Role.TENANT: {
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            const tenantRow = require("@utils/ExcelUtil").default.getTestData("LoginTest", "TC01_ValidLogin");
+            return {
+                role,
+                email: process.env.TENANT_EMAIL || tenantRow.UserName,
+                password: process.env.TENANT_PASSWORD || tenantRow.Password,
+                tenantId: process.env.TENANT_ID,
+            };
+        }
         case Role.SELLER:
             return { role, email: required("SELLER_EMAIL"), password: required("SELLER_PASSWORD") };
         case Role.DELIVERY:
