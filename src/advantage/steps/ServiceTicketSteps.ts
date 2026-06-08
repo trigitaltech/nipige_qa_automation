@@ -108,12 +108,6 @@ export default class ServiceTicketSteps {
      */
     public async clickEditForTicket(ticketId: string) {
         await test.step(`Click ${ServiceTicketConstants.TICKET_EDIT_BUTTON} for ticket '${ticketId}'`, async () => {
-            // eslint-disable-next-line no-console
-            console.log("DIAG row count:", await this.page.locator(`tr:has-text("${ticketId}")`).count());
-            // eslint-disable-next-line no-console
-            console.log("DIAG edit button count:", await this.page.locator('button[title="Edit"]').count());
-            // eslint-disable-next-line no-console
-            console.log("ROW TEXT:", await this.page.locator(`tr:has-text("${ticketId}")`).first().innerText());
             await this.ui.element(ServiceTicketPage.ticketEditButton(ticketId),
                 ServiceTicketConstants.TICKET_EDIT_BUTTON).click();
             await this.page.waitForLoadState("domcontentloaded");

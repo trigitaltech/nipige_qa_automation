@@ -133,7 +133,7 @@ import { test } from "@base-test";
 import Allure from "@allure";
 import ExcelUtil from "@utils/ExcelUtil";
 
-const SHEET = "Admin App";
+const SHEET = "LoginTest";
 
 const scenarios = [
     "TC01_ValidLogin",
