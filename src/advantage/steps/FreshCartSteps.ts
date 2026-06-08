@@ -18,7 +18,7 @@ export default class FreshCartSteps {
     public async loginToFreshCart() {
         await test.step(`Login to ${FreshCartConstants.LOGIN_PAGE}`, async () => {
             // eslint-disable-next-line @typescript-eslint/no-var-requires
-            const freshCartRow = require("@utils/ExcelUtil").default.getTestData("Admin App", "TC05_FreshCartLogin");
+            const freshCartRow = require("@utils/ExcelUtil").default.getTestData("LoginTest", "TC05_FreshCartLogin");
             const url = process.env.FRESHCART_URL || "https://freshcart-usa.nipige.com/login";
             const email = process.env.FRESHCART_EMAIL || freshCartRow.UserName;
             const password = process.env.FRESHCART_PASSWORD || freshCartRow.Password;
