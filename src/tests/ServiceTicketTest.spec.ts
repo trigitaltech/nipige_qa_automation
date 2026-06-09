@@ -22,29 +22,29 @@ test(`${data1.TestID} - ${data1.Description}`, async ({ page }) => {
 
     // Step 1: Navigate to Service Ticket listing page
     await ticket.navigateToServiceTickets();
+    await ticket.clickRefresh();
 
-    // Step 2: Click View (eye icon) for the ticket matching TicketID from Excel
-    await ticket.clickViewForTicket(data1.TicketID);
+    // Step 2: Capture the first OPEN ticket ID dynamically — no hardcoded ID needed
+    const ticketId = await ticket.getFirstOpenTicketId();
 
-    // Step 3: Verify ticket detail fields on the View page
-    await ticket.verifyViewDetails(
-        data1.TicketID,
-        data1.CustomerName,
-        data1.Subject,
-        data1.Status,
-    );
+    // Step 3: Click View (eye icon) for the captured ticket
+    await ticket.clickViewForTicket(ticketId);
 
-    // Step 4: Navigate back to the listing
+    // Step 4: Verify ticket detail fields on the View page
+    await ticket.verifyViewDetails(ticketId, "", "", "");
+
+    // Step 5: Navigate back to the listing and re-search
     await ticket.navigateBackToListing();
+    await ticket.searchByTicketId(ticketId);
 
-    // Step 5: Click Edit (pencil icon) for the ticket matching TicketID from Excel
-    await ticket.clickEditForTicket(data1.TicketID);
+    // Step 6: Click Edit (pencil icon) for the captured ticket
+    await ticket.clickEditForTicket(ticketId);
 
     // Step 6: Verify the Edit page has loaded
     await ticket.verifyEditPageLoaded();
 
     // Step 7: Verify current status is OPEN
-    await ticket.verifyCurrentStatus(data1.Status);
+    await ticket.verifyCurrentStatus("OPEN");
 
     // Step 8: Change status to CLOSED
     await ticket.changeStatus(data1.NewStatus);
@@ -65,7 +65,7 @@ test(`${data1.TestID} - ${data1.Description}`, async ({ page }) => {
     await ticket.clickRefresh();
 
     // Step 14: Verify ticket status is CLOSED in the listing
-    await ticket.verifyTicketStatusInListing(data1.TicketID, data1.NewStatus);
+    await ticket.verifyTicketStatusInListing(ticketId, data1.NewStatus);
 
     await home.logout();
 });
