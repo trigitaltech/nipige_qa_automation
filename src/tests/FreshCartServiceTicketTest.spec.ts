@@ -8,6 +8,7 @@ import FreshCartConstants from "@uiConstants/FreshCartConstants";
 
 test("FreshCart_TC01 - Create FreshCart Support Ticket and Close via Tenant Portal", async ({ page, gData }) => {
     Allure.attachDetails(
+        // eslint-disable-next-line max-len
         "Creates a support ticket on FreshCart, closes it via the Tenant portal, verifies CLOSED status on FreshCart, then logs out.",
         "",
     );
@@ -64,7 +65,8 @@ test("FreshCart_TC01 - Create FreshCart Support Ticket and Close via Tenant Port
     await home.logout();
 
     // ── Part 3: FreshCart — verify ticket is CLOSED, then logout ─────────────
-    // Navigate back via the same working flow used in Part 1 — no direct nav link needed
+    // No standalone Support Tickets nav link exists — must navigate via order.
+    // Confirmed path: Orders → View Details → Need Help → Support Ticket → reload.
 
     await freshCart.loginToFreshCart();
     await freshCart.navigateToOrders();
@@ -79,6 +81,7 @@ test("FreshCart_TC01 - Create FreshCart Support Ticket and Close via Tenant Port
 
 test("FreshCart_TC02 - Negative: Search Invalid Ticket ID in Tenant Portal", async ({ page, gData }) => {
     Allure.attachDetails(
+        // eslint-disable-next-line max-len
         "Searches for a dynamically derived invalid ticket ID in the Tenant Service Tickets listing and verifies no data is found.",
         "",
     );
@@ -93,8 +96,8 @@ test("FreshCart_TC02 - Negative: Search Invalid Ticket ID in Tenant Portal", asy
         throw new Error("TC01 did not complete successfully. Captured Ticket ID unavailable.");
     }
     const invalidTicketId = capturedTicketId.length > 0
-        ? capturedTicketId.substring(0, capturedTicketId.length - 1) +
-          ((Number(capturedTicketId.slice(-1)) + 1) % 10)
+        ? capturedTicketId.substring(0, capturedTicketId.length - 1)
+          + ((Number(capturedTicketId.slice(-1)) + 1) % 10)
         : "";
 
     await home.launchApplication();
