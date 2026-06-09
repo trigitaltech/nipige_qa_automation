@@ -4,7 +4,7 @@ import Allure from "@allure";
 import ExcelUtil from "@utils/ExcelUtil";
 import { getCredential, Role } from "@config/Credentials";
 
-const SHEET = "Admin App";
+const SHEET = "LoginTest";
 
 const data1 = ExcelUtil.getTestData(SHEET, "TC06_AdminValidLogin");
 test(`${data1.TestID} - ${data1.Description}`, async ({ page }) => {

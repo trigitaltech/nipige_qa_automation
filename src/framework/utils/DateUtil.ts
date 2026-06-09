@@ -41,4 +41,13 @@ export default class DateUtil {
       const time = moment().add(minutes, 'm').add(hours, 'h').format(format);
       return time;
    }
+
+   /**
+    * Converts a date string from Excel format (dd-mm-yyyy) to HTML date-input format (yyyy-mm-dd).
+    * @param date date string in dd-mm-yyyy format as stored in Excel
+    * @returns date string in yyyy-mm-dd format required by HTML date inputs
+    */
+   public static excelToNativeDate(date: string): string {
+      return moment(date.trim(), "DD-MM-YYYY").format("YYYY-MM-DD");
+   }
 }

@@ -17,8 +17,8 @@ export default class FreshCartSteps {
      */
     public async loginToFreshCart() {
         await test.step(`Login to ${FreshCartConstants.LOGIN_PAGE}`, async () => {
-            // eslint-disable-next-line @typescript-eslint/no-var-requires
-            const freshCartRow = require("@utils/ExcelUtil").default.getTestData("Admin App", "TC05_FreshCartLogin");
+            // eslint-disable-next-line @typescript-eslint/no-var-requires, global-require
+            const freshCartRow = require("@utils/ExcelUtil").default.getTestData("LoginTest", "TC05_FreshCartLogin");
             const url = process.env.FRESHCART_URL || "https://freshcart-usa.nipige.com/login";
             const email = process.env.FRESHCART_EMAIL || freshCartRow.UserName;
             const password = process.env.FRESHCART_PASSWORD || freshCartRow.Password;
@@ -119,17 +119,16 @@ export default class FreshCartSteps {
             // Locate the row that contains both the automation description AND is OPEN —
             // this uniquely identifies the ticket created in the current run
             const targetRow = this.page.locator(
-                'ul.divide-y > li:has-text("Ticket created by automation framework."):has-text("OPEN")'
+                'ul.divide-y > li:has-text("Ticket created by automation framework."):has-text("OPEN")',
             ).first();
             await targetRow.waitFor({ state: "visible", timeout: 15_000 });
 
-            // Read the SR number from that specific row
             const rowText = await targetRow.innerText();
             const match = rowText.match(/SR\d+/);
             if (!match) {
                 throw new Error(`No SR number found in the OPEN automation row. Row text: ${rowText}`);
             }
-            ticketId = match[0];
+            [ticketId] = match;
             if (!ticketId.startsWith("SR")) {
                 throw new Error(`Invalid ticket id captured: ${ticketId}`);
             }
@@ -143,8 +142,16 @@ export default class FreshCartSteps {
      */
     public async hardRefreshSupportTickets() {
         await test.step(`Hard refresh ${FreshCartConstants.SUPPORT_TICKETS_PAGE}`, async () => {
-            await this.ui.element(FreshCartPage.SUPPORT_TICKETS_LINK,
-                FreshCartConstants.SUPPORT_TICKETS_LINK).click();
+            await this.ui.element(FreshCartPage.ORDERS_LINK,
+                FreshCartConstants.ORDERS_LINK).click();
+            await this.page.waitForLoadState("domcontentloaded");
+            await this.ui.element(FreshCartPage.FIRST_ORDER_VIEW_DETAILS,
+                FreshCartConstants.FIRST_ORDER_VIEW_DETAILS).click();
+            await this.page.waitForLoadState("domcontentloaded");
+            await this.ui.element(FreshCartPage.NEED_HELP_BUTTON,
+                FreshCartConstants.NEED_HELP_BUTTON).click();
+            await this.ui.element(FreshCartPage.SUPPORT_TICKET_OPTION,
+                FreshCartConstants.SUPPORT_TICKET_OPTION).click();
             await this.page.waitForLoadState("domcontentloaded");
             await this.page.reload({ waitUntil: "networkidle" });
         });
