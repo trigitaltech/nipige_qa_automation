@@ -7,6 +7,8 @@ export default class HomePageConstants {
     static readonly SIGN_IN_ERROR_MESSAGE = "Error Message";
     static readonly SIGN_OUT_LINK = "Logout Link";
     static readonly LOGIN_AS_ROLE = "Login As Role";
+    static readonly TENANT_DROPDOWN = "Select Tenant Dropdown";
+    static readonly TENANT_OPTION = "Tenant Option";
     static readonly PROFILE_MENU = "Profile Menu";
     static readonly HOME_PAGE = "Home Page";
     static readonly CREATE_NEW_ACCOUNT_LINK = "Create New Account Link";
