@@ -6,7 +6,7 @@
 ### 1. Document Control
 | Version | Date | Author | Status | Target Audience |
 | :--- | :--- | :--- | :--- | :--- |
-| **v1.0.0** | June 3, 2026 | Antigravity AI | Ready for Review | QA Engineers, Developers, DevOps, Project Stakeholders |
+| **v1.1.0** | June 3, 2026 | Antigravity AI | Ready for Review | QA Engineers, Developers, DevOps, Project Stakeholders |
 
 ---
 
@@ -23,6 +23,7 @@ The **Playwright QA Automation Framework** is designed to unify UI, API (REST & 
 * **High Efficiency & Reduced Redundancy:** Executes the same test scenario against different data sets, minimizing code duplication.
 * **Unified Reporting:** Consolidates logs, execution results, screenshots, videos, and custom attachments (e.g., PDF diff files) into a single, interactive report dashboard (Allure & Playwright HTML).
 * **Advanced Document Verification:** Automates PDF comparisons by dynamically masking volatile, time-dependent, or transaction-specific fields (e.g., timestamps, dynamically-generated order IDs) before performing pixel-by-pixel comparisons.
+* **Visual Regression Automation:** Leverages pixel-level image comparisons with automatic baseline provisioning to detect UI regressions.
 
 ---
 
@@ -62,6 +63,14 @@ graph TD
 * **Database Drivers:** `mssql`, `oracledb`, `ibm_db`.
 * **PDF Utility Libraries:** `pdf.js-extract`, `pdf-lib` (for drawing masks), `compare-pdf-plus` (for pixel comparison), `resemblejs`.
 
+#### 4.3 Code Quality & Formatting Standards
+The project strictly enforces coding guidelines via ESLint rules configured in `.eslintrc.json`:
+* **Inherited Rule Sets:** Extends `eslint:recommended`, `airbnb-base`, `airbnb-typescript/base`, `plugin:@typescript-eslint/recommended`, and `plugin:playwright/playwright-test`.
+* **Key Configuration Customizations:**
+  * **Line Limit:** Strict warning on lines exceeding **120 characters** (excluding comments, template literals, and URLs) to preserve readability on split screens.
+  * **Syntactic Restraints:** Enforces semicolons globally; allows relaxed rules for quotes (`quotes: off`), class spacing (`lines-between-class-members: off`), and variable prefixes (`no-underscore-dangle: off`).
+  * **Asynchronous Operations:** Allows `no-await-in-loop` to support sequential business validation steps which must proceed in order.
+
 ---
 
 ### 5. Functional Requirements (Core Modules)
@@ -76,14 +85,26 @@ The framework must enable users to configure and schedule test executions entire
   * **Parallel:** Configures the test block (`test.describe.configure({ mode: 'parallel' })`) to utilize all available workers.
 * **F-5.1.3 Test Data Mapping:** Tests must locate their row-based parameters using a unique `TestID` key matching the spec file's request (e.g., `TC01_ValidLogin`).
 
-#### 5.2 UI Testing Layer
-The UI testing layer implements the Page Object Model (POM) pattern to isolate UI interactions from tests.
+#### 5.2 UI Testing Layer (POM Separation Design)
+To isolate UI modifications from testing scenarios, the framework utilizes a clean Page Object Model separation:
 
-* **F-5.2.1 Object Abstraction Wrapper:** Raw Playwright actions must be abstracted into domain-specific wrappers (e.g., `UIActions`, `UIElementActions`, `EditBoxActions`, `CheckBoxActions`, `DropDownActions`, `AlertActions`) to:
+```
+[UI Test Spec (.spec.ts)]
+         │
+         ▼
+[Step Definitions (*Steps.ts)] ──► Uses UIActions (Wrapper API)
+         │
+         ▼
+[Page Selectors (*Page.ts)] ──────► Enforces locator isolation
+```
+
+* **F-5.2.1 Component Separation:**
+  * **Selectors/Locators:** Declarative strings, XPath expressions, and dynamic template functions are stored isolated in a Page class (e.g., `HomePage.ts`). Page classes must contain *no test assertions or execution logic*.
+  * **Step Actions:** Business logical workflows, test expectations, and step logging hooks are declared inside Steps classes (e.g., `HomeSteps.ts`). Steps classes act as orchestrators using Playwright's `test.step` syntax to segment logs.
+* **F-5.2.2 Object Abstraction Wrapper:** Raw Playwright actions must be abstracted into domain-specific wrappers (e.g., `UIActions`, `UIElementActions`, `EditBoxActions`, `CheckBoxActions`, `DropDownActions`, `AlertActions`) to:
   * Standardize error handling and element timeouts.
   * Embed logging and diagnostic output for every interaction.
   * Automatically take screenshots and record video when UI tests fail.
-* **F-5.2.2 Live Demo Application:** A standard deployment of `advantageonlineshopping.com` is targeted for smoke, registration, and checkout test cases.
 * **F-5.2.3 Dynamic Account Registration:** To ensure pipeline stability, the framework must auto-register a randomized test account at runtime if pre-configured environment credentials are not present in `.env`.
 
 #### 5.3 API Testing Layer
@@ -137,30 +158,61 @@ sequenceDiagram
 * **F-5.5.3 Volatile Content Masking:** Draw black opaque rectangles over target texts matching dynamic values (e.g., today's date, unique reference number) on both the baseline and actual documents using `pdf-lib` to ensure pixel-perfect stability.
 * **F-5.5.4 Visual Diff Analysis:** Compare the output documents using a pixel comparison engine, allowing configurable tolerance levels, and output a PNG visual difference highlighting changes.
 
-#### 5.6 Reporting & Diagnostics
-* **F-5.6.1 Execution Logs:** A custom `TestListener` hooked into Playwright's reporter lifecycle must format and log every start, step, end, and failure to `test-results/logs/execution.log` via Winston.
-* **F-5.6.2 Allure Interactive Report:** Detailed reporting containing suite hierarchies, test status, step execution duration, failure stack traces, embedded screenshots, screen recordings, and PDF/image comparison files.
-* **F-5.6.3 CI Integration Files:** Standardized JUnit XML format report creation at `test-results/results/results.xml` to allow CI engines (e.g., Jenkins) to parse test pass/fail metrics.
+#### 5.6 Visual Image Comparison & Auto-Baselining
+To catch structural CSS changes, layout slips, and canvas bugs, visual snapshot assertions must be supported.
+
+* **F-5.6.1 Automated Baseline Provisioning:** When comparing an actual viewport screenshot with its baseline, if the baseline file does not exist, the framework must automatically copy the actual screenshot to the baseline target and pass the test. This facilitates low-overhead initialization of visual testing.
+* **F-5.6.2 Resemble.js Engine Configuration:** The comparison engine must support:
+  * **Antialiasing Filter:** Ignoring minor rendering differences caused by text antialiasing.
+  * **Auto-Scaling:** Rescaling mismatched images to identical dimensions before comparing to avoid layout crash errors.
+  * **Highlight Color:** Rendering visual discrepancies in bright Magenta (`#FF00FF`) overlay on the output diff image.
+* **F-5.6.3 Custom Tolerance Configuration:** Tests must accept a customizable mismatch threshold (e.g., `misMatchTolerance = 0.05` allowing a 0.05% difference). If the differences exceed the tolerance, the diff image must be attached to the Allure report automatically.
+
+#### 5.7 Reporting & Diagnostics
+* **F-5.7.1 Execution Logs:** A custom `TestListener` hooked into Playwright's reporter lifecycle must format and log every start, step, end, and failure to `test-results/logs/execution.log` via Winston.
+* **F-5.7.2 Allure Interactive Report:** Detailed reporting containing suite hierarchies, test status, step execution duration, failure stack traces, embedded screenshots, screen recordings, and PDF/image comparison files.
+* **F-5.7.3 CI Integration Files:** Standardized JUnit XML format report creation at `test-results/results/results.xml` to allow CI engines (e.g., Jenkins) to parse test pass/fail metrics.
 
 ---
 
-### 6. Non-Functional Requirements (NFRs)
+### 6. Configuration Management (Environment Variable Schema)
 
-#### 6.1 Security
+The test run's behaviors are defined via environment parameters loaded by `playwright.config.ts` from `.env`:
+
+| Key | Description | Example / Target Value |
+| :--- | :--- | :--- |
+| `BROWSER` | Target browser for execution | `chrome`, `firefox`, `edge`, `webkit` |
+| `TEST_TIMEOUT` | Global limit for a single test block (in minutes) | `20` |
+| `BROWSER_LAUNCH_TIMEOUT` | Timeout limit for browser initialization (in ms) | `0` (disabled) |
+| `ACTION_TIMEOUT` | Timeout for element locator operations (in minutes) | `1` |
+| `NAVIGATION_TIMEOUT` | Timeout for page load and routing actions (in minutes) | `2` |
+| `RETRIES` | Number of times a failed test is automatically re-run | `0` |
+| `PARALLEL_THREAD` | Maximum concurrent worker processes spawned | `3` |
+| `BASE_URL` | Application root URL | `http://advantageonlineshopping.com` |
+| `SOAP_API_BASE_URL` | Root URL for SOAP service verification | `http://www.advantageonlineshopping.com:80` |
+| `REST_API_BASE_URL` | Root URL for REST mock service validation | `https://fakestoreapi.com` |
+| `DB_CONFIG` | Driver-specific DB connection string | `Server=localhost,1433;Database=AutomationDB;...` |
+| `TEST_NAME` | Regex identifier for local filter matching | `LoginTest` |
+
+---
+
+### 7. Non-Functional Requirements (NFRs)
+
+#### 7.1 Security
 * **Credential Isolation:** No login passwords, database secrets, or API tokens must be saved in the git repository. They must reside in a local, git-ignored `.env` file.
 * **Fallback Assertions:** Tests must immediately crash and explain which credential key is missing if required `.env` values are left undefined at startup.
 
-#### 6.2 Performance & Resource Management
+#### 7.2 Performance & Resource Management
 * **Resource Parallelization:** Support running independent specs concurrently up to the maximum threads defined by the `PARALLEL_THREAD` env variable.
 * **Cleanup Actions:** Temporary files generated during browser downloads and PDF conversions must be cleaned, or contained in `test-results/` folder which is ignored by version control.
 
-#### 6.3 Maintainability & Reliability
-* **Clean Action Wrappers:** Test scripts should not call raw Playwright API functions directly; they should rely on page action methods, which in turn use standard action wrappers.
+#### 7.3 Maintainability & Reliability
+* **Client Action Wrappers:** Test scripts should not call raw Playwright API functions directly; they should rely on page action methods, which in turn use standard action wrappers.
 * **Retry Capability:** Support automated retries (`RETRIES` variable in configuration) for resolving minor network or page layout rendering hiccups.
 
 ---
 
-### 7. Future Enhancements & Roadmap
+### 8. Future Enhancements & Roadmap
 * **Auto-Sync Excel Matrix:** A utility script to synchronize test spec code declarations directly into the Excel execution sheet, avoiding manual configuration errors.
 * **Cloud Execution Grid Integrations:** Integration hooks for running suites on containerized Selenium/Playwright grids (e.g., Docker Selenoid or Playwright Service).
 * **AI Page Object Locator Healing:** An AI-powered locator search strategy that attempts to recover broken POM locators dynamically when DOM changes occur.

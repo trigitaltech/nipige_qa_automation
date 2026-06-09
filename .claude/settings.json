@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(cd \"d:\\\\Trigital poject\\\\nipige_qa_automation\"; $env:TEST_NAME = \"TaxCodeTest\"; $out = npx playwright test --project=local 2>&1; $out | Select-String -Pattern \"FAILED|passed|failed|TC_20|TC_21|TC_22|TC_23|TC_24|TC_25|TC_26|TC_27|Error:|Form control\" -CaseSensitive:$false)"
+    ]
+  }
+}

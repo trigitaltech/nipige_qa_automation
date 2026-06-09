@@ -32,7 +32,7 @@
     "@types/xmldom": "^0.1.31",
     "@typescript-eslint/eslint-plugin": "^5.16.0",
     "@typescript-eslint/parser": "^5.16.0",
-    "allure-playwright": "3.4.1",
+    "allure-playwright": "^3.9.0",
     "compare-pdf-plus": "1.0.4",
     "convert-excel-to-json": "1.7.0",
     "dotenv": "16.0.0",

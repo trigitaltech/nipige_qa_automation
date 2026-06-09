@@ -1,8 +1,9 @@
+import type { BrowserName } from "@playwright/test";
 import BrowserConstants from "../constants/BrowserConstants";
 
 export default class Browser {
-    public static type(browser: string) {
-        let browserType;
+    public static type(browser: string): BrowserName {
+        let browserType: BrowserName;
         if (browser === BrowserConstants.FIREFOX) {
             browserType = BrowserConstants.FIREFOX;
         } else if (browser === BrowserConstants.WEBKIT) {
