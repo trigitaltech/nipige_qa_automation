@@ -45,6 +45,30 @@ export default class ServiceTicketSteps {
     }
 
     /**
+     * Click the Open filter tab to show only OPEN tickets, then capture the
+     * first ticket ID from the filtered listing at runtime.
+     * Eliminates the need for a hardcoded TicketID in Excel test data.
+     */
+    public async getFirstOpenTicketId(): Promise<string> {
+        let ticketId = "";
+        await test.step(`Capture first OPEN ticket ID from listing`, async () => {
+            // Click the Open tab — selector is scoped to aria-selected tabs to avoid
+            // false matches on other "Open" text in the sidebar or page header.
+            await this.ui.element(ServiceTicketPage.OPEN_FILTER_TAB,
+                ServiceTicketConstants.OPEN_FILTER_TAB).click();
+            // Wait for the Open tab to become active (aria-selected="true") before reading
+            // the grid — React updates the attribute asynchronously after the API response.
+            await this.page.locator(ServiceTicketPage.OPEN_FILTER_TAB_ACTIVE)
+                .waitFor({ state: "visible", timeout: 15_000 });
+            // Read the ticket ID from the first row of the filtered listing
+            const cell = this.page.locator(ServiceTicketPage.FIRST_OPEN_TICKET_ID).first();
+            await cell.waitFor({ state: "visible", timeout: 15_000 });
+            ticketId = (await cell.innerText()).trim();
+        });
+        return ticketId;
+    }
+
+    /**
      * Click the eye-icon View button on the row matching the given ticket ID.
      * @param ticketId the Service Number visible in the listing row
      */
@@ -180,17 +204,6 @@ export default class ServiceTicketSteps {
         await test.step(`Click ${ServiceTicketConstants.UPDATE_BUTTON}`, async () => {
             await this.ui.element(ServiceTicketPage.UPDATE_BUTTON,
                 ServiceTicketConstants.UPDATE_BUTTON).click();
-        });
-    }
-
-    /**
-     * Verify a success toast notification is displayed after the update.
-     * Uses waitTillVisible() so the check auto-retries until the toast appears.
-     */
-    public async verifyUpdateSuccess() {
-        await test.step(`Verify ${ServiceTicketConstants.SUCCESS_TOAST} is displayed`, async () => {
-            await this.ui.element(ServiceTicketPage.SUCCESS_TOAST,
-                ServiceTicketConstants.SUCCESS_TOAST).waitTillVisible(10);
         });
     }
 

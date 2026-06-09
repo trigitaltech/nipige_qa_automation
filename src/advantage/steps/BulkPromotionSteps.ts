@@ -2,6 +2,7 @@ import test, { Page, expect } from "@playwright/test";
 import UIActions from "@uiActions/UIActions";
 import BulkPromotionPage from "@pages/BulkPromotionPage";
 import BulkPromotionConstants from "@uiConstants/BulkPromotionConstants";
+import DateUtil from "@utils/DateUtil";
 
 export default class BulkPromotionSteps {
     private ui: UIActions;
@@ -20,7 +21,7 @@ export default class BulkPromotionSteps {
 
     public async clickCreate() {
         await test.step(`Click ${BulkPromotionConstants.CREATE_BUTTON}`, async () => {
-            await this.page.getByRole("button", { name: "Create" }).click();
+            await this.page.getByRole("button", { name: BulkPromotionConstants.CREATE_BUTTON_LABEL }).click();
             await this.page.waitForLoadState("domcontentloaded");
         });
     }
@@ -88,8 +89,8 @@ export default class BulkPromotionSteps {
 
     public async enterDateRange(fromDate: string, toDate: string, rowIndex = 0) {
         await test.step(`Enter date range '${fromDate}' to '${toDate}' on row ${rowIndex + 1}`, async () => {
-            const convertedFromDate = this.convertExcelDateToNativeDate(fromDate);
-            const convertedToDate = this.convertExcelDateToNativeDate(toDate);
+            const convertedFromDate = DateUtil.excelToNativeDate(fromDate);
+            const convertedToDate = DateUtil.excelToNativeDate(toDate);
             console.log(`[BulkPromotion] Original date '${fromDate}' -> Converted date '${convertedFromDate}'`);
             console.log(`[BulkPromotion] Original date '${toDate}' -> Converted date '${convertedToDate}'`);
 
@@ -100,14 +101,10 @@ export default class BulkPromotionSteps {
         });
     }
 
-    private convertExcelDateToNativeDate(date: string) {
-        const [day, month, year] = date.split("-").map((part) => part.trim());
-        return `${year}-${month}-${day}`;
-    }
-
     public async clickViewImpactedCustomer() {
         await test.step(`Click ${BulkPromotionConstants.VIEW_IMPACTED_BUTTON}`, async () => {
-            await this.page.getByRole("button", { name: /VIEW IMPACTED CUSTOMER/i }).click();
+            const viewImpactedPattern = new RegExp(BulkPromotionConstants.VIEW_IMPACTED_BUTTON_LABEL, "i");
+            await this.page.getByRole("button", { name: viewImpactedPattern }).click();
             await this.page.waitForLoadState("domcontentloaded");
         });
     }
@@ -117,18 +114,18 @@ export default class BulkPromotionSteps {
      */
     public async verifyImpactedCustomers(): Promise<string> {
         return test.step(`Verify ${BulkPromotionConstants.IMPACTED_COUNT} is displayed`, async () => {
-            const label = this.page.getByText("TOTAL IMPACTED");
+            const label = this.page.getByText(BulkPromotionConstants.TOTAL_IMPACTED_LABEL);
             await expect(label,
-                "Expected TOTAL IMPACTED card to be visible on the listing page")
+                `Expected ${BulkPromotionConstants.TOTAL_IMPACTED_LABEL} card to be visible on the listing page`)
                 .toBeVisible({ timeout: 15_000 });
             const card = label.locator("..");
             const count = card.locator("text=/^\\d+$/");
             await expect(count,
-                "Expected numeric count to be visible inside TOTAL IMPACTED card")
+                `Expected numeric count to be visible inside ${BulkPromotionConstants.TOTAL_IMPACTED_LABEL} card`)
                 .toBeVisible({ timeout: 5_000 });
             const countText = ((await count.textContent()) ?? "").trim();
             expect(countText,
-                "Expected TOTAL IMPACTED count to be a number")
+                `Expected ${BulkPromotionConstants.TOTAL_IMPACTED_LABEL} count to be a number`)
                 .toMatch(/^\d+$/);
             return countText;
         });
@@ -145,8 +142,8 @@ export default class BulkPromotionSteps {
                 "Expected SweetAlert2 title to be visible")
                 .toBeVisible({ timeout: 15_000 });
             await expect(this.page.locator("#swal2-html-container"),
-                "Expected modal to contain 'Criteria created successfully.'")
-                .toContainText("Criteria created successfully.", { timeout: 5_000 });
+                `Expected modal to contain '${BulkPromotionConstants.SUCCESS_MODAL_TEXT}'`)
+                .toContainText(BulkPromotionConstants.SUCCESS_MODAL_TEXT, { timeout: 5_000 });
             await this.page.locator("button.swal2-confirm").click();
             await expect(this.page.locator(".swal2-popup"),
                 "Expected SweetAlert2 modal to disappear after clicking OK")
@@ -296,7 +293,7 @@ export default class BulkPromotionSteps {
 
         const row = this.page.locator(BulkPromotionPage.TABLE_ROW).nth(rowIndex);
         await expect(row, "Expected listing row to finish loading")
-            .not.toContainText("Loading...", { timeout: 15_000 });
+            .not.toContainText(BulkPromotionConstants.LOADING_TEXT, { timeout: 15_000 });
 
         const rowText = await row.innerText().catch(() => "<row not found>");
         // eslint-disable-next-line no-console

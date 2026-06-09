@@ -3,6 +3,13 @@ export default class BulkPromotionConstants {
     static readonly BULK_PROMOTION_PAGE = "Bulk Promotion Page";
     static readonly MENU_BULK_PROMOTION = "Bulk Promotion Menu Link";
 
+    // UI labels — used in Steps for locating buttons and verifying text
+    static readonly CREATE_BUTTON_LABEL = "Create";
+    static readonly VIEW_IMPACTED_BUTTON_LABEL = "VIEW IMPACTED CUSTOMER";
+    static readonly TOTAL_IMPACTED_LABEL = "TOTAL IMPACTED";
+    static readonly SUCCESS_MODAL_TEXT = "Criteria created successfully.";
+    static readonly LOADING_TEXT = "Loading...";
+
     // Listing page
     static readonly CREATE_BUTTON = "Create Button";
 
