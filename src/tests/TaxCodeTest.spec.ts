@@ -5,8 +5,8 @@ import TaxCodeSteps, { TaxCodeFormData } from "@uiSteps/TaxCodeSteps";
 import Assert from "@asserts/Assert";
 import TaxCodeConstants from "@uiConstants/TaxCodeConstants";
 
-const EMAIL = process.env.TENANT_EMAIL ?? "freshcart@gmail.com";
-const PASS = process.env.TENANT_PASSWORD ?? "Welcome@123";
+const EMAIL = process.env.TENANT_EMAIL || "freshcart@gmail.com";
+const PASS = process.env.TENANT_PASSWORD || "Welcome@123";
 
 function pickRandom<T>(arr: readonly T[]): T {
     return arr[Math.floor(Math.random() * arr.length)];
@@ -44,6 +44,8 @@ test.describe("Tax Code Management", () => {
 
         const home = new HomeSteps(sharedPage);
         await home.launchApplication();
+        console.log("Username:", EMAIL);
+        console.log("Password:", PASS ? "***" : "EMPTY");
         await home.login(EMAIL, PASS, "tenant");
         await home.validateLogin(EMAIL);
 
