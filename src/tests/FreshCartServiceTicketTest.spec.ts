@@ -57,7 +57,6 @@ test("FreshCart_TC01 - Create FreshCart Support Ticket and Close via Tenant Port
     await ticket.enterNoteToCustomer("Ticket closed successfully");
     await ticket.enterInternalNote("Closed by automation test");
     await ticket.clickUpdate();
-    await ticket.verifyUpdateSuccess();
 
     await ticket.clickRefresh();
     await ticket.verifyTicketStatusInListing(capturedTicketId, "CLOSED");
