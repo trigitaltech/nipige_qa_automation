@@ -208,17 +208,6 @@ export default class ServiceTicketSteps {
     }
 
     /**
-     * Verify a success toast notification is displayed after the update.
-     * Uses waitTillVisible() so the check auto-retries until the toast appears.
-     */
-    public async verifyUpdateSuccess() {
-        await test.step(`Verify ${ServiceTicketConstants.SUCCESS_TOAST} is displayed`, async () => {
-            await this.ui.element(ServiceTicketPage.SUCCESS_TOAST,
-                ServiceTicketConstants.SUCCESS_TOAST).waitTillVisible(10);
-        });
-    }
-
-    /**
      * Click the Refresh button on the listing page and wait for the table to reload.
      */
     public async clickRefresh() {
