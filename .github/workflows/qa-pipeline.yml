@@ -2,102 +2,15 @@ name: QA Automation Pipeline
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
   workflow_dispatch:
-    inputs:
-      test_suite:
-        description: "Excel sheet name to use as test suite (e.g. Regression)"
-        required: false
-        default: "Regression"
-      browser:
-        description: "Browser to run tests on"
-        required: false
-        default: "chrome"
-        type: choice
-        options:
-          - chrome
-          - firefox
-          - edge
 
 jobs:
-  run-api-tests:
-    name: "API Tests (REST + SOAP)"
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    # No env: block here — all values come from the committed .env file
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-          cache: "npm"
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Install Playwright browsers
-        run: npx playwright install chromium --with-deps
-
-      - name: Verify .env and show BASE_URL
-        run: |
-          if [ ! -f .env ]; then
-            echo "ERROR: .env file not found."
-            exit 1
-          fi
-          echo ".env found."
-          echo "BASE_URL = $(grep '^BASE_URL' .env)"
-
-      - name: Patch Playwright config for headless CI
-        run: |
-          sed -i 's/headless: false/headless: true/g' playwright.config.ts
-          sed -i 's/"--start-maximized"/"--window-size=1920,1080"/g' playwright.config.ts
-          sed -i 's/viewport: null/viewport: { width: 1920, height: 1080 }/g' playwright.config.ts
-          echo "Patched OK"
-
-      - name: Run REST API Tests
-        run: npx playwright test src/tests/RESTUserTest.spec.ts --project=local
-        env:
-          TEST_NAME: RESTUserTest
-
-      - name: Run SOAP API Tests
-        run: npx playwright test src/tests/SOAPAccountServiceTest.spec.ts --project=local
-        env:
-          TEST_NAME: SOAPAccountServiceTest
-
-      - name: Upload HTML Report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: api-html-report
-          path: test-results/report/
-          retention-days: 14
-
-      - name: Upload Execution Logs
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: api-logs
-          path: test-results/logs/
-          retention-days: 14
-
-      - name: Upload Failure Artifacts
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: api-failure-artifacts
-          path: test-results/failure/
-          retention-days: 7
-
-  run-ui-tests:
-    name: "UI Tests (Nipige App)"
+  run-all-tests:
+    name: Run All Tests
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    continue-on-error: true
-    # No env: block here — all values come from the committed .env file
 
     steps:
       - name: Checkout repository
@@ -109,60 +22,255 @@ jobs:
           node-version: "22"
           cache: "npm"
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+
+          sudo apt-get install -y \
+            build-essential \
+            make \
+            gcc \
+            g++ \
+            python3 \
+            pkg-config \
+            libpixman-1-dev \
+            libcairo2-dev \
+            libpango1.0-dev \
+            libjpeg-dev \
+            libgif-dev \
+            librsvg2-dev
+
+      - name: Install project dependencies
+        run: npm ci || npm install
+
+      - name: Verify Playwright installation
+        run: |
+          npx playwright --version
+          node --version
+          npm --version
 
       - name: Install Playwright browsers
-        run: npx playwright install chromium --with-deps
-
-      - name: Verify .env and show BASE_URL
         run: |
+          npx playwright install chromium --with-deps
+
+      - name: Verify environment
+        run: |
+          echo "Checking environment..."
+
           if [ ! -f .env ]; then
-            echo "ERROR: .env file not found."
-            exit 1
+            echo "WARNING: .env not found"
+            ls -la
+          else
+            echo ".env found"
+            grep "^BASE_URL" .env || true
           fi
-          echo ".env found."
-          echo "BASE_URL = $(grep '^BASE_URL' .env)"
 
-      - name: Patch Playwright config for headless CI
+      - name: Patch Playwright config for CI
         run: |
-          sed -i 's/headless: false/headless: true/g' playwright.config.ts
-          sed -i 's/"--start-maximized"/"--window-size=1920,1080"/g' playwright.config.ts
-          sed -i 's/viewport: null/viewport: { width: 1920, height: 1080 }/g' playwright.config.ts
-          echo "Patched OK"
+          sed -i 's/headless: false/headless: true/g' playwright.config.ts || true
+          sed -i 's/"--start-maximized"/"--window-size=1920,1080"/g' playwright.config.ts || true
+          sed -i 's/viewport: null/viewport: { width: 1920, height: 1080 }/g' playwright.config.ts || true
 
-      - name: Run Login Tests
-        run: npx playwright test src/tests/LoginTest.spec.ts --project=local
-        env:
-          TEST_NAME: LoginTest
-
-      - name: Run Create Account Tests
-        run: npx playwright test src/tests/CreateAccountTest.spec.ts --project=local
-        env:
-          TEST_NAME: CreateAccountTest
-
-      - name: Run Contact Us Tests
-        run: npx playwright test src/tests/ContactUsTest.spec.ts --project=local
-        env:
-          TEST_NAME: ContactUsTest
-
-      - name: Run Download Tests
-        run: npx playwright test src/tests/DownloadTest.spec.ts --project=local
-        env:
-          TEST_NAME: DownloadTest
+      - name: Run Playwright tests
+        run: |
+          npm run local:test
 
       - name: Upload HTML Report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ui-html-report
-          path: test-results/report/
+          name: playwright-html-report
+          path: |
+            playwright-report
+            test-results
+          retention-days: 14
+
+      - name: Upload Logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: execution-logs
+          path: |
+            logs
+            test-results
           retention-days: 14
 
       - name: Upload Failure Artifacts
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: ui-failure-artifacts
-          path: test-results/failure/
+          name: failure-artifacts
+          path: |
+            test-results
+            playwright-report
           retention-days: 7
+
+
+# name: QA Automation Pipeline
+
+# on:
+#   push:
+#     branches: [main]
+#   workflow_dispatch:
+#     inputs:
+#       test_suite:
+#         description: "Excel sheet name to use as test suite (e.g. Regression)"
+#         required: false
+#         default: "Regression"
+#       browser:
+#         description: "Browser to run tests on"
+#         required: false
+#         default: "chrome"
+#         type: choice
+#         options:
+#           - chrome
+#           - firefox
+#           - edge
+
+# jobs:
+#   run-api-tests:
+#     name: "API Tests (REST + SOAP)"
+#     runs-on: ubuntu-latest
+#     timeout-minutes: 30
+#     # No env: block here — all values come from the committed .env file
+
+#     steps:
+#       - name: Checkout repository
+#         uses: actions/checkout@v4
+
+#       - name: Setup Node.js
+#         uses: actions/setup-node@v4
+#         with:
+#           node-version: "22"
+#           cache: "npm"
+
+#       - name: Install dependencies
+#         run: npm ci
+
+#       - name: Install Playwright browsers
+#         run: npx playwright install chromium --with-deps
+
+#       - name: Verify .env and show BASE_URL
+#         run: |
+#           if [ ! -f .env ]; then
+#             echo "ERROR: .env file not found."
+#             exit 1
+#           fi
+#           echo ".env found."
+#           echo "BASE_URL = $(grep '^BASE_URL' .env)"
+
+#       - name: Patch Playwright config for headless CI
+#         run: |
+#           sed -i 's/headless: false/headless: true/g' playwright.config.ts
+#           sed -i 's/"--start-maximized"/"--window-size=1920,1080"/g' playwright.config.ts
+#           sed -i 's/viewport: null/viewport: { width: 1920, height: 1080 }/g' playwright.config.ts
+#           echo "Patched OK"
+
+#       - name: Run REST API Tests
+#         run: npx playwright test src/tests/RESTUserTest.spec.ts --project=local
+#         env:
+#           TEST_NAME: RESTUserTest
+
+#       - name: Run SOAP API Tests
+#         run: npx playwright test src/tests/SOAPAccountServiceTest.spec.ts --project=local
+#         env:
+#           TEST_NAME: SOAPAccountServiceTest
+
+#       - name: Upload HTML Report
+#         if: always()
+#         uses: actions/upload-artifact@v4
+#         with:
+#           name: api-html-report
+#           path: test-results/report/
+#           retention-days: 14
+
+#       - name: Upload Execution Logs
+#         if: always()
+#         uses: actions/upload-artifact@v4
+#         with:
+#           name: api-logs
+#           path: test-results/logs/
+#           retention-days: 14
+
+#       - name: Upload Failure Artifacts
+#         if: failure()
+#         uses: actions/upload-artifact@v4
+#         with:
+#           name: api-failure-artifacts
+#           path: test-results/failure/
+#           retention-days: 7
+
+#   run-ui-tests:
+#     name: "UI Tests (Nipige App)"
+#     runs-on: ubuntu-latest
+#     timeout-minutes: 45
+#     continue-on-error: true
+#     # No env: block here — all values come from the committed .env file
+
+#     steps:
+#       - name: Checkout repository
+#         uses: actions/checkout@v4
+
+#       - name: Setup Node.js
+#         uses: actions/setup-node@v4
+#         with:
+#           node-version: "22"
+#           cache: "npm"
+
+#       - name: Install dependencies
+#         run: npm ci
+
+#       - name: Install Playwright browsers
+#         run: npx playwright install chromium --with-deps
+
+#       - name: Verify .env and show BASE_URL
+#         run: |
+#           if [ ! -f .env ]; then
+#             echo "ERROR: .env file not found."
+#             exit 1
+#           fi
+#           echo ".env found."
+#           echo "BASE_URL = $(grep '^BASE_URL' .env)"
+
+#       - name: Patch Playwright config for headless CI
+#         run: |
+#           sed -i 's/headless: false/headless: true/g' playwright.config.ts
+#           sed -i 's/"--start-maximized"/"--window-size=1920,1080"/g' playwright.config.ts
+#           sed -i 's/viewport: null/viewport: { width: 1920, height: 1080 }/g' playwright.config.ts
+#           echo "Patched OK"
+
+#       - name: Run Login Tests
+#         run: npx playwright test src/tests/LoginTest.spec.ts --project=local
+#         env:
+#           TEST_NAME: LoginTest
+
+#       - name: Run Create Account Tests
+#         run: npx playwright test src/tests/CreateAccountTest.spec.ts --project=local
+#         env:
+#           TEST_NAME: CreateAccountTest
+
+#       - name: Run Contact Us Tests
+#         run: npx playwright test src/tests/ContactUsTest.spec.ts --project=local
+#         env:
+#           TEST_NAME: ContactUsTest
+
+#       - name: Run Download Tests
+#         run: npx playwright test src/tests/DownloadTest.spec.ts --project=local
+#         env:
+#           TEST_NAME: DownloadTest
+
+#       - name: Upload HTML Report
+#         if: always()
+#         uses: actions/upload-artifact@v4
+#         with:
+#           name: ui-html-report
+#           path: test-results/report/
+#           retention-days: 14
+
+#       - name: Upload Failure Artifacts
+#         if: failure()
+#         uses: actions/upload-artifact@v4
+#         with:
+#           name: ui-failure-artifacts
+#           path: test-results/failure/
+#           retention-days: 7

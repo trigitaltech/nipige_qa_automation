@@ -1,0 +1,616 @@
+import test, { Page, expect } from "@playwright/test";
+import UIActions from "@uiActions/UIActions";
+import Assert from "@asserts/Assert";
+import CommonConstants from "framework/constants/CommonConstants";
+import Logger from "framework/logger/Logger";
+import CustomerManagementConstants from "@uiConstants/CustomerManagementConstants";
+import CustomerManagementPage from "@pages/CustomerManagementPage";
+
+export default class CustomerManagementSteps {
+    private ui: UIActions;
+
+    // Optional demo/observation pause (in seconds) applied AFTER each Customer Management step so the
+    // flow can be watched live. Driven by the STEP_DELAY env var; defaults to 0 (no pause) so CI and
+    // normal runs are unaffected. Login is not touched, only this feature's steps are paced.
+    private readonly stepDelaySec: number = Number(process.env.STEP_DELAY) || 0;
+
+    // Observation pause (in seconds) held AFTER the negative-search error toast becomes visible, so
+    // the top-right popup can be seen during a demo. Configurable via TOAST_DELAY; defaults to 5s.
+    private readonly toastObserveSec: number = Number(process.env.TOAST_DELAY) || 5;
+
+    constructor(private page: Page) {
+        this.ui = new UIActions(page);
+    }
+
+    /**
+     * Navigate the tenant console menu: Customers -> Customer Admin, and wait for the
+     * Customer Management dashboard to finish loading.
+     */
+    public async navigateToCustomerAdmin() {
+        await test.step(`Navigate to Customer -> Customer Admin`, async () => {
+            const adminLink = this.ui.element(CustomerManagementPage.CUSTOMER_ADMIN_LINK,
+                CustomerManagementConstants.CUSTOMER_ADMIN_LINK);
+            // The Customer Admin entry is a direct sidebar link to /customer-management. Older builds
+            // nested it inside a collapsible "Customers" group, so expand that group ONLY if present
+            // and only when the link isn't already shown. This is best-effort and never fatal, making
+            // navigation resilient to both menu layouts (the route href is the stable anchor).
+            if (!(await adminLink.getLocator().isVisible().catch(() => false))) {
+                const toggle = this.page.locator(CustomerManagementPage.CUSTOMERS_MENU).first();
+                if (await toggle.isVisible().catch(() => false)) {
+                    await toggle.click().catch(() => { /* group already open / not a toggle */ });
+                }
+            }
+            // Explicit waits: confirm the link is shown, the route changed, and the dashboard search
+            // box is interactable before any later step tries to use it.
+            await adminLink.waitTillVisible(CommonConstants.DEFAULT_TIMEOUT);
+            await adminLink.click();
+            await this.page.waitForURL(/\/customer-management$/,
+                { timeout: CommonConstants.DEFAULT_TIMEOUT * CommonConstants.ONE_THOUSAND });
+            await this.ui.element(CustomerManagementPage.SEARCH_INPUT,
+                CustomerManagementConstants.SEARCH_INPUT).waitTillVisible(CommonConstants.DEFAULT_TIMEOUT);
+        });
+        await this.pauseToObserve("Customer Admin page");
+    }
+
+    /**
+     * Verify that the Customer Admin dashboard has loaded and all four summary widgets are shown.
+     */
+    public async verifyCustomerDashboard() {
+        await test.step(`Verify Customer Admin dashboard widgets`, async () => {
+            await this.verifyWidget(CustomerManagementPage.DASHBOARD_HEADING,
+                CustomerManagementConstants.DASHBOARD_HEADING);
+            await this.verifyWidget(CustomerManagementPage.WIDGET_TOTAL_CUSTOMERS,
+                CustomerManagementConstants.WIDGET_TOTAL_CUSTOMERS);
+            await this.verifyWidget(CustomerManagementPage.WIDGET_ACTIVE_CUSTOMERS,
+                CustomerManagementConstants.WIDGET_ACTIVE_CUSTOMERS);
+            await this.verifyWidget(CustomerManagementPage.WIDGET_ORDERS_TODAY,
+                CustomerManagementConstants.WIDGET_ORDERS_TODAY);
+            await this.verifyWidget(CustomerManagementPage.WIDGET_OPEN_TICKETS,
+                CustomerManagementConstants.WIDGET_OPEN_TICKETS);
+        });
+        await this.pauseToObserve("dashboard widgets");
+    }
+
+    // ------------------------------------------------------------------------------------------
+    // Generic Customer 360° search. searchCustomer() (positive) and searchCustomerExpectingNoResult()
+    // (negative) both reuse the private enterSearch(type, value), so the search interaction — select
+    // type, enter value, submit — lives in exactly one place for every search type.
+    // ------------------------------------------------------------------------------------------
+
+    /**
+     * Generic POSITIVE search: select the type, enter the value, submit, and wait for the matching
+     * customer profile to open. Validate the opened profile with {@link verifyCustomerProfile}.
+     * @param searchType  search type exactly as labelled in the UI
+     *                    (e.g. "Mobile Number", "Customer Number", "E-mail Id", "Order Number")
+     * @param searchValue value to search for
+     */
+    public async searchCustomer(searchType: string, searchValue: string) {
+        await test.step(`Search customer by ${searchType} '${searchValue}'`, async () => {
+            await this.enterSearch(searchType, searchValue);
+            // The profile opens at /customer-management/<id>; wait for the route plus the "Back"
+            // control so detail assertions run against a fully-rendered profile.
+            await this.page.waitForURL(/\/customer-management\/.+/,
+                { timeout: CommonConstants.DEFAULT_TIMEOUT * CommonConstants.ONE_THOUSAND });
+            await this.ui.element(CustomerManagementPage.CUSTOMER_PROFILE_READY,
+                CustomerManagementConstants.CUSTOMER_PROFILE).waitTillVisible(CommonConstants.DEFAULT_TIMEOUT);
+        });
+        await this.pauseToObserve("customer profile");
+    }
+
+    /**
+     * Generic NEGATIVE search: select the type, enter an invalid value and submit WITHOUT waiting
+     * for a profile (none opens). The error toast and the definitive "no customer loaded" checks are
+     * done in {@link verifyInvalidCustomerSearch}, which is called immediately after.
+     * @param searchType  search type exactly as labelled in the UI
+     * @param searchValue invalid value to search for
+     */
+    public async searchCustomerExpectingNoResult(searchType: string, searchValue: string) {
+        await test.step(`Search customer by ${searchType} '${searchValue}' (expecting no result)`, async () => {
+            await this.enterSearch(searchType, searchValue);
+        });
+    }
+
+    /**
+     * Search the Customer 360° box by phone number (positive). Thin wrapper over the generic
+     * {@link searchCustomer} kept so the existing phone tests read unchanged.
+     * @param phone phone number to search for, e.g. "7878787878"
+     */
+    public async searchCustomerByPhone(phone: string) {
+        await this.searchCustomer(CustomerManagementConstants.SEARCH_TYPE_MOBILE, String(phone));
+    }
+
+    /**
+     * Search by an invalid / non-existent phone number (negative). Thin wrapper over the generic
+     * {@link searchCustomerExpectingNoResult}.
+     * @param phone invalid phone number to search for, e.g. "9999999999"
+     */
+    public async searchCustomerByInvalidPhone(phone: string) {
+        await this.searchCustomerExpectingNoResult(CustomerManagementConstants.SEARCH_TYPE_MOBILE, String(phone));
+    }
+
+    /**
+     * Validate the application's response to a search that returns no customer.
+     *  1. Wait (web-first, no pre-wait sleep) for the top-right error toast to appear.
+     *  2. Capture and log the toast text, and verify it is shown.
+     *  3. Hold a configurable observation pause so the popup can be seen during a demo.
+     *  4. Then assert the definitive, stable "no customer loaded" signals (route unchanged, empty
+     *     state still shown, no profile controls).
+     */
+    public async verifyInvalidCustomerSearch() {
+        const timeout = CommonConstants.DEFAULT_TIMEOUT * CommonConstants.ONE_THOUSAND;
+        const toast = this.page.locator(CustomerManagementPage.SEARCH_ERROR_TOAST).first();
+
+        // 1. Wait for the error toast to become visible (auto-retrying; no hard wait beforehand).
+        await test.step(`Wait for the error toast to appear (top-right)`, async () => {
+            await expect(toast, "Expected a top-right error toast for the invalid search")
+                .toBeVisible({ timeout });
+        });
+
+        // 2. Capture, log and verify the toast text.
+        const toastText = (await toast.innerText().catch(() => "")).trim();
+        await test.step(`Error toast displayed: "${toastText}"`, async () => {
+            await Assert.assertTrue(toastText.length > 0,
+                `error toast text is shown for the invalid search ("${toastText}")`);
+        });
+
+        // 3. Observation pause AFTER the toast is visible, so the popup can be seen in the browser.
+        if (this.toastObserveSec > 0) {
+            await test.step(`Pause ${this.toastObserveSec}s to observe the error toast`, async () => {
+                await this.ui.pauseInSecs(this.toastObserveSec);
+            });
+        }
+
+        // 4. Definitive, stable "no customer returned" checks (web-first; never expire).
+        await test.step(`Verify the search returned no customer`, async () => {
+            await expect(this.page,
+                "An invalid search must NOT open a customer profile")
+                .toHaveURL(/\/customer-management$/);
+            await expect(this.page.locator(CustomerManagementPage.SEARCH_EMPTY_STATE).first(),
+                "Expected the customer search empty-state to remain visible")
+                .toBeVisible({ timeout });
+            await expect(this.page.locator(CustomerManagementPage.CUSTOMER_PROFILE_READY),
+                "No customer profile should be rendered for an invalid search")
+                .toHaveCount(0);
+        });
+    }
+
+    // Friendly SearchType aliases (as they may appear in the data sheet) -> exact Customer 360
+    // dropdown option labels. Lets the sheet use natural names ("Customer ID", "Ticket ID", "Phone")
+    // while the UI options are "Customer Number", "Service Ticket", "Mobile Number", etc.
+    private static readonly SEARCH_TYPE_ALIASES: Readonly<Record<string, string>> = {
+        "phone": "Mobile Number",
+        "phone number": "Mobile Number",
+        "mobile": "Mobile Number",
+        "mobile number": "Mobile Number",
+        "customer id": "Customer Number",
+        "customerid": "Customer Number",
+        "customer number": "Customer Number",
+        "email": "E-mail Id",
+        "e-mail": "E-mail Id",
+        "e-mail id": "E-mail Id",
+        "order id": "Order Number",
+        "orderid": "Order Number",
+        "order number": "Order Number",
+        "ticket id": "Service Ticket",
+        "ticketid": "Service Ticket",
+        "service ticket": "Service Ticket",
+    };
+
+    /** Resolve a (possibly friendly) SearchType from the sheet to the exact UI dropdown option label. */
+    private static resolveSearchType(searchType: string): string {
+        const key = (searchType ?? "").trim().toLowerCase();
+        return CustomerManagementSteps.SEARCH_TYPE_ALIASES[key] ?? searchType;
+    }
+
+    /**
+     * Select a Customer 360° search type. The box defaults to "Mobile Number", so that type needs no
+     * interaction; any other type is picked from the type dropdown (a portal listbox of options).
+     * Friendly aliases (e.g. "Customer ID", "Ticket ID") are normalised to the real UI label first.
+     * @param searchType search type as stored in the data sheet (friendly name or exact UI label)
+     */
+    private async selectSearchType(searchType: string) {
+        const uiLabel = CustomerManagementSteps.resolveSearchType(searchType);
+        if (!uiLabel || uiLabel.trim().toLowerCase()
+            === CustomerManagementConstants.SEARCH_TYPE_MOBILE.toLowerCase()) {
+            return;
+        }
+        await test.step(`Select search type '${uiLabel}'`, async () => {
+            await this.ui.element(CustomerManagementPage.SEARCH_TYPE_TOGGLE,
+                CustomerManagementConstants.SEARCH_TYPE_TOGGLE).click();
+            await this.ui.element(CustomerManagementPage.searchTypeOption(uiLabel),
+                `${CustomerManagementConstants.SEARCH_TYPE_OPTION} (${uiLabel})`).click();
+        });
+    }
+
+    /**
+     * Select the search type, enter the value into the Customer 360° box and submit. Shared by the
+     * positive and negative search flows so the search interaction lives in exactly one place.
+     */
+    private async enterSearch(searchType: string, searchValue: string) {
+        await this.selectSearchType(searchType);
+        await this.ui.editBox(CustomerManagementPage.SEARCH_INPUT,
+            CustomerManagementConstants.SEARCH_INPUT).fill(String(searchValue));
+        await this.ui.element(CustomerManagementPage.SEARCH_BUTTON,
+            CustomerManagementConstants.SEARCH_BUTTON).click();
+    }
+
+    /**
+     * Verify the opened customer profile shows the expected details. Each field is asserted softly
+     * so a single run reports every mismatch (rather than stopping at the first), which is the most
+     * useful behaviour when validating a record's data.
+     * @param name  expected customer name
+     * @param id    expected customer ID
+     * @param email expected customer email
+     * @param phone expected customer phone
+     */
+    public async verifyCustomerDetails(name: string, id: string, email: string, phone: string) {
+        await test.step(`Verify customer details for '${name}' (${id})`, async () => {
+            await this.verifyDetail(name, CustomerManagementConstants.CUSTOMER_NAME);
+            await this.verifyDetail(id, CustomerManagementConstants.CUSTOMER_ID);
+            await this.verifyDetail(email, CustomerManagementConstants.CUSTOMER_EMAIL);
+            await this.verifyDetail(String(phone), CustomerManagementConstants.CUSTOMER_PHONE);
+        });
+        await this.pauseToObserve("verified customer details");
+    }
+
+    /**
+     * Verify a customer profile opened and shows the expected Name, Customer ID and Email. The page
+     * load is asserted HARD (stable profile route + the "Back" control) — "page loaded successfully";
+     * the detail fields are asserted SOFTLY so one run reports every mismatch. Used by the generic
+     * positive search tests (Customer ID / Email / Order ID), independent of which type was searched.
+     * @param name  expected customer name
+     * @param id    expected customer ID
+     * @param email expected customer email
+     */
+    public async verifyCustomerProfile(name: string, id: string, email: string) {
+        await test.step(`Verify customer profile for '${name}' (${id})`, async () => {
+            const timeout = CommonConstants.DEFAULT_TIMEOUT * CommonConstants.ONE_THOUSAND;
+            // Page loaded successfully: the profile route + the "Back" control are stable signals.
+            await expect(this.page, "Expected a customer profile page to be open")
+                .toHaveURL(/\/customer-management\/.+/);
+            await expect(this.page.locator(CustomerManagementPage.CUSTOMER_PROFILE_READY).first(),
+                "Expected the customer profile to be loaded").toBeVisible({ timeout });
+            // Field checks (soft — report all mismatches in one run).
+            await this.verifyDetail(name, CustomerManagementConstants.CUSTOMER_NAME);
+            await this.verifyDetail(id, CustomerManagementConstants.CUSTOMER_ID);
+            await this.verifyDetail(email, CustomerManagementConstants.CUSTOMER_EMAIL);
+        });
+        await this.pauseToObserve("verified customer profile");
+    }
+
+    // ==========================================================================================
+    // Orders tab validation (inside an opened customer profile). Reusable, web-first, no hard waits.
+    // ==========================================================================================
+
+    /** Phase 1: the Orders tab is visible and selected (its grid is the default, shown view). */
+    public async verifyOrdersTabSelected() {
+        await test.step(`Verify the Orders tab is visible and selected`, async () => {
+            const timeout = CommonConstants.DEFAULT_TIMEOUT * CommonConstants.ONE_THOUSAND;
+            await expect(this.page.locator(CustomerManagementPage.ORDERS_TAB).first(),
+                "Orders tab should be visible").toBeVisible({ timeout });
+            await expect(this.page.locator(CustomerManagementPage.ORDERS_TABLE).first(),
+                "Orders grid should be shown (Orders tab selected)").toBeVisible({ timeout });
+        });
+    }
+
+    /** Phase 1: every Orders table column header is visible. */
+    public async verifyOrdersTableColumns() {
+        await test.step(`Verify Orders table columns`, async () => {
+            const timeout = CommonConstants.DEFAULT_TIMEOUT * CommonConstants.ONE_THOUSAND;
+            for (const column of CustomerManagementConstants.ORDER_COLUMNS) {
+                await expect(this.page.getByRole("cell", { name: column, exact: true }).first(),
+                    `Orders column '${column}' should be visible`).toBeVisible({ timeout });
+            }
+        });
+    }
+
+    /** Phase 2: the order filters (field dropdown, search box, date filter) are present. */
+    public async verifyOrderFilters() {
+        await test.step(`Verify order filters`, async () => {
+            const timeout = CommonConstants.DEFAULT_TIMEOUT * CommonConstants.ONE_THOUSAND;
+            const combos = this.page.locator(CustomerManagementPage.ORDERS_COMBOBOX);
+            // Filter-field dropdown defaults to "Order Number" (value of the first combobox input).
+            await expect(combos.nth(0),
+                "Order Number filter dropdown should exist").toHaveValue("Order Number", { timeout });
+            await expect(this.page.locator(CustomerManagementPage.ORDERS_SEARCH_INPUT).first(),
+                "'Enter order number' search box should exist").toBeVisible({ timeout });
+            // Date filter dropdown defaults to "Today" (value of the second combobox input).
+            await expect(combos.nth(1),
+                "Date filter (Today) should exist").toHaveValue("Today", { timeout });
+        });
+    }
+
+    /**
+     * Phase 2/3: switch the filter field to "Status", confirm the Status dropdown appears, open it,
+     * verify every expected status option and log all options found.
+     */
+    public async verifyOrderStatusFilter() {
+        await test.step(`Verify the Status filter and its options`, async () => {
+            const timeout = CommonConstants.DEFAULT_TIMEOUT * CommonConstants.ONE_THOUSAND;
+            const combos = this.page.locator(CustomerManagementPage.ORDERS_COMBOBOX);
+            // Switch the filter field from "Order Number" to "Status".
+            await this.ui.element(CustomerManagementPage.ORDERS_FILTER_TOGGLE,
+                CustomerManagementConstants.ORDERS_FILTER_FIELD).click();
+            await this.ui.element(CustomerManagementPage.searchTypeOption("Status"),
+                `${CustomerManagementConstants.SEARCH_TYPE_OPTION} (Status)`).click();
+            // The Status dropdown now exists: the field shows "Status" and a 3rd combobox appears.
+            await expect(combos.nth(0),
+                "Filter field should switch to Status").toHaveValue("Status", { timeout });
+            await expect(combos,
+                "Status dropdown should appear next to the field").toHaveCount(3, { timeout });
+            // Open the "Select Status" dropdown (2nd Open-options toggle in Status mode).
+            await this.page.locator(CustomerManagementPage.ORDERS_FILTER_TOGGLE).nth(1).click();
+            await expect(this.page.locator('[role="option"]').first(),
+                "Status options should be listed").toBeVisible({ timeout });
+            // Log every option found, then verify each expected status is present.
+            const found = (await this.page.locator('[role="option"]').allInnerTexts())
+                .map((s) => s.trim()).filter(Boolean);
+            await test.step(`Status options found (${found.length}): ${found.join(", ")}`, async () => {
+                for (const status of CustomerManagementConstants.ORDER_STATUSES) {
+                    await Assert.assertTrue(found.some((o) => o === status),
+                        `status option '${status}' is present`);
+                }
+            });
+            await this.page.keyboard.press("Escape").catch(() => { /* close dropdown */ });
+        });
+    }
+
+    /**
+     * Phase 4: at least one order row exists; validate and log the first row's key fields
+     * (Order Number, Status, Service Provider, Amount).
+     */
+    public async verifyFirstOrderRow() {
+        // Demo checkpoint: let the order grid be observed before validating the first row.
+        await this.pauseToObserve("order data");
+        await test.step(`Verify the first order row`, async () => {
+            const timeout = CommonConstants.DEFAULT_TIMEOUT * CommonConstants.ONE_THOUSAND;
+            const firstRow = this.page.locator(CustomerManagementPage.ORDERS_ROWS).first();
+            await expect(firstRow, "Expected at least one order row").toBeVisible({ timeout });
+            const cells = firstRow.locator("td");
+            const orderNo = (await cells.nth(0).innerText()).trim();
+            const status = (await cells.nth(2).innerText()).trim();
+            const provider = (await cells.nth(3).innerText()).trim();
+            const amount = (await cells.nth(4).innerText()).trim();
+            await test.step(`First order -> Order#: '${orderNo}' | Status: '${status}' | `
+                + `Service Provider: '${provider}' | Amount: '${amount}'`, async () => {
+                await Assert.assertTrue(orderNo.length > 0, "first order's Order Number is present");
+                await Assert.assertTrue(status.length > 0, "first order's Status is present");
+                await Assert.assertTrue(provider.length > 0, "first order's Service Provider is present");
+                await Assert.assertTrue(amount.length > 0, "first order's Amount is present");
+            });
+        });
+    }
+
+    /**
+     * Phase 5: open the first order's details via the View icon, verify the order detail page shows
+     * the order number, then return to the customer profile Orders grid.
+     */
+    public async viewFirstOrderDetails() {
+        await test.step(`View the first order's details and return to the profile`, async () => {
+            const timeout = CommonConstants.DEFAULT_TIMEOUT * CommonConstants.ONE_THOUSAND;
+            const orderNo = (await this.page.locator(CustomerManagementPage.ORDERS_ROWS).first()
+                .locator("td").nth(0).innerText()).trim();
+            await this.ui.element(CustomerManagementPage.ORDER_VIEW_BUTTON,
+                CustomerManagementConstants.ORDER_VIEW_BUTTON).click();
+            // The order detail page opens at /customer-management/<id>/orderDetail/<orderNo>.
+            await this.page.waitForURL(/\/orderDetail\/.+/, { timeout });
+            await expect(this.page, "Order detail URL should contain the order number")
+                .toHaveURL(new RegExp(orderNo.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+            await expect(this.page.locator(CustomerManagementPage.orderDetailHeading(orderNo)).first(),
+                `Order detail should display order number '${orderNo}'`).toBeVisible({ timeout });
+            // Demo checkpoint: observe the opened order details before returning to the profile.
+            await this.pauseToObserve("order details");
+            // Return to the customer profile.
+            await this.ui.element(CustomerManagementPage.CUSTOMER_PROFILE_READY,
+                CustomerManagementConstants.CUSTOMER_PROFILE).click();
+            await this.page.waitForURL(/\/customer-management\/[^/]+$/, { timeout });
+            await expect(this.page.locator(CustomerManagementPage.ORDERS_TABLE).first(),
+                "Should be back on the customer profile Orders grid").toBeVisible({ timeout });
+        });
+    }
+
+    // ==========================================================================================
+    // Address Management tab validation (inside an opened customer profile). Reusable, web-first.
+    // ==========================================================================================
+
+    /** Open the Address Management tab and wait for its address list to render. */
+    public async openAddressManagementTab() {
+        await test.step(`Open the Address Management tab`, async () => {
+            const timeout = CommonConstants.DEFAULT_TIMEOUT * CommonConstants.ONE_THOUSAND;
+            await this.ui.element(CustomerManagementPage.ADDRESS_TAB,
+                CustomerManagementConstants.ADDRESS_TAB).click();
+            await expect(this.page.locator(CustomerManagementPage.ADDRESS_VIEW_HEADING).first(),
+                "Address list should load after opening the Address Management tab")
+                .toBeVisible({ timeout });
+        });
+        // Demo checkpoint: observe the opened Address Management tab.
+        await this.pauseToObserve("Address Management tab", CustomerManagementConstants.OBSERVATION_DELAY);
+    }
+
+    /**
+     * Validate the Address Management tab: it is selected, address cards are shown, each card has a
+     * Customer Name / Delivery Address / Customer Phone, and the tab badge count matches the number
+     * of visible cards. Logs the badge/card counts, any Default badge, and the first address.
+     */
+    public async verifyAddressManagement() {
+        await test.step(`Verify the Address Management tab and address cards`, async () => {
+            const timeout = CommonConstants.DEFAULT_TIMEOUT * CommonConstants.ONE_THOUSAND;
+            // Tab visible and selected.
+            await expect(this.page.locator(CustomerManagementPage.ADDRESS_TAB).first(),
+                "Address Management tab should be visible").toBeVisible({ timeout });
+            await expect(this.page.locator(CustomerManagementPage.ADDRESS_TAB_SELECTED).first(),
+                "Address Management tab should be selected").toBeVisible({ timeout });
+            // At least one address card is displayed.
+            await expect(this.page.locator(CustomerManagementPage.ADDRESS_CARD_NAME).first(),
+                "At least one address card should be displayed").toBeVisible({ timeout });
+
+            const cardCount = await this.page.locator(CustomerManagementPage.ADDRESS_CARD_NAME).count();
+            const addressCount = await this.page.locator(CustomerManagementPage.ADDRESS_CARD_ADDRESS).count();
+            const phoneCount = await this.page.locator(CustomerManagementPage.ADDRESS_CARD_PHONE).count();
+            const badgeCount = await this.readAddressBadgeCount();
+            Logger.info(`Address Count Badge = ${badgeCount}`);
+            Logger.info(`Visible Address Cards = ${cardCount}`);
+
+            // Each card shows Customer Name, Delivery Address and Customer Phone; badge == cards.
+            await Assert.assertTrue(cardCount >= 1, "at least one address card exists");
+            await Assert.assertEquals(addressCount, cardCount, "each address card shows a Delivery Address");
+            await Assert.assertEquals(phoneCount, cardCount, "each address card shows a Customer Phone");
+            await Assert.assertEquals(badgeCount, cardCount,
+                "address badge count matches the number of visible address cards");
+
+            // Optional "Default" badge.
+            const defaultCount = await this.page.locator(CustomerManagementPage.ADDRESS_DEFAULT_BADGE).count();
+            if (defaultCount > 0) {
+                Logger.info(`Default address badge present (count: ${defaultCount})`);
+            }
+
+            // Capture the first address details.
+            const name = (await this.page.locator(CustomerManagementPage.ADDRESS_CARD_NAME).first().innerText()).trim();
+            const address = (await this.page.locator(CustomerManagementPage.ADDRESS_CARD_ADDRESS).first().innerText()).trim();
+            const phone = (await this.page.locator(CustomerManagementPage.ADDRESS_CARD_PHONE).first().innerText()).trim();
+            Logger.info(`First Address -> ${name} | ${address} | ${phone}`);
+            Logger.info("Address Validation Passed");
+        });
+        // Demo checkpoint: observe after the address validation completes.
+        await this.pauseToObserve("address validation", CustomerManagementConstants.OBSERVATION_DELAY);
+    }
+
+    /** Reads the numeric badge count shown on the Address Management tab (e.g. "Address Management 2"). */
+    private async readAddressBadgeCount(): Promise<number> {
+        const tabText = (await this.page.locator(CustomerManagementPage.ADDRESS_TAB).first().innerText()).trim();
+        const match = tabText.match(/(\d+)/);
+        return match ? parseInt(match[1], 10) : 0;
+    }
+
+    // ==========================================================================================
+    // Service Requests tab validation (inside an opened customer profile). Handles both records and
+    // no-records states. Reusable, web-first, no hard waits (only the gated observation pauses).
+    // ==========================================================================================
+
+    /** Open the Service Requests tab and wait for its table to render. */
+    public async openServiceRequestsTab() {
+        await test.step(`Open the Service Requests tab`, async () => {
+            const timeout = CommonConstants.DEFAULT_TIMEOUT * CommonConstants.ONE_THOUSAND;
+            await this.ui.element(CustomerManagementPage.SR_TAB,
+                CustomerManagementConstants.SR_TAB).click();
+            await expect(this.page.locator(CustomerManagementPage.SR_TABLE).first(),
+                "Service Requests table should render after opening the tab").toBeVisible({ timeout });
+        });
+        // Demo checkpoint: observe the opened Service Requests tab.
+        await this.pauseToObserve("Service Requests tab", CustomerManagementConstants.OBSERVATION_DELAY);
+    }
+
+    /**
+     * Validate the Service Requests tab: tab selected, Date Range + Apply, Statistics panel, table
+     * and columns. Then handle BOTH data states — records present (validate/log first row) or empty
+     * (verify the "no service requests" message and a zero badge). Passes either way.
+     */
+    public async verifyServiceRequests() {
+        await test.step(`Verify the Service Requests tab`, async () => {
+            const timeout = CommonConstants.DEFAULT_TIMEOUT * CommonConstants.ONE_THOUSAND;
+            // Tab visible + selected.
+            await expect(this.page.locator(CustomerManagementPage.SR_TAB).first(),
+                "Service Requests tab should be visible").toBeVisible({ timeout });
+            await expect(this.page.locator(CustomerManagementPage.SR_TAB_SELECTED).first(),
+                "Service Requests tab should be selected").toBeVisible({ timeout });
+            // Filters.
+            await expect(this.page.locator(CustomerManagementPage.SR_DATE_RANGE_DROPDOWN).first(),
+                "Date Range dropdown should be visible").toBeVisible({ timeout });
+            Logger.info("Date Range Filter Visible = true");
+            await expect(this.page.locator(CustomerManagementPage.SR_APPLY_BUTTON).first(),
+                "Apply button should be visible").toBeVisible({ timeout });
+            // Statistics.
+            await expect(this.page.locator(CustomerManagementPage.SR_STATISTICS).first(),
+                "Service Request Statistics section should be visible").toBeVisible({ timeout });
+            Logger.info("Statistics Section Visible = true");
+            // Table + columns.
+            await expect(this.page.locator(CustomerManagementPage.SR_TABLE).first(),
+                "Service Requests table should be visible").toBeVisible({ timeout });
+            Logger.info("Service Requests Table Visible = true");
+            for (const column of CustomerManagementConstants.SR_COLUMNS) {
+                await expect(this.page.getByRole("cell", { name: column, exact: true }).first(),
+                    `Service Requests column '${column}' should be visible`).toBeVisible({ timeout });
+            }
+
+            const badgeCount = await this.readServiceRequestBadgeCount();
+            Logger.info(`Service Request Badge Count = ${badgeCount}`);
+
+            // Branch on data availability.
+            const noRecords = (await this.page.locator(CustomerManagementPage.SR_EMPTY_MESSAGE).count()) > 0;
+            if (noRecords) {
+                // Case 2 - valid empty state.
+                await expect(this.page.locator(CustomerManagementPage.SR_EMPTY_MESSAGE).first(),
+                    "Empty-state message should be displayed").toBeVisible({ timeout });
+                await Assert.assertEquals(badgeCount, 0, "service request badge count is 0 when there are no records");
+                Logger.info("No Service Requests Found");
+            } else {
+                // Case 1 - records present: validate and log the first service request.
+                const firstRow = this.page.locator(CustomerManagementPage.SR_ROWS).first();
+                await expect(firstRow, "Expected at least one service request row").toBeVisible({ timeout });
+                const cells = firstRow.locator("td");
+                const srNumber = (await cells.nth(1).innerText()).trim();
+                const description = (await cells.nth(2).innerText()).trim();
+                const status = (await cells.nth(3).innerText()).trim();
+                Logger.info(`First SR Number = ${srNumber}`);
+                Logger.info(`First Status = ${status}`);
+                Logger.info(`First Description = ${description}`);
+                await Assert.assertTrue(srNumber.length > 0, "first SR Number is populated");
+                await Assert.assertTrue(status.length > 0, "first SR Status is populated");
+                await Assert.assertTrue(description.length > 0, "first SR Description is populated");
+                // Open details via the row's Action control if one is available, then return.
+                const viewButton = this.page.locator(CustomerManagementPage.SR_VIEW_BUTTON).first();
+                if (await viewButton.isVisible().catch(() => false)) {
+                    await viewButton.click();
+                    const backButton = this.page.locator(CustomerManagementPage.CUSTOMER_PROFILE_READY).first();
+                    await expect(backButton, "Service request details should open").toBeVisible({ timeout });
+                    await backButton.click();
+                    await expect(this.page.locator(CustomerManagementPage.SR_TABLE).first(),
+                        "Should return to the Service Requests list").toBeVisible({ timeout });
+                }
+            }
+            Logger.info("Service Requests Validation Passed");
+        });
+        // Demo checkpoint: observe after the validation completes.
+        await this.pauseToObserve("service requests validation", CustomerManagementConstants.OBSERVATION_DELAY);
+    }
+
+    /** Reads the numeric badge count shown on the Service Requests tab (e.g. "Service Requests 0"). */
+    private async readServiceRequestBadgeCount(): Promise<number> {
+        const tabText = (await this.page.locator(CustomerManagementPage.SR_TAB).first().innerText()).trim();
+        const match = tabText.match(/(\d+)/);
+        return match ? parseInt(match[1], 10) : 0;
+    }
+
+    /**
+     * Optional demo pause so the just-completed step's result stays on screen long enough to watch.
+     * No-op unless STEP_DELAY (seconds) is set, keeping CI and normal runs at full speed.
+     * @param whatToObserve short label describing what is on screen during the pause
+     */
+    private async pauseToObserve(whatToObserve: string, seconds?: number) {
+        // Gated on STEP_DELAY so CI / fast runs skip all observation pauses; an explicit `seconds`
+        // (e.g. OBSERVATION_DELAY) overrides the duration when pauses are enabled.
+        if (this.stepDelaySec > 0) {
+            const sec = seconds ?? this.stepDelaySec;
+            await test.step(`Pause ${sec}s to observe ${whatToObserve}`, async () => {
+                await this.ui.pauseInSecs(sec);
+            });
+        }
+    }
+
+    /**
+     * Assert that a dashboard widget/label is visible.
+     */
+    private async verifyWidget(selector: string, description: string) {
+        const isVisible = await this.ui.element(selector, description).isVisible(CommonConstants.DEFAULT_TIMEOUT);
+        await Assert.assertTrue(isVisible, `${description} is displayed`);
+    }
+
+    /**
+     * Soft-assert that a customer detail value is rendered on the profile.
+     */
+    private async verifyDetail(value: string, fieldName: string) {
+        const isVisible = await this.ui.element(CustomerManagementPage.customerDetail(value),
+            `${fieldName} (${value})`).isVisible(CommonConstants.DEFAULT_TIMEOUT);
+        await Assert.assertTrue(isVisible, `${fieldName} '${value}' is visible on the customer profile`, true);
+    }
+}
