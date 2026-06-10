@@ -26,6 +26,7 @@ export default class FreshCartConstants {
     static readonly ISSUE_INPUT = "Issue Input";
     static readonly DESCRIPTION_INPUT = "Description Input";
     static readonly SUBMIT_TICKET_BUTTON = "Submit Ticket Button";
+    static readonly SUBMIT_SUCCESS_TOAST = "Ticket Created Successfully Toast";
 
     // Support tickets listing
     static readonly FIRST_TICKET_ID_CELL = "Generated Ticket ID";

@@ -6,8 +6,8 @@ import Assert from "@asserts/Assert";
 import SkillConstants from "@uiConstants/SkillConstants";
 import SkillPage from "@pages/SkillPage";
 
-const EMAIL = process.env.TENANT_EMAIL  ?? "freshcart@gmail.com";
-const PASS  = process.env.TENANT_PASSWORD ?? "Welcome@123";
+const EMAIL = process.env.TENANT_EMAIL  || "freshcart@gmail.com";
+const PASS  = process.env.TENANT_PASSWORD || "Welcome@123";
 
 // ─── Skill used across most tests (created in beforeAll, cleaned up in afterAll)
 let sharedPage!:    Page;
@@ -67,6 +67,8 @@ test.describe("Skill Setup Management", () => {
 
         const home = new HomeSteps(sharedPage);
         await home.launchApplication();
+        console.log("Username:", EMAIL);
+        console.log("Password:", PASS ? "***" : "EMPTY");
         await home.login(EMAIL, PASS, "tenant");
         await home.validateLogin(EMAIL);
 

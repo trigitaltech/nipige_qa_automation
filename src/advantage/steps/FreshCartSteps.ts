@@ -100,9 +100,31 @@ export default class FreshCartSteps {
                 FreshCartConstants.ISSUE_INPUT).fill(issue);
             await this.ui.editBox(FreshCartPage.DESCRIPTION_INPUT,
                 FreshCartConstants.DESCRIPTION_INPUT).fill(description);
-            await this.ui.element(FreshCartPage.SUBMIT_TICKET_BUTTON,
-                FreshCartConstants.SUBMIT_TICKET_BUTTON).click();
-            await this.page.waitForLoadState("domcontentloaded");
+
+            // Wait for the network POST triggered by Submit to complete before proceeding.
+            // domcontentloaded is unreliable for AJAX submissions (page doesn't navigate).
+            const [response] = await Promise.all([
+                this.page.waitForResponse(
+                    (res) => res.request().method() === "POST"
+                        && (res.url().includes("ticket") || res.url().includes("support")),
+                    { timeout: 30_000 },
+                ),
+                this.ui.element(FreshCartPage.SUBMIT_TICKET_BUTTON,
+                    FreshCartConstants.SUBMIT_TICKET_BUTTON).click(),
+            ]);
+
+            if (!response.ok()) {
+                throw new Error(`Support ticket POST failed: ${response.status()} ${response.statusText()}`);
+            }
+
+            // Wait for the success toast — confirms the UI has acknowledged the created ticket
+            // before captureGeneratedTicketId() reloads the listing page.
+            await this.page.locator(FreshCartPage.SUBMIT_SUCCESS_TOAST)
+                .waitFor({ state: "visible", timeout: 15_000 })
+                .catch(() => {
+                    // Toast may disappear too fast or may not exist in all environments;
+                    // the POST response check above is the primary gate.
+                });
         });
     }
 
@@ -116,17 +138,36 @@ export default class FreshCartSteps {
         await test.step(`Capture ${FreshCartConstants.FIRST_TICKET_ID_CELL}`, async () => {
             await this.page.reload({ waitUntil: "networkidle" });
 
-            // Locate the row that contains both the automation description AND is OPEN —
-            // this uniquely identifies the ticket created in the current run
-            const targetRow = this.page.locator(
-                'ul.divide-y > li:has-text("Ticket created by automation framework."):has-text("OPEN")',
-            ).first();
-            await targetRow.waitFor({ state: "visible", timeout: 15_000 });
+            // Scan the refreshed ticket list because row order and visible row text can vary.
+            const rows = this.page.locator(FreshCartPage.SUPPORT_TICKET_ROWS);
+            await rows.first().waitFor({ state: "visible", timeout: 30_000 });
 
-            const rowText = await targetRow.innerText();
-            const match = rowText.match(/SR\d+/);
+            const rowTexts = (await rows.allInnerTexts()).map((text) => text.trim());
+            const srNumbers = rowTexts
+                .flatMap((text) => text.match(/SR\d+/g) ?? []);
+
+            console.log(`[FreshCart Ticket Capture] Current URL: ${this.page.url()}`);
+            console.log(`[FreshCart Ticket Capture] Page title: ${await this.page.title()}`);
+            console.log(`[FreshCart Ticket Capture] Total rows found: ${rowTexts.length}`);
+            console.log(`[FreshCart Ticket Capture] First row text: ${rowTexts[0] ?? ""}`);
+            console.log(`[FreshCart Ticket Capture] Last row text: ${rowTexts[rowTexts.length - 1] ?? ""}`);
+            console.log(`[FreshCart Ticket Capture] All SR numbers found: ${srNumbers.join(", ")}`);
+
+            const targetRowText = rowTexts.find((text) => {
+                const normalizedText = text.toLowerCase();
+                return /SR\d+/.test(text)
+                    && normalizedText.includes("open")
+                    && (normalizedText.includes("automation test issue")
+                        || normalizedText.includes("ticket created by automation framework"));
+            });
+
+            if (!targetRowText) {
+                throw new Error(`No OPEN automation ticket row found. Rows: ${JSON.stringify(rowTexts)}`);
+            }
+
+            const match = targetRowText.match(/SR\d+/);
             if (!match) {
-                throw new Error(`No SR number found in the OPEN automation row. Row text: ${rowText}`);
+                throw new Error(`No SR number found in the OPEN automation row. Row text: ${targetRowText}`);
             }
             [ticketId] = match;
             if (!ticketId.startsWith("SR")) {
@@ -166,12 +207,25 @@ export default class FreshCartSteps {
      */
     public async verifyTicketStatusInFreshCart(ticketId: string, expectedStatus: string) {
         await test.step(`Verify ${FreshCartConstants.TICKET_STATUS_BADGE} for '${ticketId}' is '${expectedStatus}'`, async () => {
-            const rowText = await this.page
-                .locator(FreshCartPage.ticketRowAnchor(ticketId))
-                .first()
-                .locator("xpath=../..")
-                .innerText();
-            await Assert.assertContainsIgnoreCase(rowText, expectedStatus,
+            await this.page.reload({ waitUntil: "networkidle" });
+
+            const rows = this.page.locator(FreshCartPage.SUPPORT_TICKET_ROWS);
+            await rows.first().waitFor({ state: "visible", timeout: 30_000 });
+
+            const rowTexts = (await rows.allInnerTexts()).map((t) => t.trim());
+
+            console.log(`[verifyTicketStatusInFreshCart] Total rows: ${rowTexts.length}`);
+            rowTexts.forEach((t, i) => console.log(`  Row[${i}]: ${t}`));
+
+            const targetRow = rowTexts.find((t) => t.includes(ticketId));
+
+            if (!targetRow) {
+                throw new Error(
+                    `Ticket ${ticketId} not found in FreshCart support ticket list. Rows: ${JSON.stringify(rowTexts)}`,
+                );
+            }
+
+            await Assert.assertContainsIgnoreCase(targetRow, expectedStatus,
                 FreshCartConstants.TICKET_STATUS_BADGE);
         });
     }
