@@ -1,16 +1,15 @@
 export default class FreshCartPage {
-
     // ── Login page ────────────────────────────────────────────────────────────
     // Confirmed from DevTools: <input id="identifier" type="email">
-    static readonly USERNAME_INPUT       = '#identifier';
+    static readonly USERNAME_INPUT = '#identifier';
     // Confirmed from DevTools: <input id="password" type="password">
-    static readonly PASSWORD_INPUT       = '#password';
+    static readonly PASSWORD_INPUT = '#password';
     // Confirmed from DevTools: <button type="submit">
-    static readonly LOGIN_BUTTON         = 'button[type="submit"]';
+    static readonly LOGIN_BUTTON = 'button[type="submit"]';
 
     // ── Top navigation ────────────────────────────────────────────────────────
     // TODO: verify selector — inspect the Orders link in the top nav
-    static readonly ORDERS_LINK          = 'a:text-is("Orders")';
+    static readonly ORDERS_LINK = 'a:text-is("Orders")';
 
     // ── Orders listing page ───────────────────────────────────────────────────
     // Confirmed from DevTools: card-based layout — <a><span>View Details</span></a>
@@ -18,7 +17,7 @@ export default class FreshCartPage {
 
     // ── Order detail page ─────────────────────────────────────────────────────
     // TODO: verify selector — inspect the Need Help button on the order detail page
-    static readonly NEED_HELP_BUTTON     = 'button:text-is("Need Help")';
+    static readonly NEED_HELP_BUTTON = 'button:text-is("Need Help")';
 
     // ── Need Help / Support panel ─────────────────────────────────────────────
     // Confirmed: rendered as a non-button/anchor element — text= matches any tag
@@ -26,27 +25,27 @@ export default class FreshCartPage {
 
     // ── Support Ticket creation ───────────────────────────────────────────────
     // TODO: verify selector — inspect the Raise Ticket button
-    static readonly RAISE_TICKET_BUTTON  = 'button:text-is("Raise Ticket")';
+    static readonly RAISE_TICKET_BUTTON = 'button:text-is("Raise Ticket")';
 
     // Issue Type dropdown
     // Confirmed from DevTools: native <select class="w-full rounded-xl border...">
-    static readonly ISSUE_TYPE_DROPDOWN  = 'select';
+    static readonly ISSUE_TYPE_DROPDOWN = 'select';
 
     // Confirmed from DevTools: <input placeholder="Enter issue title" type="text">
-    static readonly ISSUE_INPUT          = 'input[placeholder="Enter issue title"]';
+    static readonly ISSUE_INPUT = 'input[placeholder="Enter issue title"]';
 
     // Confirmed from DevTools: <textarea rows="3" placeholder="Describe your issue...">
-    static readonly DESCRIPTION_INPUT    = 'textarea[rows="3"]';
+    static readonly DESCRIPTION_INPUT = 'textarea[rows="3"]';
 
     // Confirmed from DevTools: <button>Submit Ticket</button>
     static readonly SUBMIT_TICKET_BUTTON = 'button:has-text("Submit Ticket")';
 
     // ── Support Tickets listing ───────────────────────────────────────────────
     // All <p> elements across all rows — SR numbers are among these, identified by "SR" prefix
-    static readonly ALL_ROW_PARAGRAPHS     = 'ul.divide-y > li a p';
+    static readonly ALL_ROW_PARAGRAPHS = 'ul.divide-y > li a p';
     // Fallback single-row selectors
-    static readonly OPEN_TICKET_ID_CELL    = 'ul.divide-y > li:last-child a p';
-    static readonly FIRST_TICKET_ID_CELL   = 'ul.divide-y > li:last-child a p';
+    static readonly OPEN_TICKET_ID_CELL = 'ul.divide-y > li:last-child a p';
+    static readonly FIRST_TICKET_ID_CELL = 'ul.divide-y > li:last-child a p';
 
     // ── Support Tickets listing — status verification ─────────────────────────
     // TODO: replace with real selector once debug log reveals the actual DOM structure.
@@ -61,9 +60,9 @@ export default class FreshCartPage {
 
     // ── Profile menu & logout ─────────────────────────────────────────────────
     // Confirmed from DevTools: <button aria-label="Account menu">
-    static readonly PROFILE_MENU         = 'button[aria-label="Account menu"]';
+    static readonly PROFILE_MENU = 'button[aria-label="Account menu"]';
     // Confirmed from DevTools: logout button inside profile dropdown
-    static readonly LOGOUT_LINK          = 'button:has-text("Logout")';
+    static readonly LOGOUT_LINK = 'button:has-text("Logout")';
     // Login page indicator — #identifier is confirmed present on the login page
     static readonly LOGIN_PAGE_INDICATOR = '#identifier';
 }

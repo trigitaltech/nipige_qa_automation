@@ -7,10 +7,11 @@
  *
  * Required .env keys (see .env.example):
  *   TENANT_EMAIL / TENANT_PASSWORD / TENANT_ID
- *   BULK_PROMOTION_TENANT_EMAIL / BULK_PROMOTION_TENANT_PASSWORD
  *   SELLER_EMAIL / SELLER_PASSWORD
  *   DELIVERY_EMAIL / DELIVERY_PASSWORD
  *   USER_EMAIL / USER_PASSWORD
+ * Optional overrides (fall back to Excel "LoginTest" sheet):
+ *   BULK_PROMOTION_TENANT_EMAIL / BULK_PROMOTION_TENANT_PASSWORD
  */
 
 export enum Role {
@@ -51,18 +52,25 @@ export function getCredential(role: Role): Credential {
     switch (role) {
         case Role.ADMIN: {
             // eslint-disable-next-line @typescript-eslint/no-var-requires
-            const adminRow = require("@utils/ExcelUtil").default.getTestData("Admin App", "TC06_AdminValidLogin");
+            const adminRow = require("@utils/ExcelUtil").default.getTestData("LoginTest", "TC06_AdminValidLogin");
             return {
                 role,
                 email: process.env.ADMIN_EMAIL || adminRow.UserName,
                 password: process.env.ADMIN_PASSWORD || adminRow.Password,
             };
         }
-        case Role.BULK_PROMOTION_TENANT:
-            return { role, email: required("BULK_PROMOTION_TENANT_EMAIL"), password: required("BULK_PROMOTION_TENANT_PASSWORD") };
+        case Role.BULK_PROMOTION_TENANT: {
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            const bulkRow = require("@utils/ExcelUtil").default.getTestData("LoginTest", "TC10_BulkPromotionTenantLogin");
+            return {
+                role,
+                email: process.env.BULK_PROMOTION_TENANT_EMAIL || bulkRow.UserName,
+                password: process.env.BULK_PROMOTION_TENANT_PASSWORD || bulkRow.Password,
+            };
+        }
         case Role.TENANT: {
             // eslint-disable-next-line @typescript-eslint/no-var-requires
-            const tenantRow = require("@utils/ExcelUtil").default.getTestData("Admin App", "TC01_ValidLogin");
+            const tenantRow = require("@utils/ExcelUtil").default.getTestData("LoginTest", "TC01_ValidLogin");
             return {
                 role,
                 email: process.env.TENANT_EMAIL || tenantRow.UserName,
