@@ -38,10 +38,14 @@ export default class FreshCartPage {
     static readonly DESCRIPTION_INPUT = 'textarea[rows="3"]';
 
     // Confirmed from DevTools: <button>Submit Ticket</button>
-    static readonly SUBMIT_TICKET_BUTTON = 'button:has-text("Submit Ticket")';
+    static readonly SUBMIT_TICKET_BUTTON = 'button:text-is("Submit Ticket")';
+
+    // Success toast shown after ticket submission — text confirmed from manual run
+    static readonly SUBMIT_SUCCESS_TOAST = 'text=Ticket Created Successfully';
 
     // ── Support Tickets listing ───────────────────────────────────────────────
     // All <p> elements across all rows — SR numbers are among these, identified by "SR" prefix
+    static readonly SUPPORT_TICKET_ROWS = 'ul.divide-y > li';
     static readonly ALL_ROW_PARAGRAPHS = 'ul.divide-y > li a p';
     // Fallback single-row selectors
     static readonly OPEN_TICKET_ID_CELL = 'ul.divide-y > li:last-child a p';

@@ -7,8 +7,8 @@ import Assert from "@asserts/Assert";
 import ConcernConstants from "@uiConstants/ConcernConstants";
 import ConcernPage from "@pages/ConcernPage";
 
-const EMAIL = process.env.TENANT_EMAIL ?? "freshcart@gmail.com";
-const PASS = process.env.TENANT_PASSWORD ?? "Welcome@123";
+const EMAIL = process.env.TENANT_EMAIL || "freshcart@gmail.com";
+const PASS = process.env.TENANT_PASSWORD || "Welcome@123";
 
 let sharedPage!: Page;
 let concernSteps!: ConcernSteps;
@@ -21,6 +21,8 @@ test.describe("Concern Management", () => {
         sharedPage = await browser.newPage();
         const home = new HomeSteps(sharedPage);
         await home.launchApplication();
+        console.log("Username:", EMAIL);
+        console.log("Password:", PASS ? "***" : "EMPTY");
         await home.login(EMAIL, PASS, "tenant");
         await home.validateLogin(EMAIL);
         concernSteps = new ConcernSteps(sharedPage);
