@@ -103,7 +103,7 @@ export default class HomeSteps {
             // unsuccessful login fails fast with a clear reason instead of a long visibility timeout.
             // Allow generous headroom: the migration backend can cold-start and leave the
             // Log in button in a "Loading..." state for several seconds.
-            const LOGIN_STATE_TIMEOUT_MS = 30_000;
+            const LOGIN_STATE_TIMEOUT_MS = 120_000;
             await expect(profileMenu.or(signInError).first(),
                 `Neither the logged-in profile menu nor a sign-in error appeared for '${userName}'`)
                 .toBeVisible({ timeout: LOGIN_STATE_TIMEOUT_MS });
