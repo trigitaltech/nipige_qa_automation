@@ -119,7 +119,7 @@ export default class BulkPromotionSteps {
                 `Expected ${BulkPromotionConstants.TOTAL_IMPACTED_LABEL} card to be visible on the listing page`)
                 .toBeVisible({ timeout: 15_000 });
             const card = label.locator("..");
-            const count = card.locator("text=/^\\d+$/");
+            const count = card.locator("text=/^\\d+$/").filter({ visible: true }).first();
             await expect(count,
                 `Expected numeric count to be visible inside ${BulkPromotionConstants.TOTAL_IMPACTED_LABEL} card`)
                 .toBeVisible({ timeout: 5_000 });
