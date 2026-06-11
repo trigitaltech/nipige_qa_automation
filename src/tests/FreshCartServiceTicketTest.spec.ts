@@ -72,7 +72,6 @@ test("FreshCart_TC01 - Create FreshCart Support Ticket and Close via Tenant Port
     await freshCart.openFirstOrder();
     await freshCart.clickNeedHelp();
     await freshCart.clickSupportTicketOption();
-    await page.reload({ waitUntil: "networkidle" });
     await freshCart.verifyTicketStatusInFreshCart(capturedTicketId, "Closed");
     await freshCart.logoutFromFreshCart();
     await freshCart.verifyFreshCartLoginPage();
