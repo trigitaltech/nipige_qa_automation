@@ -12,7 +12,12 @@ export default class SuiteManager {
         const sheet = CLIUtil.getValueOf("SHEET");
         this.deleteFiles(CommonConstants.TEST_FOLDER_PATH);
         let testList = CommonConstants.BLANK;
+        const seenTests = new Set<string>();
         for (const { TestName, Mode } of ExcelUtil.getSuiteTests(sheet)) {            
+            if (seenTests.has(TestName)) {
+                continue;
+            }
+            seenTests.add(TestName);
             let modeOfRun = CommonConstants.BLANK;
             if (Mode !== undefined && Mode !== null && Mode !== CommonConstants.BLANK) {
                 modeOfRun = `\n\ttest.describe.configure({ mode: '${Mode.toLowerCase()}' });`;
