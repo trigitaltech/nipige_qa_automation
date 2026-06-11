@@ -46,7 +46,8 @@ export default class RolePermissionSteps {
                     const isDisabled = await nextBtn.isDisabled().catch(() => false);
                     const classAttr = await nextBtn.getAttribute("class").catch(() => "") ?? "";
                     const ariaDisabled = await nextBtn.getAttribute("aria-disabled").catch(() => "") ?? "";
-                    if (isDisabled || classAttr.includes("disabled") || ariaDisabled === "true") {
+                    const hasDisabledClass = classAttr.split(/\s+/).includes("disabled");
+                    if (isDisabled || hasDisabledClass || ariaDisabled === "true") {
                         hasNext = false;
                     } else {
                         await nextBtn.click();
