@@ -6,7 +6,10 @@
 ### 1. Document Control
 | Version | Date | Author | Status | Target Audience |
 | :--- | :--- | :--- | :--- | :--- |
-| **v1.1.0** | June 3, 2026 | Antigravity AI | Ready for Review | QA Engineers, Developers, DevOps, Project Stakeholders |
+| **v1.3.0** | June 10, 2026 | Antigravity AI | Ready for Review | QA Engineers, Developers, DevOps, Project Stakeholders |
+| **v1.2.0** | June 10, 2026 | Antigravity AI | Historical | QA Engineers, Developers, DevOps, Project Stakeholders |
+| **v1.1.0** | June 3, 2026 | Antigravity AI | Historical | QA Engineers, Developers, DevOps, Project Stakeholders |
+| **v1.0.0** | June 3, 2026 | Antigravity AI | Historical | QA Engineers, Developers, DevOps, Project Stakeholders |
 
 ---
 
@@ -71,6 +74,20 @@ The project strictly enforces coding guidelines via ESLint rules configured in `
   * **Syntactic Restraints:** Enforces semicolons globally; allows relaxed rules for quotes (`quotes: off`), class spacing (`lines-between-class-members: off`), and variable prefixes (`no-underscore-dangle: off`).
   * **Asynchronous Operations:** Allows `no-await-in-loop` to support sequential business validation steps which must proceed in order.
 
+#### 4.4 Resource & Payload Directory Mapping
+Test resources are structured to keep baseline documents, spreadsheets, and request templates separated from the codebase:
+
+```plaintext
+src/resources/
+├── API/
+│   ├── REST/                      # REST JSON request bodies (e.g., ADD_USER.json, LOGIN.json)
+│   └── SOAP/                      # SOAP XML payload envelopes (e.g., AccountCreateRequest.xml)
+├── data/
+│   └── testData.xlsx              # Execution configuration & test data records
+└── pdf/
+    └── baseline/                  # Golden baseline PDF files for structural validation
+```
+
 ---
 
 ### 5. Functional Requirements (Core Modules)
@@ -84,6 +101,7 @@ The framework must enable users to configure and schedule test executions entire
   * **Serial:** Runs sequentially, but immediately stops on the first failure (preventing cascading failures in dependent chains).
   * **Parallel:** Configures the test block (`test.describe.configure({ mode: 'parallel' })`) to utilize all available workers.
 * **F-5.1.3 Test Data Mapping:** Tests must locate their row-based parameters using a unique `TestID` key matching the spec file's request (e.g., `TC01_ValidLogin`).
+* **F-5.1.4 Worksheet Configuration Mapping:** For data-driven variables, sheets must follow a strict header row convention. Column cell values map directly to endpoint parameters, request templates, xpath asserts, expected statuses, and target database verification statements.
 
 #### 5.2 UI Testing Layer (POM Separation Design)
 To isolate UI modifications from testing scenarios, the framework utilizes a clean Page Object Model separation:
@@ -101,17 +119,22 @@ To isolate UI modifications from testing scenarios, the framework utilizes a cle
 * **F-5.2.1 Component Separation:**
   * **Selectors/Locators:** Declarative strings, XPath expressions, and dynamic template functions are stored isolated in a Page class (e.g., `HomePage.ts`). Page classes must contain *no test assertions or execution logic*.
   * **Step Actions:** Business logical workflows, test expectations, and step logging hooks are declared inside Steps classes (e.g., `HomeSteps.ts`). Steps classes act as orchestrators using Playwright's `test.step` syntax to segment logs.
-* **F-5.2.2 Object Abstraction Wrapper:** Raw Playwright actions must be abstracted into domain-specific wrappers (e.g., `UIActions`, `UIElementActions`, `EditBoxActions`, `CheckBoxActions`, `DropDownActions`, `AlertActions`) to:
-  * Standardize error handling and element timeouts.
-  * Embed logging and diagnostic output for every interaction.
-  * Automatically take screenshots and record video when UI tests fail.
+* **F-5.2.2 Object Abstraction Wrapper:** Raw Playwright actions must be abstracted into domain-specific wrappers (e.g., `UIActions`, `UIElementActions`, `EditBoxActions`, `CheckBoxActions`, `DropDownActions`, `AlertActions`) to standardize error handling and element timeouts, and embed logging and diagnostic output for every interaction.
 * **F-5.2.3 Dynamic Account Registration:** To ensure pipeline stability, the framework must auto-register a randomized test account at runtime if pre-configured environment credentials are not present in `.env`.
+* **F-5.2.4 Window, Alert, and Download Handlers:**
+  * **Native Dialog Handling:** The framework must intercept alerts, confirmation boxes, and prompt boxes (using wrappers `acceptAlertOnElementClick`, `dismissAlertOnElementClick`, `acceptPromptOnElementClick`) utilizing Playwright's event listeners.
+  * **Tab / Window Context Switching:** Navigating to new tabs or popup windows must be handled asynchronously via `switchToNewWindow` by waiting for context `page` listener resolutions before binding locators to the new view.
+  * **Download Manager:** Initiating file downloads must save streams to `./test-results/downloads/` with the server-supplied suggested filename (using `downloadFile`), cleanup temporary files, and avoid memory leakage.
 
-#### 5.3 API Testing Layer
+#### 5.3 API Testing Layer (REST & SOAP Integration)
 The framework must provide unified helpers for REST and SOAP communication.
 
-* **F-5.3.1 SOAP Request Handler:** An wrapper around HTTP POST requests that automatically inserts SOAP headers, submits XML payloads, parses responses using DOM-based parser interfaces (`xmldom`), and validates fields using XPath selectors.
-* **F-5.3.2 REST Request Wrapper:** Support for CRUD REST operations with dynamic header handling, cookie preservation, and curl-command output generation (using `fetch-to-curl`) to assist debuggers in reproducing API errors.
+* **F-5.3.1 REST Request Wrapper:** Support for CRUD REST operations with dynamic header handling and cookie preservation.
+* **F-5.3.2 SOAP Request Handler:** A wrapper around HTTP POST requests that automatically inserts SOAP headers and submits XML payloads.
+* **F-5.3.3 Template Parameterization:** API payload templates (both JSON and XML) must support brackets placeholders (e.g., `{userName}`, `{password}`, `{phoneNumber}`). These templates are resolved dynamically at runtime by formatting template values with targeted key-value replacement utility.
+* **F-5.3.4 Request Debugging & curl Logging:** Outgoing REST requests must be format-logged to the execution logger in standard executable `curl` commands (utilizing `fetch-to-curl`), ensuring DevOps or developers can execute requests directly in shell terminals for fast verification.
+* **F-5.3.5 XML DOM & XPath Extraction:** SOAP response payloads must be parsed via DOM Parser (`xmldom`) and validated using XPath queries (e.g., `XMLParserUtil.getTagContentByXpath`), permitting direct assertion of individual response elements.
+* **F-5.3.6 JSONPath Node Extraction:** For REST validation, target values and assertions must be resolved by querying json paths (e.g. `$.id`, `$.username`) using the `jsonpath` library, allowing precise nested validations on JSON responses.
 
 #### 5.4 Database Verification Layer
 To perform end-to-end verification, the framework must query backend databases directly to confirm transaction updates.
@@ -172,6 +195,14 @@ To catch structural CSS changes, layout slips, and canvas bugs, visual snapshot 
 * **F-5.7.1 Execution Logs:** A custom `TestListener` hooked into Playwright's reporter lifecycle must format and log every start, step, end, and failure to `test-results/logs/execution.log` via Winston.
 * **F-5.7.2 Allure Interactive Report:** Detailed reporting containing suite hierarchies, test status, step execution duration, failure stack traces, embedded screenshots, screen recordings, and PDF/image comparison files.
 * **F-5.7.3 CI Integration Files:** Standardized JUnit XML format report creation at `test-results/results/results.xml` to allow CI engines (e.g., Jenkins) to parse test pass/fail metrics.
+
+#### 5.8 Worker-Scoped Data Transfer & Session Chaining
+The framework must support sequential dependencies where outputs of preceding test cases serve as inputs for subsequent test cases.
+
+* **F-5.8.1 Context-Sharing Map:** A custom worker-scoped test fixture named `gData` (`Map<string, any>`) must be instantiated at the worker level. This enables parallelized worker threads to isolate their dynamic execution states while permitting consecutive tests in a single suite to read and write parameters.
+* **F-5.8.2 Session and Transaction Chaining:**
+  * **SOAP Flow:** Test cases must be able to write dynamic authentication hashes (e.g., XML `token`) or resource identifiers (e.g., `userId` extracted using XPath selectors) into `gData`, permitting subsequent logout or fetch actions to retrieve them dynamically.
+  * **REST Flow:** User IDs generated dynamically via user registration must be stored in `gData` and automatically injected into subsequent put/delete URL parameters (e.g. replacing `{ID}` placeholders via path utilities).
 
 ---
 
