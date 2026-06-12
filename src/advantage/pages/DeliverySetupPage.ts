@@ -6,8 +6,8 @@
  */
 export default class DeliverySetupPage {
     // ── Direct navigation path ────────────────────────────────────────────────
-    static readonly DELIVERY_PATH = "setup/delivery";
-    static readonly DELIVERY_CREATE_PATH = "setup/delivery/create";
+    static readonly DELIVERY_PATH = "delivery-operation";
+    static readonly DELIVERY_CREATE_PATH = "delivery-operation/create";
 
     // ── Home page & sidebar indicators ───────────────────────────────────────
     static readonly PROFILE_MENU = 'button[aria-haspopup="true"]';
@@ -50,6 +50,11 @@ export default class DeliverySetupPage {
         'input[placeholder*="Search delivery" i]',
         'input[placeholder*="Search" i][type="text"]',
         'input[placeholder*="Search" i]',
+    ].join(", ");
+    static readonly SEARCH_BTN = [
+        'button[aria-label*="Search" i]',
+        'div:has(input[placeholder*="Search" i]) button',
+        'input[placeholder*="Search" i] + button',
     ].join(", ");
 
     // ── Create button ─────────────────────────────────────────────────────────

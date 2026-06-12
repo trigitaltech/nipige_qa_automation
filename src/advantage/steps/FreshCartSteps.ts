@@ -207,8 +207,6 @@ export default class FreshCartSteps {
      */
     public async verifyTicketStatusInFreshCart(ticketId: string, expectedStatus: string) {
         await test.step(`Verify ${FreshCartConstants.TICKET_STATUS_BADGE} for '${ticketId}' is '${expectedStatus}'`, async () => {
-            await this.page.reload({ waitUntil: "networkidle" });
-
             const rows = this.page.locator(FreshCartPage.SUPPORT_TICKET_ROWS);
             await rows.first().waitFor({ state: "visible", timeout: 30_000 });
 
