@@ -29,14 +29,9 @@ export default class ZoneManagementSteps {
                 return;
             }
 
-            // Expand "Manage Services" parent menu
-            const manageServicesMenu = this.page.locator(ZoneManagementPage.MENU_MANAGE_SERVICES).first();
-            await manageServicesMenu.waitFor({ state: "visible", timeout: 10_000 });
-            await manageServicesMenu.click();
-
-            // Wait for the submenu item to appear then click it
+            // Zone Management is a direct sidebar link (no parent menu to expand)
             const zoneManagementLink = this.page.locator(
-                'a[href*="zoneManagement"], a:has-text("Zone Management"), li:has-text("Zone Management") > a'
+                'a[href*="zoneManagement"], a:has-text("Zone Management")'
             ).first();
             await zoneManagementLink.waitFor({ state: "visible", timeout: 10_000 });
             await zoneManagementLink.click();
