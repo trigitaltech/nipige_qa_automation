@@ -3,6 +3,7 @@ import RoleManagementSteps from "@uiSteps/RoleManagementSteps";
 import RolePermissionSteps from "@uiSteps/RolePermissionSteps";
 import { test, expect } from "@base-test";
 import Allure from "@allure";
+import RolePermissionPage from "@pages/RolePermissionPage";
 import ExcelUtil from "@utils/ExcelUtil";
 import { getCredential, Role } from "@config/Credentials";
 import RolePage from "@pages/RolePage";
@@ -433,13 +434,12 @@ test(`${d21.TestID} - ${d21.Description}`, async ({ page }) => {
     await perm.selectPermission();
     await perm.assignPermission();
     await perm.verifyAssignSuccessToast();
-    // Get the name of the first assigned permission row and search for its prefix
+    // Read the first assigned permission name, search by full name, verify it appears
     const firstRow = page.locator("div.space-y-2 p.font-semibold, tbody tr:first-child td:first-child").first();
     const assignedPermName = ((await firstRow.textContent().catch(() => "")) ?? "").trim();
     if (assignedPermName) {
-        await perm.searchPermission(assignedPermName.substring(0, 5));
-        const row = page.locator(`div:has(p:text-is("${assignedPermName}")), tr:has-text("${assignedPermName}")`).first();
-        await expect(row, d21.ExpectedMessage ?? "").toBeVisible({ timeout: 10_000 });
+        await perm.searchPermission(assignedPermName);
+        await perm.verifyPermissionSearchResult(assignedPermName);
     }
     await home.logout();
 });
