@@ -19,6 +19,18 @@ test.describe("Delivery Setup", () => {
     // ── beforeAll: LOGIN ONLY — test data created within each test ────────────
     test.beforeAll(async ({ browser }) => {
         sharedPage = await browser.newPage();
+        sharedPage.on('console', msg => console.log('PAGE LOG:', msg.type(), msg.text()));
+        sharedPage.on('pageerror', err => console.error('PAGE ERROR:', err.message));
+        sharedPage.on('requestfailed', req => console.log('REQUEST FAILED:', req.url(), req.failure()?.errorText));
+        sharedPage.on('response', res => {
+            if (res.url().includes('charge-matrix/create')) {
+                console.log('CHARGE-MATRIX RESPONSE STATUS:', res.status(), res.url());
+                res.text().then(text => console.log('CHARGE-MATRIX RESPONSE BODY:', text)).catch(() => {});
+            } else if (res.status() >= 400) {
+                console.log('RESPONSE ERROR:', res.status(), res.url());
+                res.json().then(data => console.log('RESPONSE JSON:', JSON.stringify(data))).catch(() => {});
+            }
+        });
         const home = new HomeSteps(sharedPage);
         await home.launchApplication();
         console.log("[DeliverySetup beforeAll] Username:", EMAIL);
@@ -421,17 +433,20 @@ test.describe("Delivery Setup", () => {
     // ═══════════════════════════════════════════════════════════════════════════
     test("TC_DS_18 - Duplicate delivery name is blocked with appropriate feedback", async () => {
         const dupName = dsSteps.generateUniqueDeliveryName("DUP_TC18");
+        const dupArea = String(Math.floor(Math.random() * 9000) + 1000);
+        const dupCat = Math.floor(Math.random() * 9) + 2; // 2..10
+        const dupRank = 1; // fixed rank index
         // Create the first instance
         await dsSteps.navigateToDeliverySetup();
         await dsSteps.clickCreateButton();
         await dsSteps.verifyCreatePageLoaded();
-        await dsSteps.fillCreateForm({ name: dupName });
+        await dsSteps.fillCreateForm({ name: dupName, areaCode: dupArea, catIndex: dupCat, rankIndex: dupRank });
         await dsSteps.clickSave();
         // Attempt to create a duplicate
         await dsSteps.navigateToDeliverySetup();
         await dsSteps.clickCreateButton();
         await dsSteps.verifyCreatePageLoaded();
-        await dsSteps.fillCreateForm({ name: dupName });
+        await dsSteps.fillCreateForm({ name: dupName, areaCode: dupArea, catIndex: dupCat, rankIndex: dupRank });
         const urlBefore = sharedPage.url();
         await sharedPage.locator(DeliverySetupPage.SAVE_BTN).first().click();
         await sharedPage.waitForLoadState("networkidle", { timeout: 8000 }).catch(() => {});
