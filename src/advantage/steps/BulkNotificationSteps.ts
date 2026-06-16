@@ -27,6 +27,10 @@ export default class BulkNotificationSteps {
      * at a time, so the option button can be matched globally once the combobox is clicked.
      */
     private async chooseFromCombobox(comboboxLocator: string, label: string, index = 0) {
+        // A SweetAlert2 modal from a previous action (this test's own prior step, or a slow-to-close
+        // modal racing with this one) intercepts pointer events on everything behind it, which
+        // otherwise surfaces as a 60s click timeout here with no indication why. Clear it first.
+        await this.dismissAnyModal();
         const combobox = this.page.locator(comboboxLocator).nth(index);
         // The opened listbox renders below the combobox. scrollIntoViewIfNeeded() aligns to the
         // nearest edge, which for a combobox near the bottom of a long page (e.g. Notification
@@ -35,7 +39,11 @@ export default class BulkNotificationSteps {
         await combobox.evaluate((el) => el.scrollIntoView({ block: "center" }));
         await combobox.click();
         const option = this.page.locator(BulkNotificationPage.comboboxOption(label)).first();
-        await option.scrollIntoViewIfNeeded();
+        await option.waitFor({ state: "visible", timeout: 10_000 });
+        // scrollIntoViewIfNeeded() aligns to the nearest edge, which can still leave a long listbox
+        // option partly clipped — center it explicitly (same fix as the combobox above) before
+        // clicking, since "outside of the viewport" otherwise causes the click to hang/retry.
+        await option.evaluate((el) => el.scrollIntoView({ block: "center" }));
         await option.click();
     }
 
