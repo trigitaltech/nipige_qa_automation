@@ -4,9 +4,9 @@ import { test as base, BrowserContext } from '@playwright/test';
 // Execution-view zoom: render every page at 60% (like Ctrl-minus) so the full application screen is
 // visible during execution and recording. Implemented via the CSS `zoom` property in an init script,
 // so it does NOT change the viewport size, locators, assertions, waits, or any test behaviour.
-export const EXECUTION_ZOOM = 0.60;
+export const EXECUTION_ZOOM = 1.0;
 
-/** Apply the 75% execution-view zoom to a browser context (covers all its pages and navigations). */
+/** Apply the execution-view zoom to a browser context (covers all its pages and navigations). */
 export async function applyExecutionZoom(context: BrowserContext): Promise<void> {
   await context.addInitScript((zoom) => {
     const apply = () => document.documentElement?.style.setProperty('zoom', String(zoom));

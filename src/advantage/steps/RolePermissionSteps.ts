@@ -37,7 +37,7 @@ export default class RolePermissionSteps {
             let assignedText = "";
             let hasNext = true;
             let pageNum = 1;
-            while (hasNext && pageNum <= 10) {
+            while (hasNext && pageNum <= 50) {
                 const pageText = await this.page.locator('div:has(h2:has-text("Assigned Permissions"))').first().innerText().catch(() => "");
                 assignedText += " " + pageText;
                 
@@ -50,8 +50,13 @@ export default class RolePermissionSteps {
                     if (isDisabled || hasDisabledClass || ariaDisabled === "true") {
                         hasNext = false;
                     } else {
+                        const prevText = pageText;
                         await nextBtn.click();
-                        await this.page.waitForTimeout(500);
+                        // Wait until the container text changes so we know the next page has loaded
+                        await expect(async () => {
+                            const currentText = await this.page.locator('div:has(h2:has-text("Assigned Permissions"))').first().innerText().catch(() => "");
+                            expect(currentText).not.toBe(prevText);
+                        }).toPass({ timeout: 5000 }).catch(() => {});
                         pageNum++;
                     }
                 } else {
@@ -64,6 +69,32 @@ export default class RolePermissionSteps {
                 if (await firstPageBtn.isVisible().catch(() => false)) {
                     await firstPageBtn.click();
                     await this.page.waitForTimeout(500);
+                } else {
+                    // Ellipsis hides page 1, so click Previous until we reach page 1 (Previous is disabled)
+                    let hasPrev = true;
+                    let prevSafety = 0;
+                    while (hasPrev && prevSafety < 50) {
+                        const prevBtn = this.page.locator('button:has-text("Previous"), a:has-text("Previous")').first();
+                        if (await prevBtn.isVisible().catch(() => false)) {
+                            const isDisabled = await prevBtn.isDisabled().catch(() => false);
+                            const classAttr = await prevBtn.getAttribute("class").catch(() => "") ?? "";
+                            const ariaDisabled = await prevBtn.getAttribute("aria-disabled").catch(() => "") ?? "";
+                            const hasDisabledClass = classAttr.split(/\s+/).includes("disabled");
+                            if (isDisabled || hasDisabledClass || ariaDisabled === "true") {
+                                hasPrev = false;
+                            } else {
+                                const prevText = await this.page.locator('div:has(h2:has-text("Assigned Permissions"))').first().innerText().catch(() => "");
+                                await prevBtn.click();
+                                await expect(async () => {
+                                    const currentText = await this.page.locator('div:has(h2:has-text("Assigned Permissions"))').first().innerText().catch(() => "");
+                                    expect(currentText).not.toBe(prevText);
+                                }).toPass({ timeout: 3000 }).catch(() => {});
+                                prevSafety++;
+                            }
+                        } else {
+                            hasPrev = false;
+                        }
+                    }
                 }
             }
             console.log(`[selectPermission] Assigned permissions (all pages): "${assignedText.replace(/\n/g, ' ')}"`);
