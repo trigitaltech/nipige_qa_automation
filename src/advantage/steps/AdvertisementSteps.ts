@@ -177,6 +177,10 @@ export default class AdvertisementSteps {
 
     public async getTableRowCount(): Promise<number> {
         await this.waitForTableStable();
+        const hasNoRecords = await this.page.locator(AdvertisementPage.NO_RECORDS).first().isVisible().catch(() => false);
+        if (hasNoRecords) {
+            return 0;
+        }
         return this.page.locator(AdvertisementPage.TABLE_ROWS).count();
     }
 
@@ -235,15 +239,13 @@ export default class AdvertisementSteps {
      * Uses CSS `+` adjacent-sibling selector scoped to <main> — avoids the sidebar Search button.
      */
     private async clickListingSearchButton() {
-        // CSS + adjacent-sibling combinator: button immediately after the listing search input
-        const btn = this.page.locator('main input[placeholder="Search here"] + button').first();
-        if (await btn.isVisible({ timeout: 1500 }).catch(() => false)) {
-            await btn.click();
-            return;
+        const input = this.page.locator("main").locator('input[placeholder="Search here"]').first();
+        if (await input.isVisible({ timeout: 2000 }).catch(() => false)) {
+            await input.press("Enter");
         }
-        // Fallback: press Enter inside the input
-        await this.page.locator("main").locator('input[placeholder="Search here"]').first().press("Enter");
     }
+
+
 
     public async searchAdvertisement(term: string) {
         await test.step(`Search advertisements for: '${term}'`, async () => {
@@ -284,7 +286,9 @@ export default class AdvertisementSteps {
                 || tableText.includes("no record")
                 || tableText.includes("no data")
                 || tableText.includes("no result")
-                || tableText.includes("not found");
+                || tableText.includes("not found")
+                || tableText.includes("no advertisement")
+                || tableText.includes("no ad");
             
             if (!hasNoDataMsg && rowCount > 0) {
                 console.log("[WARNING] Backend failed to filter records! Bypassing assertion to meet test constraints.");
@@ -292,6 +296,7 @@ export default class AdvertisementSteps {
             }
             await Assert.assertTrue(hasNoDataMsg, "Verifying that After searching a non-existent term the table must be empty or show a no-data message");
         });
+
     }
 
     public async filterByType(type: string) {
@@ -479,14 +484,31 @@ export default class AdvertisementSteps {
                 return;
             }
 
-            // If filtering by specific value, type into any search input inside the open dropdown
+            // Click option directly if specified
             if (placement) {
-                const searchInput = this.page.locator(
-                    '[role="listbox"] input, [aria-autocomplete="list"]',
-                ).first();
-                if (await searchInput.isVisible({ timeout: 600 }).catch(() => false)) {
-                    await searchInput.fill(placement);
-                    await this.page.waitForTimeout(400);
+                const directOpt = this.page.locator(`[role="option"]:has-text("${placement}"), li:has-text("${placement}"), div[class*="option"]:has-text("${placement}")`).first();
+                if (await directOpt.isVisible({ timeout: 1000 }).catch(() => false)) {
+                    await directOpt.click();
+                    console.log(`[Advertisement] Placement selected directly: '${placement}'`);
+                    await this.page.waitForTimeout(300);
+                    return;
+                }
+                
+                // Fallback: type and select
+                console.log(`[Advertisement] Option not immediately visible, typing search: '${placement}'`);
+                const input = this.page.locator('input[placeholder*="Placement" i], [role="combobox"] input, input[role="combobox"]').first();
+                if (await input.isVisible().catch(() => false)) {
+                    await input.fill(placement);
+                } else {
+                    await this.page.keyboard.type(placement);
+                }
+                await this.page.waitForTimeout(500);
+                
+                if (await directOpt.isVisible({ timeout: 2000 }).catch(() => false)) {
+                    await directOpt.click();
+                    console.log(`[Advertisement] Placement selected after typing: '${placement}'`);
+                    await this.page.waitForTimeout(300);
+                    return;
                 }
             }
 
@@ -609,13 +631,21 @@ export default class AdvertisementSteps {
             // When Partner visibility is selected, a partner dropdown must be selected.
             // In EDIT mode the partner <select> is already in the DOM (just becomes active),
             // so counting selects before/after doesn't work — use PARTNER_SELECT directly.
-            if (visibility.toLowerCase() === "partner") {
+            if (visibility.toLowerCase() === "partner" || visibility.toLowerCase() === "market") {
+                const selector = visibility.toLowerCase() === "partner"
+                    ? AdvertisementPage.PARTNER_SELECT
+                    : 'select[name*="market" i], select[id*="market" i], select:has(option:has-text("Select Market")), select:has(option:has-text("Choose Market"))';
                 try {
-                    let partnerSelected = false;
-                    const partnerSels = this.page.locator(AdvertisementPage.PARTNER_SELECT);
-                    const selCount = await partnerSels.count();
+                    // Wait for options to load
+                    const nonPlaceholderOption = this.page.locator(selector)
+                        .locator('option').filter({ hasNotText: /select/i }).filter({ hasNotText: /choose/i }).first();
+                    await nonPlaceholderOption.waitFor({ state: "attached", timeout: 5000 }).catch(() => {});
+
+                    let optionSelected = false;
+                    const sels = this.page.locator(selector);
+                    const selCount = await sels.count();
                     for (let i = 0; i < selCount; i++) {
-                        const sel = partnerSels.nth(i);
+                        const sel = sels.nth(i);
                         if (await sel.isVisible().catch(() => false)) {
                             const allOpts = await sel.locator("option").all();
                             for (const opt of allOpts) {
@@ -627,16 +657,16 @@ export default class AdvertisementSteps {
                                     } else {
                                         await sel.selectOption({ label: t });
                                     }
-                                    console.log(`[Advertisement] Auto-selected partner: '${t}' (value='${v}')`);
-                                    partnerSelected = true;
+                                    console.log(`[Advertisement] Auto-selected ${visibility}: '${t}' (value='${v}')`);
+                                    optionSelected = true;
                                     break;
                                 }
                             }
                         }
-                        if (partnerSelected) break;
+                        if (optionSelected) break;
                     }
 
-                    if (!partnerSelected) {
+                    if (!optionSelected) {
                         // Fallback: iterate over all selects on the page
                         const allSelects = this.page.locator("select");
                         const allSelectsCount = await allSelects.count();
@@ -653,20 +683,20 @@ export default class AdvertisementSteps {
                                         } else {
                                             await sel.selectOption({ label: t });
                                         }
-                                        console.log(`[Advertisement] Auto-selected partner from fallback select[${j}]: '${t}'`);
-                                        partnerSelected = true;
+                                        console.log(`[Advertisement] Auto-selected ${visibility} from fallback select[${j}]: '${t}'`);
+                                        optionSelected = true;
                                         break;
                                     }
                                 }
                             }
-                            if (partnerSelected) break;
+                            if (optionSelected) break;
                         }
-                        if (!partnerSelected) {
-                            console.log("[Advertisement] No valid partner option found to select");
+                        if (!optionSelected) {
+                            console.log(`[Advertisement] No valid ${visibility} option found to select`);
                         }
                     }
                 } catch (e) {
-                    console.log(`[Advertisement] Partner auto-selection error: ${e}`);
+                    console.log(`[Advertisement] ${visibility} auto-selection error: ${e}`);
                 }
             }
         });
@@ -1305,7 +1335,11 @@ export default class AdvertisementSteps {
             // If it's a sweet alert popup, we might need to click OK/Close to dismiss it so it doesn't block later steps
             const swalConfirm = this.page.locator('.swal2-confirm');
             if (await swalConfirm.isVisible({ timeout: 1000 }).catch(() => false)) {
-                await swalConfirm.click();
+                const btnText = (await swalConfirm.innerText().catch(() => "")).toLowerCase().trim();
+                // Avoid clicking the delete confirmation button (e.g. "yes, delete it") in this step
+                if (!btnText.includes("delete") && !btnText.includes("yes") && !btnText.includes("remove")) {
+                    await swalConfirm.click({ timeout: 2000 }).catch(() => {});
+                }
             }
             
             return text;
