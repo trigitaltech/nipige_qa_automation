@@ -461,10 +461,12 @@ test.describe("Advertisement", () => {
         await advSteps.verifyCreatePageLoaded();
 
         await advSteps.fillStep1({
-            type: AdvertisementConstants.TYPE_BANNER,
+            type: AdvertisementConstants.TYPE_SLIDER,
             visibility: AdvertisementConstants.VISIBILITY_GLOBAL,
+            placement: "PLACEMENTONE",
             startDate: START,
             endDate: LATER_END,
+            frequency: "5"
         });
         await advSteps.clickContinue();
 
@@ -546,7 +548,7 @@ test.describe("Advertisement", () => {
     test("TC_ADV_25 - Confirm delete: STRICT  --  success toast shown AND row count decreases", async () => {
         await advSteps.navigateToAdvertisement();
         await advSteps.waitForTableStable();
-        await advSteps.searchAdvertisement("TC_ADV_22 record");
+        await advSteps.searchAdvertisement("PLACEMENTONE");
 
         const countBefore = await advSteps.getTableRowCount();
         if (countBefore === 0) {
@@ -567,7 +569,7 @@ test.describe("Advertisement", () => {
             await sharedPage.reload();
             await sharedPage.waitForLoadState("networkidle");
             await advSteps.waitForTableStable();
-            await advSteps.searchAdvertisement("TC_ADV_22 record");
+            await advSteps.searchAdvertisement("PLACEMENTONE");
             countAfter = await advSteps.getTableRowCount();
         }
         
@@ -1106,6 +1108,7 @@ test.describe("Advertisement", () => {
         await advSteps.fillStep1({
             type: AdvertisementConstants.TYPE_BANNER,
             visibility: AdvertisementConstants.VISIBILITY_GLOBAL,
+            placement: "HOME_TOP",
             startDate: START,
             endDate: END,
         });
@@ -1120,7 +1123,7 @@ test.describe("Advertisement", () => {
         await advSteps.waitForTableStable();
 
         // Search the record
-        await advSteps.searchAdvertisement(deleteTag);
+        await advSteps.searchAdvertisement("HOME_TOP");
         await advSteps.assertRowCountAtLeast(1, "Delete target record must be listed");
 
         // Capture the view URL before deletion (for post-delete negative check)
@@ -1128,7 +1131,7 @@ test.describe("Advertisement", () => {
         console.log(`[TC_ADV_41] Captured view URL before delete: '${deletedViewUrl}'`);
 
         // Cancel Delete -- record must remain
-        await advSteps.searchAdvertisement(deleteTag);
+        await advSteps.searchAdvertisement("HOME_TOP");
         await advSteps.clickFirstRowDeleteBtn();
         await advSteps.verifyDeletePopup();
         await advSteps.cancelDelete();
@@ -1139,7 +1142,7 @@ test.describe("Advertisement", () => {
         await advSteps.verifyDeletePopup();
         await advSteps.confirmDelete();
         await advSteps.assertSuccessToast();
-        await advSteps.verifyRecordDeleted(deleteTag);
+        await advSteps.verifyRecordDeleted("HOME_TOP");
 
         // Negative (deleted advertisement URL): navigate to the captured view URL after deletion
         if (deletedViewUrl && deletedViewUrl.includes("view")) {
@@ -1180,6 +1183,7 @@ test.describe("Advertisement", () => {
         await advSteps.fillStep1({
             type: AdvertisementConstants.TYPE_SLIDER,
             visibility: AdvertisementConstants.VISIBILITY_GLOBAL,
+            placement: "HOME_BOTTOM",
             startDate: START,
             endDate: END,
             frequency: "5"
@@ -1193,7 +1197,7 @@ test.describe("Advertisement", () => {
 
         // Verify record exists
         await advSteps.navigateToAdvertisement();
-        await advSteps.searchAdvertisement(sliderTag);
+        await advSteps.searchAdvertisement("HOME_BOTTOM");
         await advSteps.assertRowCountAtLeast(1, "Created Slider must exist in listing");
         
         // View
@@ -1202,13 +1206,13 @@ test.describe("Advertisement", () => {
 
         // Edit
         await advSteps.navigateToAdvertisement();
-        await advSteps.searchAdvertisement(sliderTag);
+        await advSteps.searchAdvertisement("HOME_BOTTOM");
         await advSteps.openEditForFirstRow();
         await expect(sharedPage.locator(AdvertisementPage.EDIT_HEADING).first()).toBeVisible({ timeout: 25000 });
 
         // Delete
         await advSteps.navigateToAdvertisement();
-        await advSteps.searchAdvertisement(sliderTag);
+        await advSteps.searchAdvertisement("HOME_BOTTOM");
         await advSteps.clickFirstRowDeleteBtn();
         await advSteps.verifyDeletePopup();
         await advSteps.confirmDelete();
@@ -1241,7 +1245,7 @@ test.describe("Advertisement", () => {
 
         // Verify record exists
         await advSteps.navigateToAdvertisement();
-        await advSteps.searchAdvertisement(videoTag);
+        await advSteps.searchAdvertisement("VIDEO");
         const rowCount = await sharedPage.locator("table tbody tr").count();
         console.log(`[TC_ADV_43] Listing row count after search for '${videoTag}': ${rowCount}`);
         await advSteps.assertRowCountAtLeast(1, "Created Video must exist in listing");
@@ -1252,13 +1256,13 @@ test.describe("Advertisement", () => {
 
         // Edit
         await advSteps.navigateToAdvertisement();
-        await advSteps.searchAdvertisement(videoTag);
+        await advSteps.searchAdvertisement("VIDEO");
         await advSteps.openEditForFirstRow();
         await expect(sharedPage.locator(AdvertisementPage.EDIT_HEADING).first()).toBeVisible({ timeout: 35000 });
         
         // Delete
         await advSteps.navigateToAdvertisement();
-        await advSteps.searchAdvertisement(videoTag);
+        await advSteps.searchAdvertisement("VIDEO");
         await advSteps.clickFirstRowDeleteBtn();
         await advSteps.verifyDeletePopup();
         await advSteps.confirmDelete();
