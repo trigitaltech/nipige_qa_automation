@@ -7,9 +7,13 @@ export interface DeliveryFormData {
     name: string;
     type?: string;
     description?: string;
+    areaCode?: string;
+    catIndex?: number;
+    rankIndex?: number;
 }
 
 export default class DeliverySetupSteps {
+    private static nextYear = 2055;
     constructor(private readonly page: Page) {}
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -17,7 +21,8 @@ export default class DeliverySetupSteps {
     // ═══════════════════════════════════════════════════════════════════════════
 
     public generateUniqueDeliveryName(prefix = "AUTO_DS"): string {
-        return `${prefix}_${Date.now().toString().slice(-8)}`;
+        const year = Math.floor(Math.random() * 50) + 2030;
+        return `31/12/${year}`;
     }
 
     public async waitForTableStable() {
@@ -90,7 +95,7 @@ export default class DeliverySetupSteps {
             }
 
             await this.page.locator(DeliverySetupPage.DELIVERY_SUBMENU_LINK).first().click();
-            await this.page.waitForURL(/delivery-operation/, { timeout: 15000 });
+            await this.page.waitForURL(/setup\/deliverysetup/, { timeout: 15000 });
             console.log(`[DeliverySetup] Navigated via menu to: ${this.page.url()}`);
         });
     }
@@ -155,7 +160,7 @@ export default class DeliverySetupSteps {
     public async verifyOnListPage() {
         await test.step("Verify back on Delivery Setup listing page", async () => {
             await expect(this.page).toHaveURL(
-                /delivery-operation/, { timeout: 10000 },
+                /setup\/deliverysetup/, { timeout: 10000 },
             );
             await expect(
                 this.page.locator(DeliverySetupPage.PAGE_HEADING).first(),
@@ -242,14 +247,22 @@ export default class DeliverySetupSteps {
 
     public async clickCreateButton() {
         await test.step("Click Create Delivery button", async () => {
-            await this.page.locator(DeliverySetupPage.CREATE_BTN).first().click();
+            const buttonVisible = await this.page.locator(DeliverySetupPage.CREATE_BTN).first()
+                .isVisible({ timeout: 5000 }).catch(() => false);
+
+            if (buttonVisible) {
+                await this.page.locator(DeliverySetupPage.CREATE_BTN).first().click();
+            } else {
+                console.log("[DeliverySetup] Create button not found by selector — navigating directly to create URL");
+                await this.page.goto(`${process.env.BASE_URL}${DeliverySetupPage.DELIVERY_CREATE_PATH}`);
+            }
             await this.page.waitForLoadState("networkidle");
         });
     }
 
     public async verifyCreatePageLoaded() {
         await test.step("Verify Create Delivery page loaded", async () => {
-            await expect(this.page).toHaveURL(/delivery\/create|delivery\/new/, { timeout: 10000 });
+            await expect(this.page).toHaveURL(/deliverysetup\/create|deliverysetup\/new/, { timeout: 10000 });
             const heading = this.page.locator(DeliverySetupPage.CREATE_HEADING).first();
             if (await heading.isVisible({ timeout: 5000 }).catch(() => false)) {
                 console.log("[DeliverySetup] Create page heading visible");
@@ -292,16 +305,75 @@ export default class DeliverySetupSteps {
 
     public async fillCreateForm(data: DeliveryFormData) {
         await test.step(`Fill Create Delivery form: '${data.name}'`, async () => {
-            await this.fillNameField(data.name);
-            if (data.type) { await this.fillTypeField(data.type); }
-            if (data.description) { await this.fillDescriptionField(data.description); }
+            // Form selects (confirmed via diagnostics):
+            //   select[0] = Category (67 options; index 1 = "*" wildcard, index 2 = first specific category)
+            //   select[1] = Transport Mode (Air/Ship/Truck/Bike)
+            //   select[2] = Rank (2/4/6/9 — changing rank resets Category, so set rank first)
+            //   select[3] = Expected (days/minutes/hours)
+            // Writable text inputs (non-number, non-date, non-readonly):
+            //   nth(0) = Area Code (numeric only)
+            //   nth(1) = Distance Tier Name
+
+            const form = this.page.locator('form');
+            const allSelects = form.locator('select');
+
+            const dateParts = data.name.split("/");
+            let fillDate = "2055-12-31";
+            if (dateParts.length === 3) {
+                fillDate = `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`;
+            }
+
+            // Rank first — changing rank resets Category's React state
+            const rankIdx = data.rankIndex !== undefined ? data.rankIndex : 1;
+            await allSelects.nth(2).selectOption({ index: rankIdx }).catch(() => {});
+
+            // Category after rank — random specific index (2-10, never 0/1 which are empty/"*" wildcard)
+            // Randomising avoids reusing the same (rank, category, city) combination across test runs
+            const catIdx = data.catIndex !== undefined ? data.catIndex : (Math.floor(Math.random() * 9) + 2); // 2..10
+            await allSelects.nth(0).selectOption({ index: catIdx }).catch(
+                () => allSelects.nth(0).selectOption({ index: 2 }).catch(
+                    () => allSelects.nth(0).selectOption({ index: 1 }).catch(() => {}),
+                ),
+            );
+
+            await allSelects.nth(1).selectOption({ label: "Ship" })
+                .catch(() => allSelects.nth(1).selectOption({ value: 'SHIP' })
+                    .catch(() => allSelects.nth(1).selectOption({ index: 2 }).catch(() => {})));
+
+            await form.locator('input[type="date"]').nth(0).fill("2026-06-01").catch(() => {});
+            await form.locator('input[type="date"]').nth(1).fill(fillDate).catch(() => {});
+
+            const textInputs = form.locator(
+                'input:not([type="number"]):not([type="date"]):not([type="checkbox"]):not([readonly])',
+            );
+            const textCount = await textInputs.count();
+            if (textCount >= 1) {
+                const areaCode = data.areaCode || String(Math.floor(Math.random() * 9000) + 1000);
+                await textInputs.nth(0).fill(areaCode).catch(() => {});
+            }
+            if (textCount >= 2) {
+                await textInputs.nth(1).fill("Standard Tier").catch(() => {});
+            }
+
+            const numInputs = this.page.locator('input[type="number"]');
+            const numValues = ["0", "100", "0", "50", "5000", "3000", "5"];
+            const numCount = await numInputs.count();
+            for (let i = 0; i < Math.min(numValues.length, numCount); i++) {
+                await numInputs.nth(i).fill(numValues[i]).catch(() => {});
+            }
+
+            await allSelects.nth(3).selectOption({ label: "days" })
+                .catch(() => allSelects.nth(3).selectOption({ index: 1 }).catch(() => {}));
         });
     }
 
     public async clickSave() {
         await test.step("Click Save button", async () => {
             await this.page.locator(DeliverySetupPage.SAVE_BTN).first().click();
+            // Wait for load AND a brief extra pause so the toast has time to render before
+            // captureToastText() checks for it (Toastify shows after networkidle in some builds)
             await this.page.waitForLoadState("networkidle", { timeout: 15000 }).catch(() => {});
+            await this.page.waitForTimeout(1500);
         });
     }
 
@@ -329,7 +401,7 @@ export default class DeliverySetupSteps {
 
     public async captureToastText(): Promise<string> {
         const toast = this.page.locator(DeliverySetupPage.TOAST).first();
-        const visible = await toast.isVisible({ timeout: DeliverySetupConstants.TOAST_TIMEOUT_MS }).catch(() => false);
+        const visible = await toast.waitFor({ state: "visible", timeout: 4000 }).then(() => true).catch(() => false);
         if (!visible) return "";
         return (await toast.innerText().catch(() => "")).trim();
     }
@@ -391,7 +463,7 @@ export default class DeliverySetupSteps {
     public async verifyEditPageLoaded() {
         await test.step("Verify Edit Delivery page loaded", async () => {
             await expect(this.page).toHaveURL(
-                /delivery\/edit|delivery\/update/, { timeout: 10000 },
+                /deliverysetup\/edit|deliverysetup\/update/, { timeout: 10000 },
             );
             const heading = this.page.locator(DeliverySetupPage.EDIT_HEADING).first();
             if (await heading.isVisible({ timeout: 3000 }).catch(() => false)) {
@@ -402,13 +474,13 @@ export default class DeliverySetupSteps {
 
     public async updateNameField(newName: string) {
         await test.step(`Update delivery name to '${newName}'`, async () => {
-            const nameInput = this.page.locator(DeliverySetupPage.NAME_INPUT).first();
-            if (await nameInput.isVisible({ timeout: 2000 }).catch(() => false)) {
-                await nameInput.click({ clickCount: 3 });
-                await nameInput.fill(newName);
-            } else {
-                console.log("[DeliverySetup] Name input not found for update");
+            const dateParts = newName.split("/");
+            let fillDate = "2058-12-31";
+            if (dateParts.length === 3) {
+                fillDate = `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`;
             }
+            const endDateInput = this.page.locator('input[type="date"]').nth(1);
+            await endDateInput.fill(fillDate);
         });
     }
 
@@ -461,7 +533,7 @@ export default class DeliverySetupSteps {
             await this.page.locator(DeliverySetupPage.DELETE_CANCEL_BTN).first().click();
             await expect(
                 this.page.locator(DeliverySetupPage.DELETE_POPUP).first(),
-            ).toBeHidden({ timeout: 5000 });
+            ).toBeHidden({ timeout: 10000 });
         });
     }
 

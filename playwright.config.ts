@@ -10,7 +10,7 @@ const defaultBrowser: string = String(process.env.BROWSER ?? "chromium").toLower
 const config: PlaywrightTestConfig = {
   use: {
     browserName: Browser.type(defaultBrowser),
-    headless: false,
+    headless: process.env.HEADLESS === "true",
     channel: Browser.channel(defaultBrowser),
     launchOptions: {
       args: [
@@ -18,7 +18,7 @@ const config: PlaywrightTestConfig = {
         "--disable-extensions",
         "--disable-plugins",
       ],
-      headless: false,
+      headless: process.env.HEADLESS === "true",
       timeout: Number.parseInt(String(process.env.BROWSER_LAUNCH_TIMEOUT ?? "30000"), 10),
       slowMo: 100,
       downloadsPath: "./test-results/downloads",

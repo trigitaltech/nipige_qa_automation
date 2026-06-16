@@ -1,7 +1,7 @@
 export default class DeliverySetupConstants {
     // ── URL segments ──────────────────────────────────────────────────────────
-    static readonly PAGE_URL_SEGMENT = "delivery-operation";
-    static readonly CREATE_URL_SEGMENT = "delivery-operation/create";
+    static readonly PAGE_URL_SEGMENT = "setup/deliverysetup";
+    static readonly CREATE_URL_SEGMENT = "setup/deliverysetup/create";
 
     // ── Page titles (actual h1/h2/h3 text) ───────────────────────────────────
     static readonly PAGE_TITLE = "Delivery Setup";

@@ -6,8 +6,8 @@
  */
 export default class DeliverySetupPage {
     // ── Direct navigation path ────────────────────────────────────────────────
-    static readonly DELIVERY_PATH = "delivery-operation";
-    static readonly DELIVERY_CREATE_PATH = "delivery-operation/create";
+    static readonly DELIVERY_PATH = "setup/deliverysetup";
+    static readonly DELIVERY_CREATE_PATH = "setup/deliverysetup/create";
 
     // ── Home page & sidebar indicators ───────────────────────────────────────
     static readonly PROFILE_MENU = 'button[aria-haspopup="true"]';
@@ -17,10 +17,10 @@ export default class DeliverySetupPage {
     // Setup is a collapsible sidebar button; Delivery link is only in DOM after it expands
     static readonly SETUP_MENU_BTN = 'nav button:has-text("Setup")';
     static readonly DELIVERY_SUBMENU_LINK = [
-        'a[href="/setup/delivery"]',
-        'a[href*="delivery"]',
+        'a[href="/setup/deliverysetup"]',
+        'a[href*="setup/deliverysetup"]',
         'a:has-text("Delivery Setup")',
-        'a:has-text("Delivery")',
+        'a[href="/setup/delivery"]',
     ].join(", ");
 
     // ── Page headings ─────────────────────────────────────────────────────────
@@ -59,10 +59,15 @@ export default class DeliverySetupPage {
 
     // ── Create button ─────────────────────────────────────────────────────────
     static readonly CREATE_BTN = [
+        'a[href*="deliverysetup/create"]',
+        'button:has-text("Create Delivery Setup")',
         'button:has-text("Create Delivery")',
         'a:has-text("Create Delivery")',
         'button:has-text("Add Delivery")',
         'button:has-text("New Delivery")',
+        'button:has-text("Add New")',
+        'button:has-text("Create")',
+        'a:has-text("Create")',
     ].join(", ");
 
     // ── Table ─────────────────────────────────────────────────────────────────
@@ -142,13 +147,14 @@ export default class DeliverySetupPage {
         'button:has-text("Save Changes")',
     ].join(", ");
 
-    // ── Delete confirmation (SweetAlert2) ─────────────────────────────────────
+    // ── Delete confirmation (native <dialog[open]> or SweetAlert2) ───────────
+    // Use dialog[open] so closed dialogs lingering in the DOM are not matched.
     // eslint-disable-next-line max-len
-    static readonly DELETE_POPUP = '.swal2-popup, [role="alertdialog"], [role="dialog"]';
+    static readonly DELETE_POPUP = 'dialog[open], .swal2-popup, [role="alertdialog"], [role="dialog"]';
     // eslint-disable-next-line max-len
-    static readonly DELETE_YES_BTN = '.swal2-confirm, button:has-text("Yes, delete it!"), button:has-text("Yes, Delete"), button:has-text("Confirm")';
+    static readonly DELETE_YES_BTN = 'dialog[open] button:has-text("Yes, delete it!"), dialog[open] button:has-text("Yes, Delete"), .swal2-confirm, button:has-text("Yes, delete it!"), button:has-text("Confirm")';
     // eslint-disable-next-line max-len
-    static readonly DELETE_CANCEL_BTN = '.swal2-cancel, button:has-text("No"), button:has-text("Cancel")';
+    static readonly DELETE_CANCEL_BTN = '.swal2-cancel, button:has-text("Cancel"):visible, button:has-text("No"):visible, dialog[open] button:has-text("Cancel"), dialog[open] button:has-text("No")';
 
     // ── Toast ─────────────────────────────────────────────────────────────────
     static readonly TOAST = ".Toastify__toast";
