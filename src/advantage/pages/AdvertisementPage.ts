@@ -260,7 +260,11 @@ export default class AdvertisementPage {
         'button:has-text("Add New Banner")',
         'button:has-text("Add Banner")',
         'button:has-text("Add Video")',
-        'button:has-text("Upload Video")'
+        'button:has-text("Upload Video")',
+        'button:has-text("Replace video")',
+        'button:has-text("Replace")',
+        'button:has-text("Update Advertisement")',
+        'button:has-text("Create Advertisement")',
     ].join(', ');
 
     static readonly ADD_BANNER_SLIDER_BTN = [
@@ -376,9 +380,19 @@ export default class AdvertisementPage {
     static readonly DELETE_POPUP = '.swal2-popup, [role="alertdialog"], [role="dialog"]';
     // Overlay/backdrop — click at edge to dismiss popup (allowOutsideClick must be true in the app)
     static readonly SWAL2_BACKDROP = '.swal2-container';
-    // eslint-disable-next-line max-len
-    static readonly DELETE_YES_BTN = '.swal2-confirm, button:has-text("Yes, delete it!"), button:has-text("Yes"), button:has-text("Confirm"), button:has-text("Delete")';
-    static readonly DELETE_CANCEL_BTN = '.swal2-cancel, button:has-text("No"), button:has-text("Cancel")';
+    static readonly DELETE_YES_BTN = [
+        '.swal2-confirm',
+        'button:has-text("Yes, delete it!")',
+        'button:has-text("Yes")',
+        'button:has-text("Confirm")',
+        'button:has-text("Delete")',
+    ].map(sel => `${sel}:visible`).join(", ");
+
+    static readonly DELETE_CANCEL_BTN = [
+        '.swal2-cancel',
+        'button:has-text("No")',
+        'button:has-text("Cancel")',
+    ].map(sel => `${sel}:visible`).join(", ");
 
     // ── Toast notifications ───────────────────────────────────────────────────
     // Covers react-toastify (.Toastify__toast) and sonner ([data-sonner-toast])
