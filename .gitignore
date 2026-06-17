@@ -1,12 +1,44 @@
+# Dependencies
+/node_modules
+node_modules/
+/.pnpm-store
+
+# Build & Output
+/dist
+/build
+*.test.ts
+
+# Test Results & Reports
 /test-results
 /allure-results
 /allure-report
-/node_modules
-node_modules
-**/*.test.ts
-/.vscode
+/coverage
 
-# Secrets — never commit real credentials
+# Credentials & Environment
 .env
 .env.local
+.env.*.local
 /.auth
+
+# Playwright
+.playwright/
+/.cache
+
+# IDE & Editor
+/.vscode
+/.idea
+*.swp
+*.swo
+*.sublime-workspace
+
+# OS & Temporary Files
+.DS_Store
+Thumbs.db
+*.log
+/logs
+/tmp
+/temp
+
+# Lock files (pnpm, npm) — usually committed, uncomment if needed locally
+# pnpm-lock.yaml
+# package-lock.json
