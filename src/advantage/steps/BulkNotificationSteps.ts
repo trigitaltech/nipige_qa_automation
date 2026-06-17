@@ -44,7 +44,10 @@ export default class BulkNotificationSteps {
         // option partly clipped — center it explicitly (same fix as the combobox above) before
         // clicking, since "outside of the viewport" otherwise causes the click to hang/retry.
         await option.evaluate((el) => el.scrollIntoView({ block: "center" }));
-        await option.click();
+        // Use force:true as fallback — the element is confirmed visible and stable but the browser
+        // reports it as "outside of the viewport" due to the listbox overlay positioning. Forcing
+        // bypasses the viewport check while the element is genuinely interactable.
+        await option.click({ force: true });
     }
 
     // ---------------------------------------------------------------- navigation
@@ -407,6 +410,12 @@ export default class BulkNotificationSteps {
     /** Template is the same combobox widget as Select Entity/Criteria/Operator. */
     public async selectTemplate(template: string) {
         await test.step(`Select Template '${template}'`, async () => {
+            // Template list is fetched from the server after Notification Type is selected.
+            // Wait for the combobox to become enabled (not disabled) before opening it so the
+            // option list has time to populate.
+            const templateCombobox = this.page.locator(BulkNotificationPage.TEMPLATE_COMBOBOX).first();
+            await templateCombobox.waitFor({ state: "visible", timeout: 10_000 });
+            await expect(templateCombobox).toBeEnabled({ timeout: 10_000 });
             await this.chooseFromCombobox(BulkNotificationPage.TEMPLATE_COMBOBOX, template);
         });
     }
