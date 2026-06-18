@@ -4,6 +4,11 @@ import Allure from "@allure";
 import ExcelUtil from "@utils/ExcelUtil";
 import { getCredential, Role } from "@config/Credentials";
 
+// Retries guard against HTTP 429 rate-limiting from the backend when the regression suite
+// runs many login-heavy tests back-to-back. Two retries with Playwright's built-in backoff
+// give the server time to recover without adding artificial sleeps.
+test.describe.configure({ retries: 2 });
+
 const SHEET = "LoginTest";
 
 const data1 = ExcelUtil.getTestData(SHEET, "TC06_AdminValidLogin");
