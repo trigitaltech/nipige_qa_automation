@@ -35,9 +35,17 @@ export default class AdvertisementPage {
     ].join(", ");
 
     // ── Listing page ──────────────────────────────────────────────────────────
-    // Listing search — exact placeholder "Search here" (sidebar uses "Search navigation menu")
-    static readonly SEARCH_INPUT = 'input[placeholder="Search here"]';
-    static readonly SEARCH_BTN = 'div:has(input[placeholder="Search here"]) button';
+    // Listing search — exact placeholder "Search here" or "Type / Placement" (sidebar uses "Search navigation menu")
+    static readonly SEARCH_INPUT = [
+        'input[placeholder="Type / Placement"]',
+        'input[placeholder="Search here"]',
+        'input[placeholder*="Type / Placement" i]',
+        'input[placeholder*="Search" i]',
+    ].join(", ");
+    static readonly SEARCH_BTN = [
+        'div:has(input[placeholder="Type / Placement"]) button',
+        'div:has(input[placeholder="Search here"]) button',
+    ].join(", ");
 
     static readonly CREATE_BTN = [
         'button:has-text("Create Advertisement")',
@@ -153,10 +161,12 @@ export default class AdvertisementPage {
     ].join(", ");
 
     static readonly PLACEMENT_CLEAR_BTN = [
-        'div:has(input[placeholder*="Placement" i]) button',
-        '[aria-label="Clear"]',
+        'div:has(> label:has-text("Placement")) button',
+        'div:has(> label:has-text("Placement")) [role="button"]',
+        'div:has(> label:has-text("Placement")) [class*="clear"]',
+        'div:has(> label:has-text("Placement")) span:has-text("×")',
+        'div:has(> label:has-text("Placement")) svg',
         '.select__clear-indicator',
-        'button[class*="clear"]',
     ].join(", ");
 
     // Visibility: native <select> — second select or the one with Global/Partner/Market
