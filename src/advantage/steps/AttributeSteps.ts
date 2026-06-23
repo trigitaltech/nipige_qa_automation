@@ -319,6 +319,20 @@ export default class AttributeSteps {
 
     public async clickBack() {
         await test.step("Click Back button", async () => {
+            // Dismiss any open SweetAlert2 modal BEFORE clicking Back — a success/error modal
+            // intercepts pointer events and causes the Back click to time out.
+            const swal = this.page.locator(".swal2-container");
+            const swalVisibleBefore = await swal.isVisible({ timeout: 2000 }).catch(() => false);
+            if (swalVisibleBefore) {
+                const confirmBtn = this.page.locator(".swal2-confirm");
+                const confirmVisible = await confirmBtn.isVisible({ timeout: 1000 }).catch(() => false);
+                if (confirmVisible) {
+                    await confirmBtn.click();
+                } else {
+                    await this.page.keyboard.press("Escape");
+                }
+                await swal.waitFor({ state: "hidden", timeout: 5000 }).catch(() => {});
+            }
             const backBtn = this.page.locator(AttributePage.BACK_BTN).first();
             const visible = await backBtn.isVisible({ timeout: 5000 }).catch(() => false);
             if (visible) {
@@ -326,10 +340,10 @@ export default class AttributeSteps {
             } else {
                 await this.page.goBack();
             }
-            // If a SweetAlert2 confirmation dialog appeared (e.g. "unsaved changes?"), dismiss it
-            const swal = this.page.locator(".swal2-container");
-            const swalVisible = await swal.isVisible({ timeout: 2000 }).catch(() => false);
-            if (swalVisible) {
+            // If a SweetAlert2 confirmation dialog appeared after clicking Back (e.g. "unsaved changes?"), dismiss it
+            const swalAfter = this.page.locator(".swal2-container");
+            const swalVisibleAfter = await swalAfter.isVisible({ timeout: 2000 }).catch(() => false);
+            if (swalVisibleAfter) {
                 const confirmBtn = this.page.locator(".swal2-confirm");
                 const confirmVisible = await confirmBtn.isVisible({ timeout: 1000 }).catch(() => false);
                 if (confirmVisible) {

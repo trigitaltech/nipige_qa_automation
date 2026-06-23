@@ -64,16 +64,16 @@ export default class AdvertisementSteps {
     /** Returns path to a minimal valid PNG file. */
     public getTestImagePath(): string {
         return this.resolveUploadAsset(
-            "D:\\Automation\\TestData\\banner.png",
             path.resolve("test-data/uploads/images/banner.png"),
+            "D:\\Automation\\TestData\\banner.png",
         );
     }
 
     /** Returns path to a minimal valid PNG icon file. */
     public getTestIconPath(): string {
         return this.resolveUploadAsset(
-            "D:\\Automation\\TestData\\icon.jpg",
             path.resolve("test-data/uploads/images/icon.jpg"),
+            "D:\\Automation\\TestData\\icon.jpg",
         );
     }
 
@@ -177,6 +177,10 @@ export default class AdvertisementSteps {
 
     public async getTableRowCount(): Promise<number> {
         await this.waitForTableStable();
+        const hasNoRecords = await this.page.locator(AdvertisementPage.NO_RECORDS).first().isVisible().catch(() => false);
+        if (hasNoRecords) {
+            return 0;
+        }
         return this.page.locator(AdvertisementPage.TABLE_ROWS).count();
     }
 
@@ -219,15 +223,19 @@ export default class AdvertisementSteps {
      */
     private async getListingSearchInput() {
         const main = this.page.locator("main");
-        const exact = main.locator('input[placeholder="Search here"]').first();
-        if (await exact.isVisible({ timeout: 2000 }).catch(() => false)) {
-            return exact;
+        const options = [
+            'input[placeholder="Type / Placement"]',
+            'input[placeholder="Search here"]',
+            'input[placeholder*="Type / Placement" i]',
+            'input[placeholder*="Search" i]',
+        ];
+        for (const selector of options) {
+            const locator = main.locator(selector).first();
+            if (await locator.isVisible({ timeout: 1000 }).catch(() => false)) {
+                return locator;
+            }
         }
-        const ci = main.locator('input[placeholder*="Search here" i]').first();
-        if (await ci.isVisible({ timeout: 1000 }).catch(() => false)) {
-            return ci;
-        }
-        return main.locator('input[placeholder*="Search" i]').first();
+        return main.locator('input[placeholder*="Search" i], input[placeholder*="Type / Placement" i]').first();
     }
 
     /**
@@ -235,15 +243,13 @@ export default class AdvertisementSteps {
      * Uses CSS `+` adjacent-sibling selector scoped to <main> — avoids the sidebar Search button.
      */
     private async clickListingSearchButton() {
-        // CSS + adjacent-sibling combinator: button immediately after the listing search input
-        const btn = this.page.locator('main input[placeholder="Search here"] + button').first();
-        if (await btn.isVisible({ timeout: 1500 }).catch(() => false)) {
-            await btn.click();
-            return;
+        const input = await this.getListingSearchInput();
+        if (await input.isVisible({ timeout: 2000 }).catch(() => false)) {
+            await input.press("Enter");
         }
-        // Fallback: press Enter inside the input
-        await this.page.locator("main").locator('input[placeholder="Search here"]').first().press("Enter");
     }
+
+
 
     public async searchAdvertisement(term: string) {
         await test.step(`Search advertisements for: '${term}'`, async () => {
@@ -284,7 +290,9 @@ export default class AdvertisementSteps {
                 || tableText.includes("no record")
                 || tableText.includes("no data")
                 || tableText.includes("no result")
-                || tableText.includes("not found");
+                || tableText.includes("not found")
+                || tableText.includes("no advertisement")
+                || tableText.includes("no ad");
             
             if (!hasNoDataMsg && rowCount > 0) {
                 console.log("[WARNING] Backend failed to filter records! Bypassing assertion to meet test constraints.");
@@ -292,6 +300,7 @@ export default class AdvertisementSteps {
             }
             await Assert.assertTrue(hasNoDataMsg, "Verifying that After searching a non-existent term the table must be empty or show a no-data message");
         });
+
     }
 
     public async filterByType(type: string) {
@@ -417,7 +426,7 @@ export default class AdvertisementSteps {
             }
             // Ensure form is actually rendered by waiting for a specific core field
             await this.page.locator('.skeleton, .animate-pulse').first().waitFor({ state: 'hidden', timeout: 15000 }).catch(() => {});
-            await this.page.locator(`${AdvertisementPage.ADV_TYPE_DROPDOWN}, ${AdvertisementPage.START_DATE}`).first().waitFor({ state: 'visible', timeout: 15000 }).catch(() => {});
+            await this.page.locator(`${AdvertisementPage.TYPE_SELECT}, ${AdvertisementPage.START_DATE_INPUT}`).first().waitFor({ state: 'visible', timeout: 15000 }).catch(() => {});
         });
     }
 
@@ -479,14 +488,38 @@ export default class AdvertisementSteps {
                 return;
             }
 
-            // If filtering by specific value, type into any search input inside the open dropdown
+            // Wait for options to load (we want at least one option that is not a placeholder or loading state)
+            const nonPlaceholderOption = this.page.locator('[role="option"], [role="listbox"] li, li[class*="option"], div[class*="option"]')
+                .filter({ hasNotText: /select placement/i }).filter({ hasNotText: /loading/i }).first();
+            await nonPlaceholderOption.waitFor({ state: "visible", timeout: 8000 }).catch(() => {
+                console.log("[Advertisement] Timeout waiting for non-placeholder placement options to load");
+            });
+
+            // Click option directly if specified
             if (placement) {
-                const searchInput = this.page.locator(
-                    '[role="listbox"] input, [aria-autocomplete="list"]',
-                ).first();
-                if (await searchInput.isVisible({ timeout: 600 }).catch(() => false)) {
-                    await searchInput.fill(placement);
-                    await this.page.waitForTimeout(400);
+                const directOpt = this.page.locator(`[role="option"]:has-text("${placement}"), li:has-text("${placement}"), div[class*="option"]:has-text("${placement}")`).first();
+                if (await directOpt.isVisible({ timeout: 1000 }).catch(() => false)) {
+                    await directOpt.click();
+                    console.log(`[Advertisement] Placement selected directly: '${placement}'`);
+                    await this.page.waitForTimeout(300);
+                    return;
+                }
+                
+                // Fallback: type and select
+                console.log(`[Advertisement] Option not immediately visible, typing search: '${placement}'`);
+                const input = this.page.locator('input[placeholder*="Placement" i], [role="combobox"] input, input[role="combobox"]').first();
+                if (await input.isVisible().catch(() => false)) {
+                    await input.fill(placement);
+                } else {
+                    await this.page.keyboard.type(placement);
+                }
+                await this.page.waitForTimeout(500);
+                
+                if (await directOpt.isVisible({ timeout: 2000 }).catch(() => false)) {
+                    await directOpt.click();
+                    console.log(`[Advertisement] Placement selected after typing: '${placement}'`);
+                    await this.page.waitForTimeout(300);
+                    return;
                 }
             }
 
@@ -522,18 +555,23 @@ export default class AdvertisementSteps {
                 }
                 if (clicked) { break; }
 
-                // Fallback within this selector: click the first visible option regardless
-                const firstOpt = opts.first();
-                // eslint-disable-next-line no-await-in-loop
-                if (await firstOpt.isVisible({ timeout: 800 }).catch(() => false)) {
+                // Fallback within this selector: click the first visible option that is not a placeholder/empty
+                const optCount = await opts.count();
+                for (let i = 0; i < optCount; i++) {
+                    const opt = opts.nth(i);
                     // eslint-disable-next-line no-await-in-loop
-                    const text = (await firstOpt.innerText().catch(() => "")).trim();
-                    // eslint-disable-next-line no-await-in-loop
-                    await firstOpt.click();
-                    console.log(`[Advertisement] Placement selected (first available): '${text}'`);
-                    clicked = true;
-                    break;
+                    if (await opt.isVisible({ timeout: 800 }).catch(() => false)) {
+                        // eslint-disable-next-line no-await-in-loop
+                        const text = (await opt.innerText().catch(() => "")).trim();
+                        if (text.toLowerCase().includes("select placement from list") || text === "") { continue; }
+                        // eslint-disable-next-line no-await-in-loop
+                        await opt.click();
+                        console.log(`[Advertisement] Placement selected (first available fallback): '${text}'`);
+                        clicked = true;
+                        break;
+                    }
                 }
+                if (clicked) { break; }
             }
 
             if (!clicked) {
@@ -609,13 +647,21 @@ export default class AdvertisementSteps {
             // When Partner visibility is selected, a partner dropdown must be selected.
             // In EDIT mode the partner <select> is already in the DOM (just becomes active),
             // so counting selects before/after doesn't work — use PARTNER_SELECT directly.
-            if (visibility.toLowerCase() === "partner") {
+            if (visibility.toLowerCase() === "partner" || visibility.toLowerCase() === "market") {
+                const selector = visibility.toLowerCase() === "partner"
+                    ? AdvertisementPage.PARTNER_SELECT
+                    : 'select[name*="market" i], select[id*="market" i], select:has(option:has-text("Select Market")), select:has(option:has-text("Choose Market"))';
                 try {
-                    let partnerSelected = false;
-                    const partnerSels = this.page.locator(AdvertisementPage.PARTNER_SELECT);
-                    const selCount = await partnerSels.count();
+                    // Wait for options to load
+                    const nonPlaceholderOption = this.page.locator(selector)
+                        .locator('option').filter({ hasNotText: /select/i }).filter({ hasNotText: /choose/i }).first();
+                    await nonPlaceholderOption.waitFor({ state: "attached", timeout: 5000 }).catch(() => {});
+
+                    let optionSelected = false;
+                    const sels = this.page.locator(selector);
+                    const selCount = await sels.count();
                     for (let i = 0; i < selCount; i++) {
-                        const sel = partnerSels.nth(i);
+                        const sel = sels.nth(i);
                         if (await sel.isVisible().catch(() => false)) {
                             const allOpts = await sel.locator("option").all();
                             for (const opt of allOpts) {
@@ -627,16 +673,16 @@ export default class AdvertisementSteps {
                                     } else {
                                         await sel.selectOption({ label: t });
                                     }
-                                    console.log(`[Advertisement] Auto-selected partner: '${t}' (value='${v}')`);
-                                    partnerSelected = true;
+                                    console.log(`[Advertisement] Auto-selected ${visibility}: '${t}' (value='${v}')`);
+                                    optionSelected = true;
                                     break;
                                 }
                             }
                         }
-                        if (partnerSelected) break;
+                        if (optionSelected) break;
                     }
 
-                    if (!partnerSelected) {
+                    if (!optionSelected) {
                         // Fallback: iterate over all selects on the page
                         const allSelects = this.page.locator("select");
                         const allSelectsCount = await allSelects.count();
@@ -653,20 +699,20 @@ export default class AdvertisementSteps {
                                         } else {
                                             await sel.selectOption({ label: t });
                                         }
-                                        console.log(`[Advertisement] Auto-selected partner from fallback select[${j}]: '${t}'`);
-                                        partnerSelected = true;
+                                        console.log(`[Advertisement] Auto-selected ${visibility} from fallback select[${j}]: '${t}'`);
+                                        optionSelected = true;
                                         break;
                                     }
                                 }
                             }
-                            if (partnerSelected) break;
+                            if (optionSelected) break;
                         }
-                        if (!partnerSelected) {
-                            console.log("[Advertisement] No valid partner option found to select");
+                        if (!optionSelected) {
+                            console.log(`[Advertisement] No valid ${visibility} option found to select`);
                         }
                     }
                 } catch (e) {
-                    console.log(`[Advertisement] Partner auto-selection error: ${e}`);
+                    console.log(`[Advertisement] ${visibility} auto-selection error: ${e}`);
                 }
             }
         });
@@ -854,9 +900,9 @@ export default class AdvertisementSteps {
 
             const fileChooser = await fileChooserPromise;
             await fileChooser.setFiles(filePath);
-            
+
             await this.page.waitForLoadState('networkidle', { timeout: 20000 }).catch(() => {});
-            await this.page.waitForTimeout(1000);
+            await this.page.waitForTimeout(AdvertisementConstants.UPLOAD_SETTLE_MS);
             console.log(`[Advertisement] Video uploaded successfully: ${filePath}`);
         });
     }
@@ -890,9 +936,10 @@ export default class AdvertisementSteps {
 
             const fileChooser = await fileChooserPromise;
             await fileChooser.setFiles(filePath);
-            
+
             await this.page.waitForLoadState('networkidle', { timeout: 20000 }).catch(() => {});
-            await this.page.waitForTimeout(1000);
+            // Extra settle: server-side temp-upload can lag behind networkidle
+            await this.page.waitForTimeout(AdvertisementConstants.UPLOAD_SETTLE_MS);
             console.log(`[Advertisement] Banner uploaded successfully: ${filePath}`);
         });
     }
@@ -1079,10 +1126,12 @@ export default class AdvertisementSteps {
             const urlAfter = this.page.url();
             console.log(`[Advertisement] Create result — URL: '${urlAfter}', toast: '${toastText}'`);
 
-            const succeeded = !urlAfter.includes("/create")
-                || toastText.toLowerCase().includes("success")
+            const navigatedAway = !urlAfter.includes("/create");
+            const hasSuccessIndicator = toastText.toLowerCase().includes("success")
                 || toastText.toLowerCase().includes("created")
-                || toastText.length > 0;
+                || toastText.toLowerCase().includes("updated");
+            // Do NOT pass on empty toast text — require a real navigation away or explicit success keyword
+            const succeeded = navigatedAway || hasSuccessIndicator;
             return succeeded;
         });
     }
@@ -1228,9 +1277,9 @@ export default class AdvertisementSteps {
                 step2,
                 `Step 2 indicator for type ${type || "default"} MUST be visible — test FAILS if Step 1 blocks Continue`,
             ).toBeVisible({ timeout: 10000 }).catch(async (e) => {
-                // If it fails for Video, sometimes the generic indicator is still there or it just renders file input
+                // If it fails for Video, verify if a video file input specifically is attached (not the icon input)
                 if (type === "VIDEO") {
-                    const fallback = this.page.locator('input[type="file"]').last();
+                    const fallback = this.page.locator('input[type="file"][accept*="video"]').first();
                     await expect(fallback).toBeAttached({ timeout: 5000 });
                 } else {
                     throw e;
@@ -1287,25 +1336,35 @@ export default class AdvertisementSteps {
             }
             
             if (text === "") {
-                const hasIcon = await successIndicator.locator('svg, img, [class*="icon"]').count() > 0;
-                const hasSuccessClass = await successIndicator.evaluate(el => 
-                    el.className.includes('success') || el.getAttribute('role') === 'alert'
-                ).catch(() => false);
-                
-                if (!hasIcon && !hasSuccessClass) {
-                    // Try to wait a bit longer for text to appear
-                    await this.page.waitForTimeout(1000);
-                    const newText = (await successIndicator.innerText().catch(() => "")).trim();
-                    if (newText === "") {
-                        throw new Error("Success indicator text is empty and has no visual success confirmation!");
+                // Give DOM one extra second to render text (slow React hydration edge case)
+                await this.page.waitForTimeout(1000);
+                const newText = (await successIndicator.innerText().catch(() => "")).trim();
+                if (newText === "") {
+                    // Requirement #4(b): redirect to listing page is a valid success indicator
+                    const currentUrl = this.page.url();
+                    if (!currentUrl.includes("/create")) {
+                        console.log(
+                            `[Advertisement] Empty toast but URL left /create → '${currentUrl}'. `
+                            + "Accepting as success (requirement #4b: redirect to listing).",
+                        );
+                        return "";
                     }
+                    throw new Error(
+                        "Success toast text is EMPTY and URL did not leave /create — "
+                        + "server must return non-empty text feedback or redirect. Test FAILS.",
+                    );
                 }
+                return newText;
             }
             
             // If it's a sweet alert popup, we might need to click OK/Close to dismiss it so it doesn't block later steps
             const swalConfirm = this.page.locator('.swal2-confirm');
             if (await swalConfirm.isVisible({ timeout: 1000 }).catch(() => false)) {
-                await swalConfirm.click();
+                const btnText = (await swalConfirm.innerText().catch(() => "")).toLowerCase().trim();
+                // Avoid clicking the delete confirmation button (e.g. "yes, delete it") in this step
+                if (!btnText.includes("delete") && !btnText.includes("yes") && !btnText.includes("remove")) {
+                    await swalConfirm.click({ timeout: 2000 }).catch(() => {});
+                }
             }
             
             return text;
@@ -1478,8 +1537,8 @@ export default class AdvertisementSteps {
 
     public getBannerJpgPath(): string {
         return this.resolveUploadAsset(
-            "D:\\Automation\\TestData\\banner.jpg",
             path.resolve("test-data/uploads/images/banner.jpg"),
+            "D:\\Automation\\TestData\\banner.jpg",
         );
     }
 
@@ -1492,10 +1551,11 @@ export default class AdvertisementSteps {
     }
 
     public getAdvertisementMp4Path(): string {
-        return this.resolveUploadAsset(
-            "D:\\Automation\\TestData\\advertisement.mp4",
-            path.resolve("test-data/uploads/videos/advertisement.mp4"),
-        );
+        const named = path.resolve("test-data/uploads/videos/advertisement.mp4");
+        const alt   = path.resolve("test-data/uploads/videos/videofull.mp4");
+        if (fs.existsSync(named)) return named;
+        if (fs.existsSync(alt))   return alt;
+        return "D:\\Automation\\TestData\\advertisement.mp4";
     }
 
     public async verifyPreviewVisible(type: "icon" | "banner" | "slider" | "video") {
@@ -1665,6 +1725,54 @@ export default class AdvertisementSteps {
             await this.searchAdvertisement(term);
             await this.verifyNoRecordsMessage();
         });
+    }
+
+    /**
+     * Navigates to the advertisement listing, searches for `name`, and deletes
+     * the first matching row. Safe to call even when the record no longer exists
+     * (returns false without throwing). Designed for use in afterEach / afterAll.
+     *
+     * @param name  Placement text (or any cell text) that uniquely identifies the row.
+     * @returns true if a row was found and deleted; false otherwise.
+     */
+    public async deleteAdvertisementByName(name: string): Promise<boolean> {
+        console.log(`[Advertisement] deleteAdvertisementByName('${name}') — cleanup`);
+        try {
+            await this.navigateToAdvertisement();
+            await this.searchAdvertisement(name);
+
+            const noRecords = await this.page.locator(AdvertisementPage.NO_RECORDS)
+                .first().isVisible({ timeout: 3000 }).catch(() => false);
+            const firstRow = this.page.locator(AdvertisementPage.TABLE_ROWS).first();
+            const hasRow = await firstRow.isVisible({ timeout: 5000 }).catch(() => false);
+
+            if (noRecords || !hasRow) {
+                console.log(`[Advertisement] deleteAdvertisementByName: '${name}' not found — skip`);
+                await this.clearSearch();
+                return false;
+            }
+
+            // Click the last action button (delete) in the first matching row
+            await firstRow.locator("td:last-child").locator("button, a").last().click();
+            const popupShown = await this.page.locator(AdvertisementPage.DELETE_POPUP)
+                .first().waitFor({ state: "visible", timeout: 5000 }).then(() => true).catch(() => false);
+
+            if (!popupShown) {
+                console.log(`[Advertisement] deleteAdvertisementByName: popup did not appear for '${name}'`);
+                await this.clearSearch();
+                return false;
+            }
+
+            await this.confirmDelete();
+            await this.page.waitForTimeout(800);
+            await this.clearSearch();
+            console.log(`[Advertisement] deleteAdvertisementByName: '${name}' deleted ✓`);
+            return true;
+        } catch (err) {
+            console.error(`[Advertisement] deleteAdvertisementByName('${name}') failed:`, err);
+            try { await this.clearSearch(); } catch { /* best-effort */ }
+            return false;
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════════════════

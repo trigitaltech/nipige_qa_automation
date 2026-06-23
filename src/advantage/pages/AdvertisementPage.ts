@@ -35,9 +35,17 @@ export default class AdvertisementPage {
     ].join(", ");
 
     // ── Listing page ──────────────────────────────────────────────────────────
-    // Listing search — exact placeholder "Search here" (sidebar uses "Search navigation menu")
-    static readonly SEARCH_INPUT = 'input[placeholder="Search here"]';
-    static readonly SEARCH_BTN = 'div:has(input[placeholder="Search here"]) button';
+    // Listing search — exact placeholder "Search here" or "Type / Placement" (sidebar uses "Search navigation menu")
+    static readonly SEARCH_INPUT = [
+        'input[placeholder="Type / Placement"]',
+        'input[placeholder="Search here"]',
+        'input[placeholder*="Type / Placement" i]',
+        'input[placeholder*="Search" i]',
+    ].join(", ");
+    static readonly SEARCH_BTN = [
+        'div:has(input[placeholder="Type / Placement"]) button',
+        'div:has(input[placeholder="Search here"]) button',
+    ].join(", ");
 
     static readonly CREATE_BTN = [
         'button:has-text("Create Advertisement")',
@@ -153,10 +161,12 @@ export default class AdvertisementPage {
     ].join(", ");
 
     static readonly PLACEMENT_CLEAR_BTN = [
-        'div:has(input[placeholder*="Placement" i]) button',
-        '[aria-label="Clear"]',
+        'div:has(> label:has-text("Placement")) button',
+        'div:has(> label:has-text("Placement")) [role="button"]',
+        'div:has(> label:has-text("Placement")) [class*="clear"]',
+        'div:has(> label:has-text("Placement")) span:has-text("×")',
+        'div:has(> label:has-text("Placement")) svg',
         '.select__clear-indicator',
-        'button[class*="clear"]',
     ].join(", ");
 
     // Visibility: native <select> — second select or the one with Global/Partner/Market
@@ -260,7 +270,11 @@ export default class AdvertisementPage {
         'button:has-text("Add New Banner")',
         'button:has-text("Add Banner")',
         'button:has-text("Add Video")',
-        'button:has-text("Upload Video")'
+        'button:has-text("Upload Video")',
+        'button:has-text("Replace video")',
+        'button:has-text("Replace")',
+        'button:has-text("Update Advertisement")',
+        'button:has-text("Create Advertisement")',
     ].join(', ');
 
     static readonly ADD_BANNER_SLIDER_BTN = [
@@ -376,9 +390,19 @@ export default class AdvertisementPage {
     static readonly DELETE_POPUP = '.swal2-popup, [role="alertdialog"], [role="dialog"]';
     // Overlay/backdrop — click at edge to dismiss popup (allowOutsideClick must be true in the app)
     static readonly SWAL2_BACKDROP = '.swal2-container';
-    // eslint-disable-next-line max-len
-    static readonly DELETE_YES_BTN = '.swal2-confirm, button:has-text("Yes, delete it!"), button:has-text("Yes"), button:has-text("Confirm"), button:has-text("Delete")';
-    static readonly DELETE_CANCEL_BTN = '.swal2-cancel, button:has-text("No"), button:has-text("Cancel")';
+    static readonly DELETE_YES_BTN = [
+        '.swal2-confirm',
+        'button:has-text("Yes, delete it!")',
+        'button:has-text("Yes")',
+        'button:has-text("Confirm")',
+        'button:has-text("Delete")',
+    ].map(sel => `${sel}:visible`).join(", ");
+
+    static readonly DELETE_CANCEL_BTN = [
+        '.swal2-cancel',
+        'button:has-text("No")',
+        'button:has-text("Cancel")',
+    ].map(sel => `${sel}:visible`).join(", ");
 
     // ── Toast notifications ───────────────────────────────────────────────────
     // Covers react-toastify (.Toastify__toast) and sonner ([data-sonner-toast])
