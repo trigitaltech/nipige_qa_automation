@@ -40,8 +40,6 @@ test.afterEach(async ({ adminPage }, testInfo) => {
     }
 });
 
-test.describe.configure({ mode: "serial", retries: 0 });
-
 const ROWS = ExcelUtil.getTestDataArray(SHEET);
 function row(id: string) {
     const found = ROWS.find((r) => r.TC_ID === id);
@@ -50,6 +48,7 @@ function row(id: string) {
 }
 
 test.describe("Tenants - Super Admin Suite", () => {
+    test.describe.configure({ mode: "serial", retries: 0 });
     let steps!: TenantsSuperAdminSteps;
     let tenantId = "";
     let tenantUserName = "";
