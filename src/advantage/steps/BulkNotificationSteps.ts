@@ -284,6 +284,7 @@ export default class BulkNotificationSteps {
             await expect(this.page.locator(".swal2-popup"),
                 "Expected SweetAlert2 modal to disappear after clicking OK")
                 .not.toBeVisible({ timeout: 10_000 });
+            await this.page.locator(".swal2-container").waitFor({ state: "detached", timeout: 5_000 }).catch(() => {});
         });
     }
 
@@ -299,7 +300,7 @@ export default class BulkNotificationSteps {
         for (let attempt = 0; attempt < 8; attempt += 1) {
             const visible = await popup.isVisible().catch(() => false);
             if (!visible) {
-                return;
+                break;
             }
             // Try confirm first, then cancel, then ESC key
             const confirmed = await confirmButton.click({ timeout: 3_000 }).then(() => true).catch(() => false);
@@ -309,6 +310,9 @@ export default class BulkNotificationSteps {
             }
             await this.page.waitForTimeout(400);
         }
+        // Wait for the backdrop to fully clear — without this the next click lands on the still-
+        // animating swal2-container and gets intercepted even though the popup itself is hidden.
+        await this.page.locator(".swal2-container").waitFor({ state: "detached", timeout: 5_000 }).catch(() => {});
     }
 
     /**
