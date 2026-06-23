@@ -295,16 +295,19 @@ export default class BulkNotificationSteps {
     public async dismissAnyModal() {
         const popup = this.page.locator(".swal2-popup");
         const confirmButton = this.page.locator("button.swal2-confirm");
-        // Retry-loop (not a single isVisible snapshot) — the modal can still be mid-transition or
-        // re-render between the check and the click, which previously let a popup slip through and
-        // block every subsequent action on this shared page.
-        for (let attempt = 0; attempt < 5; attempt += 1) {
+        const cancelButton = this.page.locator("button.swal2-cancel");
+        for (let attempt = 0; attempt < 8; attempt += 1) {
             const visible = await popup.isVisible().catch(() => false);
             if (!visible) {
                 return;
             }
-            await confirmButton.click({ timeout: 5_000 }).catch(() => { /* best-effort, retry below */ });
-            await this.page.waitForTimeout(300);
+            // Try confirm first, then cancel, then ESC key
+            const confirmed = await confirmButton.click({ timeout: 3_000 }).then(() => true).catch(() => false);
+            if (!confirmed) {
+                await cancelButton.click({ timeout: 2_000 }).catch(() => {});
+                await this.page.keyboard.press("Escape").catch(() => {});
+            }
+            await this.page.waitForTimeout(400);
         }
     }
 
