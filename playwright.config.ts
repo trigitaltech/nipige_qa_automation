@@ -29,7 +29,7 @@ const config: PlaywrightTestConfig = {
     actionTimeout: Number.parseInt(String(process.env.ACTION_TIMEOUT ?? "1"), 10) * timeInMin,
     navigationTimeout: Number.parseInt(String(process.env.NAVIGATION_TIMEOUT ?? "1"), 10) * timeInMin,
     screenshot: {
-      mode: "only-on-failure",
+      mode: "on",
       fullPage: true,
     },
     video: "retain-on-failure",
@@ -38,7 +38,7 @@ const config: PlaywrightTestConfig = {
   testDir: "./src/tests",
   outputDir: "./test-results/failure",
   retries: Number.parseInt(String(process.env.RETRIES ?? "0"), 10),
-  preserveOutput: "failures-only",
+  preserveOutput: "always",
   reportSlowTests: null,
   timeout: Number.parseInt(String(process.env.TEST_TIMEOUT ?? "1"), 10) * timeInMin,
   workers: Number.parseInt(String(process.env.PARALLEL_THREAD ?? "1"), 10),
