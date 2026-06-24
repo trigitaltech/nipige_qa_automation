@@ -19,10 +19,12 @@ export default class TestListener implements Reporter {
         this.printLogs(`Test: ${test.title} - ${result.status}`, TEST_SEPARATOR);
 
         // Update Excel sheet
-        const match = test.title.match(/(TC_OM_\d+)/);
+        const match = test.title.match(/(TC_OM_\d+|DRR-\d+|CDH-\d+)/);
         if (match) {
             const tcId = match[1];
-            const status = result.status === 'passed' ? 'Pass' : result.status === 'failed' ? 'Fail' : 'Skipped';
+            const isDRRorCDH = tcId.startsWith("DRR-") || tcId.startsWith("CDH-");
+            const sheetName = isDRRorCDH ? "Daily Registration Regression" : "OfficeManagement";
+            const status = result.status === 'passed' ? (isDRRorCDH ? 'Passed' : 'Pass') : result.status === 'failed' ? (isDRRorCDH ? 'Failed' : 'Fail') : (isDRRorCDH ? 'Blocked' : 'Skipped');
             let actualResult = "";
             if (result.status === 'passed') {
                 actualResult = "Test passed successfully.";
@@ -37,7 +39,8 @@ export default class TestListener implements Reporter {
                     actualResult = actualResult.substring(0, 500) + "...";
                 }
             } else {
-                actualResult = "Test was skipped.";
+                const skipAnnotation = test.annotations.find(a => a.type === 'skipReason');
+                actualResult = skipAnnotation && skipAnnotation.description ? skipAnnotation.description : "Test was skipped.";
             }
             const durationSec = (result.duration / 1000).toFixed(2) + "s";
 
@@ -45,19 +48,29 @@ export default class TestListener implements Reporter {
                 const XLSX = require("xlsx");
                 const path = require("path");
                 const filePath = path.resolve("src/resources/data/testData.xlsx");
-                const sheetName = "OfficeManagement";
                 const wb = XLSX.readFile(filePath);
                 const ws = wb.Sheets[sheetName];
                 if (ws) {
+                    const headers: string[] = XLSX.utils.sheet_to_json(ws, { header: 1 })[0] as string[];
                     const data: any[] = XLSX.utils.sheet_to_json(ws);
                     const row = data.find((r: any) => r["Test Case ID"] === tcId);
                     if (row) {
                         row["Status"] = status;
                         row["Actual Result"] = actualResult;
                         row["Execution Time"] = durationSec;
-                        
+
+                        // Save screenshot path if available
+                        let screenshotPath = "";
+                        const screenshotAttachment = result.attachments.find(a => a.name === 'screenshot' || a.name?.includes('screenshot') || a.contentType?.startsWith('image/'));
+                        if (screenshotAttachment && screenshotAttachment.path) {
+                            screenshotPath = screenshotAttachment.path;
+                        }
+                        if (screenshotPath) {
+                            row["Screenshot Path"] = screenshotPath;
+                        }
+
                         const newWs = XLSX.utils.json_to_sheet(data, {
-                            header: ["Test Case ID", "Description", "persona", "Type", "ExpectedMessage", "Issue", "Status", "Actual Result", "Execution Time"]
+                            header: headers
                         });
                         wb.Sheets[sheetName] = newWs;
                         XLSX.writeFile(wb, filePath);
@@ -104,39 +117,76 @@ export default class TestListener implements Reporter {
             const XLSX = require("xlsx");
             const path = require("path");
             const filePath = path.resolve("src/resources/data/testData.xlsx");
-            const sheetName = "OfficeManagement";
             const wb = XLSX.readFile(filePath);
-            const ws = wb.Sheets[sheetName];
-            if (ws) {
-                const data: any[] = XLSX.utils.sheet_to_json(ws);
-                const omResults = data.filter((r: any) => r["Test Case ID"] && r["Test Case ID"].startsWith("TC_OM_"));
-                if (omResults.length === 0) return;
 
-                const total = 55;
-                const executed = omResults.filter((r: any) => r["Status"] && r["Status"] !== "Not Run" && r["Status"] !== "").length;
-                const passed = omResults.filter((r: any) => r["Status"] === "Pass").length;
-                const failed = omResults.filter((r: any) => r["Status"] === "Fail").length;
-                const skipped = total - executed;
-                const passPercentage = executed > 0 ? ((passed / executed) * 100).toFixed(2) : "0.00";
-                const failedIds = omResults.filter((r: any) => r["Status"] === "Fail").map((r: any) => r["Test Case ID"]);
-                const failureReasons = omResults.filter((r: any) => r["Status"] === "Fail").map((r: any) => `${r["Test Case ID"]}: ${r["Actual Result"]}`).join("\n");
+            // OfficeManagement Summary
+            const wsOM = wb.Sheets["OfficeManagement"];
+            if (wsOM) {
+                const dataOM: any[] = XLSX.utils.sheet_to_json(wsOM);
+                const omResults = dataOM.filter((r: any) => r["Test Case ID"] && r["Test Case ID"].startsWith("TC_OM_"));
+                if (omResults.length > 0) {
+                    const total = 55;
+                    const executed = omResults.filter((r: any) => r["Status"] && r["Status"] !== "Not Run" && r["Status"] !== "").length;
+                    const passed = omResults.filter((r: any) => r["Status"] === "Pass" || r["Status"] === "Passed").length;
+                    const failed = omResults.filter((r: any) => r["Status"] === "Fail" || r["Status"] === "Failed").length;
+                    const skipped = total - executed;
+                    const passPercentage = executed > 0 ? ((passed / executed) * 100).toFixed(2) : "0.00";
+                    const failedIds = omResults.filter((r: any) => r["Status"] === "Fail" || r["Status"] === "Failed").map((r: any) => r["Test Case ID"]);
+                    const failureReasons = omResults.filter((r: any) => r["Status"] === "Fail" || r["Status"] === "Failed").map((r: any) => `${r["Test Case ID"]}: ${r["Actual Result"]}`).join("\n");
 
-                Logger.info(TEST_SEPARATOR);
-                Logger.info("OFFICE MANAGEMENT REGRESSION SUITE EXECUTION SUMMARY (FROM EXCEL)");
-                Logger.info(TEST_SEPARATOR);
-                Logger.info(`Total Test Cases   : ${total}`);
-                Logger.info(`Executed           : ${executed}`);
-                Logger.info(`Passed             : ${passed}`);
-                Logger.info(`Failed             : ${failed}`);
-                Logger.info(`Skipped            : ${skipped}`);
-                Logger.info(`Pass Percentage    : ${passPercentage}%`);
-                if (failedIds.length > 0) {
-                    Logger.info(`Failed Test Cases  : ${failedIds.join(", ")}`);
-                    Logger.info(`Failure Reasons    :\n${failureReasons}`);
-                } else {
-                    Logger.info(`Failed Test Cases  : None`);
+                    Logger.info(TEST_SEPARATOR);
+                    Logger.info("OFFICE MANAGEMENT REGRESSION SUITE EXECUTION SUMMARY (FROM EXCEL)");
+                    Logger.info(TEST_SEPARATOR);
+                    Logger.info(`Total Test Cases   : ${total}`);
+                    Logger.info(`Executed           : ${executed}`);
+                    Logger.info(`Passed             : ${passed}`);
+                    Logger.info(`Failed             : ${failed}`);
+                    Logger.info(`Skipped            : ${skipped}`);
+                    Logger.info(`Pass Percentage    : ${passPercentage}%`);
+                    if (failedIds.length > 0) {
+                        Logger.info(`Failed Test Cases  : ${failedIds.join(", ")}`);
+                        Logger.info(`Failure Reasons    :\n${failureReasons}`);
+                    } else {
+                        Logger.info(`Failed Test Cases  : None`);
+                    }
+                    Logger.info(TEST_SEPARATOR);
                 }
-                Logger.info(TEST_SEPARATOR);
+            }
+
+            // Daily Registration Regression Summary
+            const wsDRR = wb.Sheets["Daily Registration Regression"];
+            if (wsDRR) {
+                const dataDRR: any[] = XLSX.utils.sheet_to_json(wsDRR);
+                const drrResults = dataDRR.filter((r: any) => r["Test Case ID"] && (r["Test Case ID"].startsWith("DRR-") || r["Test Case ID"].startsWith("CDH-")));
+                if (drrResults.length > 0) {
+                    const total = 41;
+                    const executed = drrResults.filter((r: any) => r["Status"] && r["Status"] !== "Not Executed" && r["Status"] !== "Not Run" && r["Status"] !== "").length;
+                    const passed = drrResults.filter((r: any) => r["Status"] === "Passed" || r["Status"] === "Pass").length;
+                    const failed = drrResults.filter((r: any) => r["Status"] === "Failed" || r["Status"] === "Fail").length;
+                    const blocked = drrResults.filter((r: any) => r["Status"] === "Blocked").length;
+                    const skipped = total - executed;
+                    const passPercentage = executed > 0 ? ((passed / executed) * 100).toFixed(2) : "0.00";
+                    const failedIds = drrResults.filter((r: any) => r["Status"] === "Failed" || r["Status"] === "Fail").map((r: any) => r["Test Case ID"]);
+                    const failureReasons = drrResults.filter((r: any) => r["Status"] === "Failed" || r["Status"] === "Fail").map((r: any) => `${r["Test Case ID"]}: ${r["Actual Result"]}`).join("\n");
+
+                    Logger.info(TEST_SEPARATOR);
+                    Logger.info("DAILY REGISTRATION REGRESSION SUITE EXECUTION SUMMARY (FROM EXCEL)");
+                    Logger.info(TEST_SEPARATOR);
+                    Logger.info(`Total Test Cases   : ${total}`);
+                    Logger.info(`Executed           : ${executed}`);
+                    Logger.info(`Passed             : ${passed}`);
+                    Logger.info(`Failed             : ${failed}`);
+                    Logger.info(`Blocked            : ${blocked}`);
+                    Logger.info(`Skipped            : ${skipped}`);
+                    Logger.info(`Pass Percentage    : ${passPercentage}%`);
+                    if (failedIds.length > 0) {
+                        Logger.info(`Failed Test Cases  : ${failedIds.join(", ")}`);
+                        Logger.info(`Failure Reasons    :\n${failureReasons}`);
+                    } else {
+                        Logger.info(`Failed Test Cases  : None`);
+                    }
+                    Logger.info(TEST_SEPARATOR);
+                }
             }
         } catch (e) {
             console.error("Failed to generate Excel execution summary", e);
