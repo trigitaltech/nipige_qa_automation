@@ -53,14 +53,24 @@ export default class NotificationTemplatePage {
     static templateTypeTab(type: string): string {
         return `main >> button:has-text("${type}")`;
     }
-    static readonly SUBJECT_INPUT = 'main >> input[placeholder="Subject"]';
-    static readonly BODY_TEXTAREA = 'main >> textarea[placeholder="HTML (text Area)"]';
-    static readonly FROM_NAME_INPUT = 'main >> input[placeholder="From Name"]';
-    static readonly FROM_EMAIL_INPUT = 'main >> input[placeholder="From Email"]';
-    static readonly SUBMIT_BUTTON = 'main >> button:text-is("Submit")';
+    static readonly SUBJECT_INPUT = 'main >> input[placeholder*="Subject" i]';
+    static readonly BODY_TEXTAREA = 'main :is(textarea, [contenteditable="true"], input[placeholder*="message" i], input[placeholder*="Body" i]):not([placeholder*="CSS" i]):visible';
+    static readonly FROM_NAME_INPUT = 'main >> input[placeholder*="From Name" i]';
+    static readonly FROM_EMAIL_INPUT = 'main >> input[placeholder*="From Email" i]';
+    static readonly HEADER_INPUT = 'main >> input[placeholder*="Header" i]';
+    static readonly TEMPLATE_ID_INPUT = 'main >> input[placeholder*="Template ID" i]';
+    static readonly ADD_VARIABLE_BUTTON = 'main >> button:has-text("+")';
+    static readonly IMAGE_UPLOAD_INPUT = 'main >> input[type="file"]';
+    
+    static readonly SUBMIT_BUTTON = 'main >> button:has-text("Submit")';
+    static readonly CANCEL_BUTTON = 'main >> button:has-text("Cancel")';
+
+    // ---- Validation & Errors ----
+    static readonly VALIDATION_MESSAGE = 'text=/Please select concern|required|mandatory|cannot be empty|invalid|Please enter/i';
 
     // ---- Delete confirmation dialog ----
     static readonly DELETE_CONFIRM_BUTTON = "Delete";
+    static readonly DELETE_CANCEL_BUTTON = "Cancel";
 
     // ---- Toasts (react-toastify) ----
     static readonly TOAST = ".Toastify__toast";
