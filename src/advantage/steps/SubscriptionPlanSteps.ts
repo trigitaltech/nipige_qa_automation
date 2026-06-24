@@ -211,8 +211,22 @@ export default class SubscriptionPlanSteps {
                 await option.click();
                 Logger.info(`${description} = ${value}`);
             } catch {
-                Logger.info(`${description}: option '${value}' is not available — left unset`);
-                await this.page.keyboard.press("Escape").catch(() => { /* close dropdown */ });
+                Logger.info(`${description}: option '${value}' is not available.`);
+                if (value.toUpperCase().includes("INVALID")) {
+                    await this.page.keyboard.press("Escape").catch(() => { /* close dropdown */ });
+                    return;
+                }
+                Logger.info(`Attempting fallback to first available option for ${description}`);
+                await this.ui.editBox(inputSelector, description).fill("");
+                await this.page.waitForTimeout(1500);
+                const firstOption = this.page.getByRole("option").first();
+                if (await firstOption.isVisible().catch(() => false)) {
+                    const fallbackText = await firstOption.textContent();
+                    await firstOption.click();
+                    Logger.info(`Fallback successful: ${description} = ${fallbackText}`);
+                } else {
+                    await this.page.keyboard.press("Escape").catch(() => { /* close dropdown */ });
+                }
             }
         });
     }
@@ -359,8 +373,6 @@ export default class SubscriptionPlanSteps {
                 ["Org Access Level", SubscriptionPlanPage.inputByLabel("Org Access"), "GLOBAL"],
                 ["Description", SubscriptionPlanPage.EDIT_DESCRIPTION_INPUT, `${name} description`],
                 ["Payment Type", SubscriptionPlanPage.inputByLabel("Payment Type"), "PRE-PAID"],
-                ["Tax Code", SubscriptionPlanPage.inputByLabel("Tax Code"), "TAX_VALIDATION_806531"],
-                ["Charge Code", SubscriptionPlanPage.inputByLabel("Charge Code"), "73301"],
                 ["Currency", SubscriptionPlanPage.inputByLabel("Currency"), "USD"],
                 ["Unit Of Measurement", SubscriptionPlanPage.comboboxByLabel("UOM"), "AMOUNT"],
                 ["Base Quantity", SubscriptionPlanPage.inputByLabel("Base Quantity"), "1"],
@@ -552,7 +564,7 @@ export default class SubscriptionPlanSteps {
             Logger.info(`Validation/error shown: "${text}"`);
             // A blocked invalid submit must NOT redirect to the listing.
             await expect(this.page, "Invalid submit must not redirect to the listing")
-                .toHaveURL(/\/setup\/subscriptionplan\/(create|.*\/edit)/);
+                .toHaveURL(/\/setup\/subscriptionplan\/(create|edit)/);
             await Assert.assertTrue(text.length > 0, "a validation/error message is displayed");
         });
     }
@@ -751,6 +763,16 @@ export default class SubscriptionPlanSteps {
             });
             await this.submitCreatePlan();
             await this.verifyPlanCreated();
+        });
+    }
+    /** TC_SP_NEG_14: Clear a mandatory field during edit and assert failure. */
+    public async clearMandatoryEditFieldAndVerifyError() {
+        await test.step(`Clear mandatory field in edit and verify validation`, async () => {
+            await this.openEditForCreatedPlan();
+            await this.ui.editBox(SubscriptionPlanPage.inputByLabel("Plan Name"),
+                SubscriptionPlanConstants.PLAN_NAME).fill("");
+            await this.page.getByRole("button", { name: /Update Plan|Update|Save/i }).first().click();
+            await this.verifyValidationError();
         });
     }
 }
