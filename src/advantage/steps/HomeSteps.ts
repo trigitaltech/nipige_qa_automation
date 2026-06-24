@@ -69,6 +69,7 @@ export default class HomeSteps {
     private async selectTenant(tenant: string) {
         await test.step(`Select '${tenant}' from the tenant dropdown`, async () => {
             await this.ui.element(HomePage.TENANT_DROPDOWN, HomePageConstants.TENANT_DROPDOWN).click();
+            await this.page.waitForTimeout(800);
             await this.ui.element(HomePage.tenantOption(tenant),
                 `${HomePageConstants.TENANT_OPTION} (${tenant})`).click();
         });
