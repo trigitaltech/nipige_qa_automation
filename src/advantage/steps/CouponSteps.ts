@@ -30,6 +30,20 @@ export interface CouponFormData {
 export default class CouponSteps {
     constructor(private readonly page: Page) {}
 
+    private async selectDropdownOption(optionText: string) {
+        const option = this.page.locator(CouponPage.DROPDOWN_OPTION(optionText)).first();
+        await option.scrollIntoViewIfNeeded().catch(() => {});
+        try {
+            await option.click({ timeout: 3000 });
+        } catch (err) {
+            console.log(`[CouponSteps] Normal click failed/timed out, attempting forced click: ${err}`);
+            await option.click({ force: true }).catch(async (e) => {
+                console.log(`[CouponSteps] Forced click also failed, using dispatchEvent fallback: ${e}`);
+                await option.dispatchEvent('click');
+            });
+        }
+    }
+
     public async waitForTableStable() {
         await this.page.waitForLoadState("networkidle", { timeout: 5000 }).catch(() => {});
         await this.page.waitForTimeout(1000);
@@ -148,8 +162,7 @@ export default class CouponSteps {
             const trigger = this.page.locator(CouponPage.STATUS_FILTER_TRIGGER).first();
             await trigger.click();
             await this.page.waitForTimeout(500);
-            const opt = this.page.locator(CouponPage.DROPDOWN_OPTION(status)).first();
-            await opt.click();
+            await this.selectDropdownOption(status);
             await this.waitForTableLoaded();
         });
     }
@@ -159,8 +172,7 @@ export default class CouponSteps {
             const trigger = this.page.locator(CouponPage.PERIOD_FILTER_TRIGGER).first();
             await trigger.click();
             await this.page.waitForTimeout(500);
-            const opt = this.page.locator(CouponPage.DROPDOWN_OPTION(period)).first();
-            await opt.click();
+            await this.selectDropdownOption(period);
             await this.waitForTableLoaded();
         });
     }
@@ -213,7 +225,7 @@ export default class CouponSteps {
                 const trigger = this.page.locator(CouponPage.APPLICABLE_ON_TRIGGER).first();
                 await trigger.click();
                 await this.page.waitForTimeout(300);
-                await this.page.locator(CouponPage.DROPDOWN_OPTION(data.applicableOn)).first().click();
+                await this.selectDropdownOption(data.applicableOn);
             }
             if (data.title !== undefined) {
                 await this.page.locator(CouponPage.TITLE_INPUT).first().fill(data.title);
@@ -231,13 +243,13 @@ export default class CouponSteps {
                 const trigger = this.page.locator(CouponPage.DISCOUNT_TYPE_TRIGGER).first();
                 await trigger.click();
                 await this.page.waitForTimeout(300);
-                await this.page.locator(CouponPage.DROPDOWN_OPTION(data.discountType)).first().click();
+                await this.selectDropdownOption(data.discountType);
             }
             if (data.rewardType !== undefined) {
                 const trigger = this.page.locator(CouponPage.REWARD_TYPE_TRIGGER).first();
                 await trigger.click();
                 await this.page.waitForTimeout(300);
-                await this.page.locator(CouponPage.DROPDOWN_OPTION(data.rewardType)).first().click();
+                await this.selectDropdownOption(data.rewardType);
             }
             if (data.rewardValue !== undefined) {
                 await this.page.locator(CouponPage.REWARD_VALUE_INPUT).first().fill(data.rewardValue);

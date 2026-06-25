@@ -41,9 +41,10 @@ test.describe("Coupons & Promotions Module Automation", () => {
         return found;
     }
 
-    test.beforeAll(async () => {
+    test.beforeAll(async ({ workerTenantPage }) => {
         sharedCouponCode = `AUTO_C_${Date.now().toString().slice(-6)}`;
         console.log(`[beforeAll] Initializing Coupon tests with shared code: ${sharedCouponCode}`);
+        cpSteps = new CouponSteps(workerTenantPage);
     });
 
     test.afterEach(async ({ tenantPage }) => {
@@ -55,9 +56,8 @@ test.describe("Coupons & Promotions Module Automation", () => {
     // LISTING SCREEN POSITIVE TEST CASES (TC_LIST_01 - TC_LIST_08)
     // ═══════════════════════════════════════════════════════════════════════════
 
-    test(`TC_LIST_01 - ${row("TC_LIST_01").Description}`, async ({ tenantPage }) => {
+    test(`TC_LIST_01 - ${row("TC_LIST_01").Description}`, async () => {
         Allure.attachDetails(row("TC_LIST_01").Description, "");
-        cpSteps = new CouponSteps(tenantPage);
         await cpSteps.navigateToCoupons();
         await cpSteps.verifyPageLoaded();
     });
