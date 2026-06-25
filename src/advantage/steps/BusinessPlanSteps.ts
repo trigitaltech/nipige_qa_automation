@@ -23,12 +23,19 @@ export default class BusinessPlanSteps {
             .waitFor({ state: "hidden", timeout: 5000 }).catch(() => {});
         // Handle rate-limit (HTTP 429) — retry up to 3 times with back-off
         for (let attempt = 0; attempt < 3; attempt++) {
-            const retryBtn = this.page.locator('button:has-text("Retry")').first();
-            if (await retryBtn.isVisible({ timeout: 1500 }).catch(() => false)) {
-                console.log(`[BusinessPlan] Rate-limit (429) detected — waiting 4s before retry (attempt ${attempt + 1})`);
+            const retryBtn = this.page.locator('button:has-text("Retry"), [role="button"]:has-text("Retry"), a:has-text("Retry"), span:has-text("Retry"), div:has-text("Retry")').first();
+            const hasError = await this.page.locator(':text("Failed to load"), :text("status code 429")').first().isVisible().catch(() => false);
+            if (hasError || await retryBtn.isVisible({ timeout: 1500 }).catch(() => false)) {
+                console.log(`[BusinessPlan] Rate-limit (429) or error page detected — waiting 4s before retry (attempt ${attempt + 1})`);
                 await this.page.waitForTimeout(4000);
-                await retryBtn.click();
-                await this.page.waitForTimeout(2000);
+                if (await retryBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+                    await retryBtn.click();
+                    await this.page.waitForTimeout(2000);
+                } else {
+                    console.log(`[BusinessPlan] Retry button not visible or found, reloading the page instead`);
+                    await this.page.reload();
+                    await this.page.waitForTimeout(2000);
+                }
             }
             const cards = await this.page.locator(BusinessPlanPage.VIEW_MORE_BTN).count().catch(() => 0);
             const noData = await this.page.locator(BusinessPlanPage.NO_RECORDS).first().isVisible().catch(() => false);

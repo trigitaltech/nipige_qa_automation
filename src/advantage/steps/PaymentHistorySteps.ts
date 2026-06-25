@@ -313,6 +313,10 @@ export default class PaymentHistorySteps {
 
     public async verifyKpiCardsDisplayed() {
         await test.step("Verify all three KPI cards are displayed", async () => {
+            await expect(this.page.locator(':text("Visible Transactions")').first(), "Visible Transactions KPI must be visible").toBeVisible({ timeout: 5000 });
+            await expect(this.page.locator(':text("Visible Amount")').first(), "Visible Amount KPI must be visible").toBeVisible({ timeout: 5000 });
+            await expect(this.page.locator(':text("Paid Transactions")').first(), "Paid Transactions KPI must be visible").toBeVisible({ timeout: 5000 });
+            
             const body = await this.page.locator("body").innerText().catch(() => "");
             const hasVT = body.includes("Visible Transactions");
             const hasVA = body.includes("Visible Amount");
@@ -328,22 +332,19 @@ export default class PaymentHistorySteps {
 
     public async verifyVisibleTransactionsDisplayed() {
         await test.step("Verify Visible Transactions KPI card is present", async () => {
-            const body = await this.page.locator("body").innerText().catch(() => "");
-            await Assert.assertTrue(body.includes("Visible Transactions"), "Visible Transactions KPI must be displayed");
+            await expect(this.page.locator(':text("Visible Transactions")').first(), "Visible Transactions KPI must be visible").toBeVisible({ timeout: 5000 });
         });
     }
 
     public async verifyVisibleAmountDisplayed() {
         await test.step("Verify Visible Amount KPI card is present", async () => {
-            const body = await this.page.locator("body").innerText().catch(() => "");
-            await Assert.assertTrue(body.includes("Visible Amount"), "Visible Amount KPI must be displayed");
+            await expect(this.page.locator(':text("Visible Amount")').first(), "Visible Amount KPI must be visible").toBeVisible({ timeout: 5000 });
         });
     }
 
     public async verifyPaidTransactionsDisplayed() {
         await test.step("Verify Paid Transactions KPI card is present", async () => {
-            const body = await this.page.locator("body").innerText().catch(() => "");
-            await Assert.assertTrue(body.includes("Paid Transactions"), "Paid Transactions KPI must be displayed");
+            await expect(this.page.locator(':text("Paid Transactions")').first(), "Paid Transactions KPI must be visible").toBeVisible({ timeout: 5000 });
         });
     }
 
