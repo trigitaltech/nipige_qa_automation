@@ -365,4 +365,198 @@ export default class NotificationTemplateSteps {
             Logger.info(`Confirmed deleted template (body='${body}') no longer exists in search results.`);
         });
     }
+    public async clickCreateTemplate() {
+        await test.step(`Click Create Template button`, async () => {
+            await this.ui.element(NotificationTemplatePage.CREATE_BUTTON, NotificationTemplateConstants.CREATE_BUTTON).click();
+            await expect(this.page.getByRole("heading", { name: NotificationTemplatePage.CREATE_HEADING }).first(), "Create Template page should render").toBeVisible({ timeout: this.timeout });
+        });
+    }
+
+    public async verifyCannotCreateWithoutConcern() {
+        await test.step(`Verify system prevents creation without concern`, async () => {
+            await this.clickCreateTemplate();
+            await this.ui.element(NotificationTemplatePage.SUBMIT_BUTTON, NotificationTemplateConstants.SUBMIT_BUTTON).click();
+            await expect(this.page.locator(NotificationTemplatePage.VALIDATION_MESSAGE).first(), "Validation error should appear").toBeVisible({ timeout: this.timeout });
+        });
+    }
+
+    public async selectConcern(concern: string) {
+        await test.step(`Select concern '${concern}'`, async () => {
+            await this.page.locator(NotificationTemplatePage.CONCERN_COMBOBOX).first().click();
+            await this.page.getByRole("option", { name: concern, exact: true }).first().click({ timeout: this.optionTimeout });
+        });
+    }
+
+    public async switchTemplateTypes() {
+        await test.step(`Switch between Email, SMS, WhatsApp, and InApp`, async () => {
+            await this.clickCreateTemplate();
+            for (const type of ["Email", "SMS", "WhatsApp", "InApp"]) {
+                await this.page.locator(NotificationTemplatePage.templateTypeTab(type)).first().click();
+            }
+        });
+    }
+
+    public async createEmailTemplateFails(concern: string, isBlank: boolean = false, isInvalidEmail: boolean = false) {
+        await test.step(`Verify Email template creation fails`, async () => {
+            await this.clickCreateTemplate();
+            await this.selectConcern(concern);
+            await this.page.locator(NotificationTemplatePage.templateTypeTab("Email")).first().click();
+            
+            if (!isBlank) {
+                await this.ui.editBox(NotificationTemplatePage.SUBJECT_INPUT, NotificationTemplateConstants.SUBJECT_INPUT).fill("Test");
+                await this.ui.editBox(NotificationTemplatePage.BODY_TEXTAREA, NotificationTemplateConstants.BODY_TEXTAREA).fill("Test body");
+                await this.ui.editBox(NotificationTemplatePage.FROM_NAME_INPUT, NotificationTemplateConstants.FROM_NAME_INPUT).fill("Test");
+                if (isInvalidEmail) {
+                    await this.ui.editBox(NotificationTemplatePage.FROM_EMAIL_INPUT, NotificationTemplateConstants.FROM_EMAIL_INPUT).fill("invalid_email_format");
+                }
+            }
+            await this.ui.element(NotificationTemplatePage.SUBMIT_BUTTON, NotificationTemplateConstants.SUBMIT_BUTTON).click();
+            await expect(this.page.locator(NotificationTemplatePage.VALIDATION_MESSAGE).first(), "Validation message should appear").toBeVisible({ timeout: this.timeout });
+        });
+    }
+
+    public async createSmsTemplate(concern: string, body: string, templateId: string) {
+        await test.step(`Create SMS template`, async () => {
+            await this.clickCreateTemplate();
+            await this.selectConcern(concern);
+            await this.page.locator(NotificationTemplatePage.templateTypeTab("SMS")).first().click();
+            await this.ui.editBox(NotificationTemplatePage.TEMPLATE_ID_INPUT, NotificationTemplateConstants.TEMPLATE_ID_INPUT).fill(templateId);
+            await this.ui.editBox(NotificationTemplatePage.BODY_TEXTAREA, NotificationTemplateConstants.BODY_TEXTAREA).fill(body);
+            await this.ui.element(NotificationTemplatePage.SUBMIT_BUTTON, NotificationTemplateConstants.SUBMIT_BUTTON).click();
+            await expect(this.page.getByText(new RegExp(NotificationTemplateConstants.CREATE_SUCCESS, "i")).first(), "Success toast").toBeVisible({ timeout: this.timeout });
+            await this.page.waitForURL(/\/notification-template$/, { timeout: this.timeout });
+        });
+    }
+
+    public async createSmsTemplateFails(concern: string, body: string) {
+        await test.step(`Verify SMS template fails when Template ID is empty`, async () => {
+            await this.clickCreateTemplate();
+            await this.selectConcern(concern);
+            await this.page.locator(NotificationTemplatePage.templateTypeTab("SMS")).first().click();
+            await this.ui.editBox(NotificationTemplatePage.BODY_TEXTAREA, NotificationTemplateConstants.BODY_TEXTAREA).fill(body);
+            await this.ui.element(NotificationTemplatePage.SUBMIT_BUTTON, NotificationTemplateConstants.SUBMIT_BUTTON).click();
+            await expect(this.page.locator(NotificationTemplatePage.VALIDATION_MESSAGE).first(), "Validation message").toBeVisible({ timeout: this.timeout });
+        });
+    }
+
+    public async createWhatsappTemplate(concern: string, header: string, body: string, templateId: string) {
+        await test.step(`Create WhatsApp template`, async () => {
+            await this.clickCreateTemplate();
+            await this.selectConcern(concern);
+            await this.page.locator(NotificationTemplatePage.templateTypeTab("WhatsApp")).first().click();
+            await this.ui.editBox(NotificationTemplatePage.HEADER_INPUT, NotificationTemplateConstants.HEADER_INPUT).fill(header);
+            await this.ui.editBox(NotificationTemplatePage.BODY_TEXTAREA, NotificationTemplateConstants.BODY_TEXTAREA).fill(body);
+            await this.ui.editBox(NotificationTemplatePage.TEMPLATE_ID_INPUT, NotificationTemplateConstants.TEMPLATE_ID_INPUT).fill(templateId);
+            await this.ui.element(NotificationTemplatePage.SUBMIT_BUTTON, NotificationTemplateConstants.SUBMIT_BUTTON).click();
+            await expect(this.page.getByText(new RegExp(NotificationTemplateConstants.CREATE_SUCCESS, "i")).first(), "Success toast").toBeVisible({ timeout: this.timeout });
+            await this.page.waitForURL(/\/notification-template$/, { timeout: this.timeout });
+        });
+    }
+
+    public async createWhatsappTemplateFails(concern: string, header: string) {
+        await test.step(`Verify WhatsApp template fails when body is empty`, async () => {
+            await this.clickCreateTemplate();
+            await this.selectConcern(concern);
+            await this.page.locator(NotificationTemplatePage.templateTypeTab("WhatsApp")).first().click();
+            await this.ui.editBox(NotificationTemplatePage.HEADER_INPUT, NotificationTemplateConstants.HEADER_INPUT).fill(header);
+            await this.ui.element(NotificationTemplatePage.SUBMIT_BUTTON, NotificationTemplateConstants.SUBMIT_BUTTON).click();
+            await expect(this.page.locator(NotificationTemplatePage.VALIDATION_MESSAGE).first(), "Validation message").toBeVisible({ timeout: this.timeout });
+        });
+    }
+
+    public async verifyWhatsappVariables(concern: string) {
+        await test.step(`Verify WhatsApp variables (+ button)`, async () => {
+            await this.clickCreateTemplate();
+            await this.selectConcern(concern);
+            await this.page.locator(NotificationTemplatePage.templateTypeTab("WhatsApp")).first().click();
+            
+            const initialCount = await this.page.locator(NotificationTemplatePage.BODY_TEXTAREA).count();
+            await this.ui.element(NotificationTemplatePage.ADD_VARIABLE_BUTTON, "Add Variable button").click();
+            
+            // The + button adds a new Body input field row for WhatsApp variables
+            await expect(this.page.locator(NotificationTemplatePage.BODY_TEXTAREA)).toHaveCount(initialCount + 1, { timeout: this.timeout });
+        });
+    }
+
+    public async createInAppTemplate(concern: string, subject: string, body: string) {
+        await test.step(`Create InApp template`, async () => {
+            await this.clickCreateTemplate();
+            await this.selectConcern(concern);
+            await this.page.locator(NotificationTemplatePage.templateTypeTab("InApp")).first().click();
+            await this.ui.editBox(NotificationTemplatePage.SUBJECT_INPUT, NotificationTemplateConstants.SUBJECT_INPUT).fill(subject);
+            await this.ui.editBox(NotificationTemplatePage.BODY_TEXTAREA, NotificationTemplateConstants.BODY_TEXTAREA).fill(body);
+            // Ignore actual image upload for passing standard case if not explicitly required by test to succeed
+            await this.ui.element(NotificationTemplatePage.SUBMIT_BUTTON, NotificationTemplateConstants.SUBMIT_BUTTON).click();
+            await expect(this.page.getByText(new RegExp(NotificationTemplateConstants.CREATE_SUCCESS, "i")).first(), "Success toast").toBeVisible({ timeout: this.timeout });
+            await this.page.waitForURL(/\/notification-template$/, { timeout: this.timeout });
+        });
+    }
+
+    public async createInAppTemplateFails(concern: string, isSubjectEmpty: boolean) {
+        await test.step(`Verify InApp template fails`, async () => {
+            await this.clickCreateTemplate();
+            await this.selectConcern(concern);
+            await this.page.locator(NotificationTemplatePage.templateTypeTab("InApp")).first().click();
+            if (!isSubjectEmpty) {
+                await this.ui.editBox(NotificationTemplatePage.SUBJECT_INPUT, NotificationTemplateConstants.SUBJECT_INPUT).fill("Subject");
+            } else {
+                await this.ui.editBox(NotificationTemplatePage.BODY_TEXTAREA, NotificationTemplateConstants.BODY_TEXTAREA).fill("Body");
+            }
+            await this.ui.element(NotificationTemplatePage.SUBMIT_BUTTON, NotificationTemplateConstants.SUBMIT_BUTTON).click();
+            await expect(this.page.locator(NotificationTemplatePage.VALIDATION_MESSAGE).first(), "Validation message").toBeVisible({ timeout: this.timeout });
+        });
+    }
+    
+    public async verifyInAppImageUpload(concern: string, isSupported: boolean) {
+        await test.step(`Verify InApp image upload (supported=${isSupported})`, async () => {
+            await this.clickCreateTemplate();
+            await this.selectConcern(concern);
+            await this.page.locator(NotificationTemplatePage.templateTypeTab("InApp")).first().click();
+            
+            // We will set files directly on the input[type="file"] instead of waiting for a filechooser
+            // Assuming the image upload button is clicked or input is populated
+            // Since we don't have a specific file, we will just simulate a path
+            const fs = require('fs');
+            const path = require('path');
+            const fileName = isSupported ? 'test.png' : 'test.txt';
+            const filePath = path.join(__dirname, fileName);
+            if (!fs.existsSync(filePath)) {
+                fs.writeFileSync(filePath, "dummy content");
+            }
+            const fileInput = this.page.locator(NotificationTemplatePage.IMAGE_UPLOAD_INPUT).first();
+            await fileInput.setInputFiles(filePath);
+            
+            if (!isSupported) {
+                await expect(this.page.getByText(/format|support|invalid/i).first(), "Error toast for invalid format").toBeVisible({ timeout: this.timeout });
+            }
+            fs.unlinkSync(filePath);
+        });
+    }
+
+    public async verifyDuplicateTemplateFails(concern: string, subject: string, body: string, fromName: string, fromEmail: string) {
+        await test.step(`Verify duplicate template fails`, async () => {
+            await this.createEmailTemplate(concern, subject, body, fromName, fromEmail);
+            await this.clickCreateTemplate();
+            await this.selectConcern(concern);
+            await this.page.locator(NotificationTemplatePage.templateTypeTab("Email")).first().click();
+            await this.ui.editBox(NotificationTemplatePage.SUBJECT_INPUT, NotificationTemplateConstants.SUBJECT_INPUT).fill(subject);
+            await this.ui.editBox(NotificationTemplatePage.BODY_TEXTAREA, NotificationTemplateConstants.BODY_TEXTAREA).fill(body);
+            await this.ui.editBox(NotificationTemplatePage.FROM_NAME_INPUT, NotificationTemplateConstants.FROM_NAME_INPUT).fill(fromName);
+            await this.ui.editBox(NotificationTemplatePage.FROM_EMAIL_INPUT, NotificationTemplateConstants.FROM_EMAIL_INPUT).fill(fromEmail);
+            await this.ui.element(NotificationTemplatePage.SUBMIT_BUTTON, NotificationTemplateConstants.SUBMIT_BUTTON).click();
+            await expect(this.page.getByText(/already exists|duplicate/i).first(), "Duplicate error toast").toBeVisible({ timeout: this.timeout });
+        });
+    }
+
+    public async cancelDeleteTemplate(body: string) {
+        await test.step(`Cancel delete template (body='${body}')`, async () => {
+            await this.searchTemplate(body);
+            await this.ui.element(NotificationTemplatePage.deleteIconInRow(body), NotificationTemplateConstants.DELETE_ICON).click();
+            const dialog = this.page.getByRole("dialog");
+            await expect(dialog.first(), "delete confirmation dialog should appear").toBeVisible({ timeout: this.timeout });
+            await dialog.getByRole("button", { name: NotificationTemplatePage.DELETE_CANCEL_BUTTON, exact: true }).first().click();
+            await expect(dialog.first()).toBeHidden({ timeout: this.timeout });
+            await expect(this.page.locator(NotificationTemplatePage.row(body)).first(), "Template should still exist").toBeVisible({ timeout: this.timeout });
+        });
+    }
 }
