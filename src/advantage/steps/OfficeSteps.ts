@@ -181,6 +181,34 @@ export default class OfficeSteps {
                 await this.page.keyboard.press("Enter");
                 await this.page.waitForTimeout(1500);
             }
+
+            // Ensure City, State, and Zipcode are filled (Google Places autocomplete might omit some fields)
+            const cityInput = this.page.locator(OfficePage.CITY_INPUT).first();
+            if (await cityInput.isVisible().catch(() => false)) {
+                const val = await cityInput.inputValue().catch(() => "");
+                if (val.trim() === "") {
+                    console.log("[OfficeSteps] City was empty, filling default: Bengaluru");
+                    await cityInput.fill("Bengaluru");
+                }
+            }
+
+            const stateInput = this.page.locator(OfficePage.STATE_INPUT).first();
+            if (await stateInput.isVisible().catch(() => false)) {
+                const val = await stateInput.inputValue().catch(() => "");
+                if (val.trim() === "") {
+                    console.log("[OfficeSteps] State was empty, filling default: Karnataka");
+                    await stateInput.fill("Karnataka");
+                }
+            }
+
+            const zipInput = this.page.locator(OfficePage.ZIPCODE_INPUT).first();
+            if (await zipInput.isVisible().catch(() => false)) {
+                const val = await zipInput.inputValue().catch(() => "");
+                if (val.trim() === "") {
+                    console.log("[OfficeSteps] Zipcode was empty, filling default: 560001");
+                    await zipInput.fill("560001");
+                }
+            }
         });
     }
 
