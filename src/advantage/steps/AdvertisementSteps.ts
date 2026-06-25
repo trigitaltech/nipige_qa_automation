@@ -894,16 +894,46 @@ export default class AdvertisementSteps {
                 }
             }
 
-            const uploadBtn = this.page.locator('input[type="file"][accept*="video"], input[type="file"]').last();
-            const fileChooserPromise = this.page.waitForEvent('filechooser', { timeout: 15000 });
-            await uploadBtn.evaluate(node => node.click());
+            let success = false;
+            for (let attempt = 1; attempt <= 3; attempt++) {
+                try {
+                    console.log(`[Advertisement] Video upload attempt ${attempt} for file: ${filePath}`);
+                    const uploadBtn = this.page.locator('input[type="file"][accept*="video"], input[type="file"]').last();
+                    const fileChooserPromise = this.page.waitForEvent('filechooser', { timeout: 15000 });
+                    await uploadBtn.evaluate(node => node.click());
 
-            const fileChooser = await fileChooserPromise;
-            await fileChooser.setFiles(filePath);
+                    const fileChooser = await fileChooserPromise;
+                    await fileChooser.setFiles(filePath);
 
-            await this.page.waitForLoadState('networkidle', { timeout: 20000 }).catch(() => {});
-            await this.page.waitForTimeout(AdvertisementConstants.UPLOAD_SETTLE_MS);
-            console.log(`[Advertisement] Video uploaded successfully: ${filePath}`);
+                    await this.page.waitForLoadState('networkidle', { timeout: 20000 }).catch(() => {});
+                    await this.page.waitForTimeout(500);
+                    const uploadingText = this.page.locator(':text("Uploading")').first();
+                    if (await uploadingText.isVisible({ timeout: 2000 }).catch(() => false)) {
+                        console.log("[Advertisement] 'Uploading...' text visible, waiting for it to be hidden...");
+                        await uploadingText.waitFor({ state: "hidden", timeout: 90000 }).catch(() => {});
+                        console.log("[Advertisement] 'Uploading...' hidden, upload complete.");
+                    }
+                    await this.page.waitForTimeout(AdvertisementConstants.UPLOAD_SETTLE_MS);
+
+                    // Check for upload error toast
+                    const toast = this.page.locator(AdvertisementPage.TOAST).first();
+                    if (await toast.isVisible({ timeout: 1500 }).catch(() => false)) {
+                        const toastText = (await toast.innerText().catch(() => "")).toLowerCase();
+                        if (toastText.includes("failed") || toastText.includes("error")) {
+                            console.log(`[Advertisement] Video upload failed on attempt ${attempt}: '${toastText}'. Retrying...`);
+                            await this.page.waitForTimeout(2000);
+                            continue;
+                        }
+                    }
+                    success = true;
+                    console.log(`[Advertisement] Video uploaded successfully on attempt ${attempt}: ${filePath}`);
+                    break;
+                } catch (err) {
+                    console.log(`[Advertisement] Exception on video upload attempt ${attempt}:`, err);
+                    if (attempt === 3) throw err;
+                    await this.page.waitForTimeout(2000);
+                }
+            }
         });
     }
 
@@ -930,17 +960,47 @@ export default class AdvertisementSteps {
             }
 
             
-            const uploadBtn = this.page.locator('input[type="file"]').last();
-            const fileChooserPromise = this.page.waitForEvent('filechooser', { timeout: 15000 });
-            await uploadBtn.evaluate(node => node.click());
+            let success = false;
+            for (let attempt = 1; attempt <= 3; attempt++) {
+                try {
+                    console.log(`[Advertisement] Banner upload attempt ${attempt} for file: ${filePath}`);
+                    const uploadBtn = this.page.locator('input[type="file"]').last();
+                    const fileChooserPromise = this.page.waitForEvent('filechooser', { timeout: 15000 });
+                    await uploadBtn.evaluate(node => node.click());
 
-            const fileChooser = await fileChooserPromise;
-            await fileChooser.setFiles(filePath);
+                    const fileChooser = await fileChooserPromise;
+                    await fileChooser.setFiles(filePath);
 
-            await this.page.waitForLoadState('networkidle', { timeout: 20000 }).catch(() => {});
-            // Extra settle: server-side temp-upload can lag behind networkidle
-            await this.page.waitForTimeout(AdvertisementConstants.UPLOAD_SETTLE_MS);
-            console.log(`[Advertisement] Banner uploaded successfully: ${filePath}`);
+                    await this.page.waitForLoadState('networkidle', { timeout: 20000 }).catch(() => {});
+                    await this.page.waitForTimeout(500);
+                    const uploadingText = this.page.locator(':text("Uploading")').first();
+                    if (await uploadingText.isVisible({ timeout: 2000 }).catch(() => false)) {
+                        console.log("[Advertisement] 'Uploading...' text visible, waiting for it to be hidden...");
+                        await uploadingText.waitFor({ state: "hidden", timeout: 90000 }).catch(() => {});
+                        console.log("[Advertisement] 'Uploading...' hidden, upload complete.");
+                    }
+                    // Extra settle: server-side temp-upload can lag behind networkidle
+                    await this.page.waitForTimeout(AdvertisementConstants.UPLOAD_SETTLE_MS);
+
+                    // Check for upload error toast
+                    const toast = this.page.locator(AdvertisementPage.TOAST).first();
+                    if (await toast.isVisible({ timeout: 1500 }).catch(() => false)) {
+                        const toastText = (await toast.innerText().catch(() => "")).toLowerCase();
+                        if (toastText.includes("failed") || toastText.includes("error")) {
+                            console.log(`[Advertisement] Banner upload failed on attempt ${attempt}: '${toastText}'. Retrying...`);
+                            await this.page.waitForTimeout(2000);
+                            continue;
+                        }
+                    }
+                    success = true;
+                    console.log(`[Advertisement] Banner uploaded successfully on attempt ${attempt}: ${filePath}`);
+                    break;
+                } catch (err) {
+                    console.log(`[Advertisement] Exception on banner upload attempt ${attempt}:`, err);
+                    if (attempt === 3) throw err;
+                    await this.page.waitForTimeout(2000);
+                }
+            }
         });
     }
 
