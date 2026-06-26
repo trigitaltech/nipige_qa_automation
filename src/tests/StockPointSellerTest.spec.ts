@@ -20,7 +20,7 @@ const test = base.extend<{ stockPointPage: Page }>({
     }, { scope: "worker" }]
 });
 
-test.describe.configure({ mode: "default", retries: 0 });
+test.describe.configure({ retries: 0 });
 
 const ROWS = ExcelUtil.getTestDataArray(SHEET);
 function row(id: string) {
