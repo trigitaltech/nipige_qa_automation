@@ -296,31 +296,34 @@ export default class ItemSteps {
     // Items only appear after all 3 filters (Market → Category → ProductCatalog) are selected.
     // Iterates through all available categories and catalogs until rows appear.
     private async ensureItemsLoaded(): Promise<void> {
-        const hasRows = async () => {
+        const hasRowsOrCreateBtn = async () => {
+            const createBtn = this.page.locator(ItemPage.CREATE_BTN).first();
+            if (await createBtn.isVisible({ timeout: 500 }).catch(() => false)) return true;
+
             const noItemsMsg = await this.page.locator(ItemPage.NO_ITEMS_MSG).isVisible({ timeout: 500 }).catch(() => false);
             if (noItemsMsg) return false;
             return (await this.page.locator(ItemPage.TABLE_ROWS).count().catch(() => 0)) > 0;
         };
-        if (await hasRows()) return;
+        if (await hasRowsOrCreateBtn()) return;
 
         // Step 1: Select Market = "Grocery"
         await this.openAndPick(ItemPage.MARKET_DROPDOWN_TRIGGER, "Grocery", "Select Market");
         await this.page.waitForTimeout(800);
-        if (await hasRows()) return;
+        if (await hasRowsOrCreateBtn()) return;
 
         // Step 2: Get all available category options then try each one
         const categoryOptions = await this.getAllOptions(ItemPage.CATEGORY_DROPDOWN_TRIGGER);
         for (const cat of categoryOptions) {
             await this.openAndPick(ItemPage.CATEGORY_DROPDOWN_TRIGGER, cat);
             await this.page.waitForTimeout(1000);
-            if (await hasRows()) return;
+            if (await hasRowsOrCreateBtn()) return;
 
             // Step 3: Try all product catalogs for this category
             const catalogOptions = await this.getAllOptions(ItemPage.PRODUCT_CATALOG_DROPDOWN_TRIGGER);
             for (const catalog of catalogOptions) {
                 await this.openAndPick(ItemPage.PRODUCT_CATALOG_DROPDOWN_TRIGGER, catalog);
                 await this.page.waitForTimeout(1200);
-                if (await hasRows()) return;
+                if (await hasRowsOrCreateBtn()) return;
             }
         }
 
@@ -337,9 +340,9 @@ export default class ItemSteps {
         // Read aria-controls AFTER click so we get the active listbox id
         const listboxId = await inputEl.getAttribute("aria-controls").catch(() => null);
         const listboxSel = listboxId ? `#${listboxId}` : '[role="listbox"]';
-        const texts = await this.page.locator(`${listboxSel} li button`).allTextContents().catch(() => [] as string[]);
+        const texts = await this.page.locator(`${listboxSel} li button, ${listboxSel} [role="option"], ${listboxSel} li, ${listboxSel} [class*="option"]`).allTextContents().catch(() => [] as string[]);
         await this.closeOpenDropdown();
-        return texts.filter((t) => t.trim().length > 0);
+        return Array.from(new Set(texts.map((t) => t.trim()))).filter((t) => t.length > 0);
     }
 
     // Click the nth button (0-based) in the Actions column of the first table row

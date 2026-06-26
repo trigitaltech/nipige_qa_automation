@@ -40,6 +40,8 @@ export default class ServiceTicketSteps {
         await test.step(`Navigate to ${ServiceTicketConstants.SERVICE_TICKET_PAGE}`, async () => {
             await this.ui.element(ServiceTicketPage.MENU_SERVICE_TICKET,
                 ServiceTicketConstants.MENU_SERVICE_TICKET).click();
+            await this.page.waitForURL("**/serviceticket**", { timeout: 15_000 }).catch(() => {});
+            await this.page.locator(ServiceTicketPage.SEARCH_INPUT).first().waitFor({ state: "visible", timeout: 15_000 }).catch(() => {});
             await this.page.waitForLoadState("domcontentloaded");
         });
     }
