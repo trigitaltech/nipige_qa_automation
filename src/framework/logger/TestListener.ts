@@ -19,12 +19,17 @@ export default class TestListener implements Reporter {
         this.printLogs(`Test: ${test.title} - ${result.status}`, TEST_SEPARATOR);
 
         // Update Excel sheet
-        const match = test.title.match(/(TC_OM_\d+|DRR-\d+|CDH-\d+)/);
+        const match = test.title.match(/(TC_OM_\d+|DRR-\d+|CDH-\d+|TC_FAQ_\d+)/);
         if (match) {
             const tcId = match[1];
             const isDRRorCDH = tcId.startsWith("DRR-") || tcId.startsWith("CDH-");
-            const sheetName = isDRRorCDH ? "Daily Registration Regression" : "OfficeManagement";
-            const status = result.status === 'passed' ? (isDRRorCDH ? 'Passed' : 'Pass') : result.status === 'failed' ? (isDRRorCDH ? 'Failed' : 'Fail') : (isDRRorCDH ? 'Blocked' : 'Skipped');
+            const isFAQ = tcId.startsWith("TC_FAQ_");
+            const sheetName = isFAQ ? "FAQ (Tenant)" : isDRRorCDH ? "Daily Registration Regression" : "OfficeManagement";
+            const status = result.status === 'passed'
+                ? (isDRRorCDH || isFAQ ? 'Passed' : 'Pass')
+                : result.status === 'failed'
+                    ? (isDRRorCDH || isFAQ ? 'Failed' : 'Fail')
+                    : (isDRRorCDH || isFAQ ? 'Blocked' : 'Skipped');
             let actualResult = "";
             if (result.status === 'passed') {
                 actualResult = "Test passed successfully.";
@@ -177,6 +182,40 @@ export default class TestListener implements Reporter {
                     Logger.info(`Passed             : ${passed}`);
                     Logger.info(`Failed             : ${failed}`);
                     Logger.info(`Blocked            : ${blocked}`);
+                    Logger.info(`Skipped            : ${skipped}`);
+                    Logger.info(`Pass Percentage    : ${passPercentage}%`);
+                    if (failedIds.length > 0) {
+                        Logger.info(`Failed Test Cases  : ${failedIds.join(", ")}`);
+                        Logger.info(`Failure Reasons    :\n${failureReasons}`);
+                    } else {
+                        Logger.info(`Failed Test Cases  : None`);
+                    }
+                    Logger.info(TEST_SEPARATOR);
+                }
+            }
+
+            // FAQ (Tenant) Summary
+            const wsFAQ = wb.Sheets["FAQ (Tenant)"];
+            if (wsFAQ) {
+                const dataFAQ: any[] = XLSX.utils.sheet_to_json(wsFAQ);
+                const faqResults = dataFAQ.filter((r: any) => r["Test Case ID"] && r["Test Case ID"].startsWith("TC_FAQ_"));
+                if (faqResults.length > 0) {
+                    const total = 40;
+                    const executed = faqResults.filter((r: any) => r["Status"] && r["Status"] !== "Not Executed" && r["Status"] !== "Not Run" && r["Status"] !== "").length;
+                    const passed = faqResults.filter((r: any) => r["Status"] === "Passed" || r["Status"] === "Pass").length;
+                    const failed = faqResults.filter((r: any) => r["Status"] === "Failed" || r["Status"] === "Fail").length;
+                    const skipped = total - executed;
+                    const passPercentage = executed > 0 ? ((passed / executed) * 100).toFixed(2) : "0.00";
+                    const failedIds = faqResults.filter((r: any) => r["Status"] === "Failed" || r["Status"] === "Fail").map((r: any) => r["Test Case ID"]);
+                    const failureReasons = faqResults.filter((r: any) => r["Status"] === "Failed" || r["Status"] === "Fail").map((r: any) => `${r["Test Case ID"]}: ${r["Actual Result"]}`).join("\n");
+
+                    Logger.info(TEST_SEPARATOR);
+                    Logger.info("FAQ REGRESSION SUITE EXECUTION SUMMARY (FROM EXCEL)");
+                    Logger.info(TEST_SEPARATOR);
+                    Logger.info(`Total Test Cases   : ${total}`);
+                    Logger.info(`Executed           : ${executed}`);
+                    Logger.info(`Passed             : ${passed}`);
+                    Logger.info(`Failed             : ${failed}`);
                     Logger.info(`Skipped            : ${skipped}`);
                     Logger.info(`Pass Percentage    : ${passPercentage}%`);
                     if (failedIds.length > 0) {
