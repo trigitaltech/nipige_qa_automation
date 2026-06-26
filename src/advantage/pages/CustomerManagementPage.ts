@@ -22,7 +22,7 @@ export default class CustomerManagementPage {
     // Dashboard: page heading + the four summary widgets. Each widget label is a <p> inside <main>;
     // the live "Active Customers" widget is rendered with the shorter label "Active".
     // ----------------------------------------------------------------------------------------
-    static readonly DASHBOARD_HEADING = 'main h2:has-text("Customer Management")';
+    static readonly DASHBOARD_HEADING = 'main h1:has-text("Customer Management")';
     static readonly WIDGET_TOTAL_CUSTOMERS = 'main >> text="Total Customers"';
     static readonly WIDGET_ACTIVE_CUSTOMERS = 'main >> text="Active"';
     static readonly WIDGET_ORDERS_TODAY = 'main >> text="Orders Today"';
@@ -74,7 +74,7 @@ export default class CustomerManagementPage {
      * @param value exact detail text to locate, e.g. "CGSO0065"
      */
     static customerDetail(value: string): string {
-        return `main >> text="${value}"`;
+        return `main >> text=/${value}/`;
     }
 
     // ----------------------------------------------------------------------------------------

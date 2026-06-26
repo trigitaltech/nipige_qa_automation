@@ -8,12 +8,17 @@ export default class NotificationTemplateConstants {
     static readonly RELOAD_BUTTON = "Reload (refresh) button";
     static readonly CONCERN_COMBOBOX = "Concern dropdown";
     static readonly SUBJECT_INPUT = "Subject field";
-    static readonly BODY_TEXTAREA = "Body (HTML) field";
+    static readonly BODY_TEXTAREA = "Body field";
     static readonly FROM_NAME_INPUT = "From Name field";
     static readonly FROM_EMAIL_INPUT = "From Email field";
+    static readonly HEADER_INPUT = "Header field";
+    static readonly TEMPLATE_ID_INPUT = "Template ID field";
+    static readonly IMAGE_UPLOAD_INPUT = "Image Upload field";
     static readonly SUBMIT_BUTTON = "Submit button";
+    static readonly CANCEL_BUTTON = "Cancel button";
     static readonly DELETE_ICON = "Delete action icon";
     static readonly DELETE_CONFIRM = "Delete confirmation button";
+    static readonly DELETE_CANCEL = "Cancel delete button";
     static readonly NEXT_BUTTON = "Next pagination button";
     static readonly PREV_BUTTON = "Previous pagination button";
 
