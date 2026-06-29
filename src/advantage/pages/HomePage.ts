@@ -33,7 +33,7 @@ export default class HomePage {
      * To support a new tenant-scoped persona, add a single entry — no other code changes needed.
      */
     static readonly PERSONA_TENANTS: Readonly<Record<string, string>> = {
-        seller: "FreshCart",
+        seller: "NipigeV2",
     };
 
     /**

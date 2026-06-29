@@ -10,7 +10,7 @@ const defaultBrowser: string = String(process.env.BROWSER ?? "chromium").toLower
 const config: PlaywrightTestConfig = {
   use: {
     browserName: Browser.type(defaultBrowser),
-    headless: false,
+    headless: process.env.HEADLESS === "true",
     channel: Browser.channel(defaultBrowser),
     launchOptions: {
       args: [
@@ -18,7 +18,7 @@ const config: PlaywrightTestConfig = {
         "--disable-extensions",
         "--disable-plugins",
       ],
-      headless: false,
+      headless: process.env.HEADLESS === "true",
       timeout: Number.parseInt(String(process.env.BROWSER_LAUNCH_TIMEOUT ?? "30000"), 10),
       slowMo: 100,
       downloadsPath: "./test-results/downloads",
@@ -29,7 +29,7 @@ const config: PlaywrightTestConfig = {
     actionTimeout: Number.parseInt(String(process.env.ACTION_TIMEOUT ?? "1"), 10) * timeInMin,
     navigationTimeout: Number.parseInt(String(process.env.NAVIGATION_TIMEOUT ?? "1"), 10) * timeInMin,
     screenshot: {
-      mode: "only-on-failure",
+      mode: "on",
       fullPage: true,
     },
     video: "retain-on-failure",
@@ -38,10 +38,13 @@ const config: PlaywrightTestConfig = {
   testDir: "./src/tests",
   outputDir: "./test-results/failure",
   retries: Number.parseInt(String(process.env.RETRIES ?? "0"), 10),
-  preserveOutput: "failures-only",
+  preserveOutput: "always",
   reportSlowTests: null,
   timeout: Number.parseInt(String(process.env.TEST_TIMEOUT ?? "1"), 10) * timeInMin,
-  workers: Number.parseInt(String(process.env.PARALLEL_THREAD ?? "1"), 10),
+  fullyParallel: false,
+  workers: process.env.CI
+    ? 4
+    : Number.parseInt(String(process.env.PARALLEL_THREAD ?? "1"), 10),
 
   reporter: [
     ["dot"],
@@ -65,13 +68,19 @@ const config: PlaywrightTestConfig = {
 
   projects: [
     {
+      name: "setup",
+      testMatch: "**/*.setup.ts",
+    },
+    {
       name: "local",
+      dependencies: ["setup"],
       testMatch: process.env.TEST_NAME
         ? process.env.TEST_NAME.split(",").map((name) => `**/*${name.trim()}*.spec.ts`)
         : ["**/*.spec.ts"],
     },
     {
       name: "suite",
+      dependencies: ["setup"],
       testMatch: "**/*.test.ts",
     },
   ],

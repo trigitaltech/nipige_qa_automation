@@ -1,7 +1,6 @@
 import fs from 'fs';
 import { PDFExtract } from 'pdf.js-extract';
 import { PDFDocument, rgb } from 'pdf-lib';
-import { ComparePdf } from "compare-pdf-plus";
 import Allure from '@allure';
 
 export default class PDFUtil {
@@ -24,7 +23,7 @@ export default class PDFUtil {
         return {
             pageCount: data.pages.length,
             content: fullText,
-            info: data.meta.info
+            info: data.meta?.info
         };
     }
     /**
@@ -146,6 +145,8 @@ export default class PDFUtil {
      * @returns 
      */
     private static async comparePdf(actualPdfDir: string, actualPdfFileName: string, baselinePdfDir: string, baselinePdfFileName: string, pages: number[], tolerance: number, threshold: number) {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const { ComparePdf } = require('compare-pdf-plus');
         const comparer = new ComparePdf({
             paths: {
                 actualPdfRootFolder: actualPdfDir,

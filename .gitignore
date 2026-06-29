@@ -17,6 +17,7 @@ node_modules/
 # Credentials & Environment
 .env
 .env.local
+/playwright/.auth/
 .env.*.local
 /.auth
 

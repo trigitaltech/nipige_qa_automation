@@ -22,7 +22,8 @@ export default class RolePermissionPage {
 
     // A single assigned permission row — scoped by the permission name text
     static assignedPermissionRow(permissionName: string): string {
-        return `div:has(p:text-is("${permissionName}")), tr:has-text("${permissionName}"), li:has-text("${permissionName}"), `
+        return `p:has-text("${permissionName}"), div.space-y-2 div:has-text("${permissionName}"), `
+            + `tr:has-text("${permissionName}"), li:has-text("${permissionName}"), `
             + `[class*="permission-item"]:has-text("${permissionName}")`;
     }
 

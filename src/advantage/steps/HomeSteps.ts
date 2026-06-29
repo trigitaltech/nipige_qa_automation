@@ -69,6 +69,7 @@ export default class HomeSteps {
     private async selectTenant(tenant: string) {
         await test.step(`Select '${tenant}' from the tenant dropdown`, async () => {
             await this.ui.element(HomePage.TENANT_DROPDOWN, HomePageConstants.TENANT_DROPDOWN).click();
+            await this.page.waitForTimeout(800);
             await this.ui.element(HomePage.tenantOption(tenant),
                 `${HomePageConstants.TENANT_OPTION} (${tenant})`).click();
         });
@@ -108,7 +109,13 @@ export default class HomeSteps {
                 `Neither the logged-in profile menu nor a sign-in error appeared for '${userName}'`)
                 .toBeVisible({ timeout: LOGIN_STATE_TIMEOUT_MS });
             if (await signInError.isVisible()) {
-                throw new Error(`Login failed for '${userName}': ${(await signInError.innerText()).trim()}`);
+                const errText = (await signInError.innerText()).trim();
+                // HTTP 429 (rate-limit) — wait 10s before throwing so Playwright's retry backoff
+                // gives the server time to recover between attempts.
+                if (errText.includes("429")) {
+                    await this.page.waitForTimeout(10_000);
+                }
+                throw new Error(`Login failed for '${userName}': ${errText}`);
             }
             await expect(this.page,
                 `Expected to land on the dashboard after logging in as '${userName}'`)
