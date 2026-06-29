@@ -1,3 +1,4 @@
+import { faker } from "@faker-js/faker";
 import UserSteps from "@restSteps/UserSteps";
 import { test } from "@base-test";
 import Allure from "@allure";
@@ -32,9 +33,9 @@ test(`${singleUserData.TestID} - ${singleUserData.Description} @regression`, asy
 const addUserData = ExcelUtil.getTestData(SHEET, "TC03_AddUser");
 test(`${addUserData.TestID} - ${addUserData.Description} @regression`, async ({ gData }) => {
     Allure.attachDetails(addUserData.Description, addUserData.Issue);
-    const userName = StringUtil.randomAlphabeticString(5);
-    const password = StringUtil.randomAlphanumericString(5);
-    const phoneNumber = StringUtil.randomNumberString(10);
+    const userName = faker.internet.username().slice(0, 15);
+    const password = faker.internet.password({ length: 8 });
+    const phoneNumber = faker.string.numeric(10);
     const requestData = {
         userName: userName,
         password: password,
@@ -52,7 +53,7 @@ const updateUserData = ExcelUtil.getTestData(SHEET, "TC04_UpdateUser");
 test(`${updateUserData.TestID} - ${updateUserData.Description} @regression`, async ({ gData }) => {
     Allure.attachDetails(updateUserData.Description, updateUserData.Issue);
     const endPoint = StringUtil.formatStringValue(updateUserData.EndPoint, { ID: gData.get("id") });
-    const phoneNumber = StringUtil.randomNumberString(10);
+    const phoneNumber = faker.string.numeric(10);
     const requestData = {
         userName: gData.get("userName"),
         password: gData.get("password"),

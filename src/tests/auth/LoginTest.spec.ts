@@ -1,10 +1,11 @@
+import { faker } from "@faker-js/faker";
 import HomeSteps from "@uiSteps/HomeSteps";
 import RegistrationSteps from "@uiSteps/RegistrationSteps";
 import { test } from "@base-test";
 import { Page } from "@playwright/test";
 import Allure from "@allure";
 import ExcelUtil from "@utils/ExcelUtil";
-import StringUtil from "@utils/StringUtil";
+import JsonUtil from "@utils/JsonUtil";
 
 const SHEET = "LoginTest";
 
@@ -25,14 +26,31 @@ async function getValidCredentials(page: Page): Promise<{ userName: string; pass
         return { userName: process.env.VALID_USERNAME, password: process.env.VALID_PASSWORD };
     }
     // AOS requires an alphanumeric password; keep the default free of special characters.
-    const password = process.env.VALID_PASSWORD ?? "Test1234";
-    const email = `${StringUtil.randomLowercaseString(10)}@example.com`;
+    const reusableData = JsonUtil.getFixtureData("reusableData.json");
+    const password = process.env.VALID_PASSWORD ?? reusableData.defaultPassword;
+    const email = faker.internet.email();
     const home = new HomeSteps(page);
     const register = new RegistrationSteps(page);
     await home.launchApplication();
     await home.navigateToCreateAccount();
-    const userName = await register.createAccount(email, password, password, "Jane", "Doe",
-        "020-7935-7788", "India", "Amdavad", "42, Kamal Estate", "Gujarat", "380023", "true");
+    const firstName = faker.person.firstName();
+    const lastName = faker.person.lastName();
+    const phone = faker.string.numeric(10);
+    const userName = await register.createAccount(
+        email,
+        password,
+        password,
+        firstName,
+        lastName,
+        phone,
+        reusableData.defaultCountry,
+        reusableData.defaultCity,
+        reusableData.defaultStreet,
+        reusableData.defaultState,
+        reusableData.defaultZip,
+        "true",
+    );
+
     await register.saveRegistration();
     await home.validateLogin(userName); // AOS auto-logs-in after registration
     await home.logout();
@@ -86,7 +104,7 @@ test(`${data4.TestID} - ${data4.Description} @regression @auth @smoke @sanity`, 
     await home.login(
         data4.UserName,
         data4.Password,
-        data4.persona
+        data4.persona,
     );
 
     await home.validateLogin(data4.UserName);
@@ -104,7 +122,7 @@ test(`${data5.TestID} - ${data5.Description} @regression @auth @smoke @sanity`, 
     await home.login(
         data5.UserName,
         data5.Password,
-        data5.persona
+        data5.persona,
     );
 
     await home.validateInvalidLogin(data5.ErrorMessage);

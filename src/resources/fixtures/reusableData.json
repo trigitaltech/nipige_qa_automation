@@ -1,0 +1,13 @@
+{
+  "freshCartUrl": "https://freshcart-usa.nipige.com/login",
+  "defaultPassword": "Test1234",
+  "skillDefaultIcon": "https://cdn-icons-png.flaticon.com/512/2921/2921222.png",
+  "skillDefaultCategory": "Electrical",
+  "skillDefaultSortOrder": "99",
+  "defaultCountry": "India",
+  "defaultCity": "Amdavad",
+  "defaultState": "Gujarat",
+  "defaultZip": "380023",
+  "defaultStreet": "42, Kamal Estate"
+}
+

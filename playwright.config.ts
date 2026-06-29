@@ -41,7 +41,10 @@ const config: PlaywrightTestConfig = {
   preserveOutput: "always",
   reportSlowTests: null,
   timeout: Number.parseInt(String(process.env.TEST_TIMEOUT ?? "1"), 10) * timeInMin,
-  workers: Number.parseInt(String(process.env.PARALLEL_THREAD ?? "1"), 10),
+  fullyParallel: false,
+  workers: process.env.CI
+    ? 4
+    : Number.parseInt(String(process.env.PARALLEL_THREAD ?? "1"), 10),
 
   reporter: [
     ["dot"],
