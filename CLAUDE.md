@@ -110,3 +110,12 @@ Playwright fixture that adds a worker-scoped `gData` Map for sharing data betwee
 - New UI test: add the `*Page.ts` selectors, the `*Steps.ts` workflow, the `*.spec.ts` reading its
   row via `ExcelUtil.getTestData`, add the row(s) to the relevant sheet in `testData.xlsx`, and add
   the test name to the suite sheet with `Run = YES`.
+- **Data-Driven & Dynamic Data Guidelines:**
+  - Avoid hardcoding credentials, endpoints, dynamic fields, or static default values.
+  - Store configuration items and static fallback values in JSON fixtures (e.g. `src/resources/fixtures/reusableData.json` read via `JsonUtil.getFixtureData(...)`).
+  - Generate dynamic/random test values (names, passwords, phone numbers, addresses, etc.) using `@faker-js/faker` to keep tests realistic and reliable.
+- **Parallel vs. Sequential Execution Rules:**
+  - **Worker Scaling:** Different test files are executed concurrently. Worker count is controlled by `PARALLEL_THREAD` in `.env` (default is 3, automatically scaled up to 4 on CI/CD pipelines).
+  - **Dependent State Flows:** Wrap dependent, stateful tests within a single spec (e.g., Create -> Update -> Delete) in a `test.describe.configure({ mode: 'serial' })` block. Avoid running tests within a single file concurrently if they share state.
+  - **Database Conflict Prevention:** Ensure strict test isolation. Always use unique identifiers/Faker suffixes for DB/UI records so concurrently running specs never read, edit, or delete other tests' data. Cleanup code should target exact entities by ID rather than using generic wildcards.
+
