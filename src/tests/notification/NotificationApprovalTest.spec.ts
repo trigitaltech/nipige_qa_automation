@@ -42,21 +42,21 @@ test.describe("Notification Approval", () => {
 
     // ── TC01: Page loads with all UI components ───────────────────────────────────
     const d01 = ExcelUtil.getTestData(SHEET, "TC01_PageLoads");
-    test(`${d01.TestID} - ${d01.Description}`, async () => {
+    test(`${d01.TestID} - ${d01.Description} @regression`, async () => {
         Allure.attachDetails(d01.Description, d01.Issue);
         await approval.verifyPageLoadsSuccessfully();
     });
 
     // ── TC02: Default filter values on page load ──────────────────────────────────
     const d02 = ExcelUtil.getTestData(SHEET, "TC02_DefaultFilters");
-    test(`${d02.TestID} - ${d02.Description}`, async () => {
+    test(`${d02.TestID} - ${d02.Description} @regression`, async () => {
         Allure.attachDetails(d02.Description, d02.Issue);
         await approval.verifyDefaultFilterValues();
     });
 
     // ── TC03: Last 7 Days date filter ─────────────────────────────────────────────
     const d03 = ExcelUtil.getTestData(SHEET, "TC03_Last7DaysFilter");
-    test(`${d03.TestID} - ${d03.Description}`, async () => {
+    test(`${d03.TestID} - ${d03.Description} @regression`, async () => {
         Allure.attachDetails(d03.Description, d03.Issue);
         await approval.selectDateFilter(d03.FilterValue);
         await approval.verifyListingReloadedAfterFilter();
@@ -64,7 +64,7 @@ test.describe("Notification Approval", () => {
 
     // ── TC04: Additional date filters (15 days / 30 days / 3 months / 6 months) ──
     const d04 = ExcelUtil.getTestData(SHEET, "TC04_MultiDateFilters");
-    test(`${d04.TestID} - ${d04.Description}`, async () => {
+    test(`${d04.TestID} - ${d04.Description} @regression`, async () => {
         Allure.attachDetails(d04.Description, d04.Issue);
         const filters = String(d04.FilterValue).split("|").map((v) => v.trim());
         await filters.reduce(async (prev, filter) => {
@@ -76,7 +76,7 @@ test.describe("Notification Approval", () => {
 
     // ── TC05: Bulk Notification type filter ──────────────────────────────────────
     const d05 = ExcelUtil.getTestData(SHEET, "TC05_BulkNotificationType");
-    test(`${d05.TestID} - ${d05.Description}`, async () => {
+    test(`${d05.TestID} - ${d05.Description} @regression`, async () => {
         Allure.attachDetails(d05.Description, d05.Issue);
         await approval.selectTypeFilter(d05.FilterValue);
         await approval.verifyListingReloadedAfterFilter();
@@ -84,7 +84,7 @@ test.describe("Notification Approval", () => {
 
     // ── TC06: Bulk Promotion type filter ─────────────────────────────────────────
     const d06 = ExcelUtil.getTestData(SHEET, "TC06_BulkPromotionType");
-    test(`${d06.TestID} - ${d06.Description}`, async () => {
+    test(`${d06.TestID} - ${d06.Description} @regression`, async () => {
         Allure.attachDetails(d06.Description, d06.Issue);
         await approval.selectTypeFilter(d06.FilterValue);
         await approval.verifyListingReloadedAfterFilter();
@@ -92,7 +92,7 @@ test.describe("Notification Approval", () => {
 
     // ── TC07: Pending status filter ───────────────────────────────────────────────
     const d07 = ExcelUtil.getTestData(SHEET, "TC07_PendingStatus");
-    test(`${d07.TestID} - ${d07.Description}`, async () => {
+    test(`${d07.TestID} - ${d07.Description} @regression`, async () => {
         Allure.attachDetails(d07.Description, d07.Issue);
         await approval.selectStatusFilter(d07.FilterValue);
         await approval.verifyListingReloadedAfterFilter();
@@ -100,7 +100,7 @@ test.describe("Notification Approval", () => {
 
     // ── TC08: Approved status filter ─────────────────────────────────────────────
     const d08 = ExcelUtil.getTestData(SHEET, "TC08_ApprovedStatus");
-    test(`${d08.TestID} - ${d08.Description}`, async () => {
+    test(`${d08.TestID} - ${d08.Description} @regression`, async () => {
         Allure.attachDetails(d08.Description, d08.Issue);
         await approval.selectStatusFilter(d08.FilterValue);
         await approval.verifyListingReloadedAfterFilter();
@@ -108,7 +108,7 @@ test.describe("Notification Approval", () => {
 
     // ── TC09: Rejected status filter ─────────────────────────────────────────────
     const d09 = ExcelUtil.getTestData(SHEET, "TC09_RejectedStatus");
-    test(`${d09.TestID} - ${d09.Description}`, async () => {
+    test(`${d09.TestID} - ${d09.Description} @regression`, async () => {
         Allure.attachDetails(d09.Description, d09.Issue);
         await approval.selectStatusFilter(d09.FilterValue);
         await approval.verifyListingReloadedAfterFilter();
@@ -116,7 +116,7 @@ test.describe("Notification Approval", () => {
 
     // ── TC10: Search by Template Name ────────────────────────────────────────────
     const d10 = ExcelUtil.getTestData(SHEET, "TC10_SearchByTemplateName");
-    test(`${d10.TestID} - ${d10.Description}`, async () => {
+    test(`${d10.TestID} - ${d10.Description} @regression`, async () => {
         Allure.attachDetails(d10.Description, d10.Issue);
         await approval.enterSearchTerm(d10.SearchTerm);
         await approval.verifySearchResultsContain(d10.SearchTerm);
@@ -124,7 +124,7 @@ test.describe("Notification Approval", () => {
 
     // ── TC11: Search by Template ID ──────────────────────────────────────────────
     const d11 = ExcelUtil.getTestData(SHEET, "TC11_SearchByTemplateID");
-    test(`${d11.TestID} - ${d11.Description}`, async () => {
+    test(`${d11.TestID} - ${d11.Description} @regression`, async () => {
         Allure.attachDetails(d11.Description, d11.Issue);
         await approval.enterSearchTerm(d11.SearchTerm);
         await approval.verifySearchResultsContain(d11.SearchTerm);
@@ -132,7 +132,7 @@ test.describe("Notification Approval", () => {
 
     // ── TC12: Partial text search ────────────────────────────────────────────────
     const d12 = ExcelUtil.getTestData(SHEET, "TC12_PartialSearch");
-    test(`${d12.TestID} - ${d12.Description}`, async () => {
+    test(`${d12.TestID} - ${d12.Description} @regression`, async () => {
         Allure.attachDetails(d12.Description, d12.Issue);
         await approval.enterSearchTerm(d12.SearchTerm);
         await approval.verifyListingReloadedAfterFilter();
@@ -140,14 +140,14 @@ test.describe("Notification Approval", () => {
 
     // ── TC13: Case-insensitive search ────────────────────────────────────────────
     const d13 = ExcelUtil.getTestData(SHEET, "TC13_CaseInsensitiveSearch");
-    test(`${d13.TestID} - ${d13.Description}`, async () => {
+    test(`${d13.TestID} - ${d13.Description} @regression`, async () => {
         Allure.attachDetails(d13.Description, d13.Issue);
         await approval.verifySearchIsCaseInsensitive(d13.SearchTerm);
     });
 
     // ── TC14: Refresh button ─────────────────────────────────────────────────────
     const d14 = ExcelUtil.getTestData(SHEET, "TC14_RefreshButton");
-    test(`${d14.TestID} - ${d14.Description}`, async () => {
+    test(`${d14.TestID} - ${d14.Description} @regression`, async () => {
         Allure.attachDetails(d14.Description, d14.Issue);
         await approval.clickRefresh();
         await approval.verifyRefreshReloadsListing();
@@ -155,28 +155,28 @@ test.describe("Notification Approval", () => {
 
     // ── TC15: Table columns displayed ───────────────────────────────────────────
     const d15 = ExcelUtil.getTestData(SHEET, "TC15_TableColumns");
-    test(`${d15.TestID} - ${d15.Description}`, async () => {
+    test(`${d15.TestID} - ${d15.Description} @regression`, async () => {
         Allure.attachDetails(d15.Description, d15.Issue);
         await approval.verifyAllColumnsDisplayed();
     });
 
     // ── TC16: Status badges ──────────────────────────────────────────────────────
     const d16 = ExcelUtil.getTestData(SHEET, "TC16_StatusBadges");
-    test(`${d16.TestID} - ${d16.Description}`, async () => {
+    test(`${d16.TestID} - ${d16.Description} @regression`, async () => {
         Allure.attachDetails(d16.Description, d16.Issue);
         await approval.verifyStatusBadgesDisplayed();
     });
 
     // ── TC17: Record count matches grid ─────────────────────────────────────────
     const d17 = ExcelUtil.getTestData(SHEET, "TC17_RecordCount");
-    test(`${d17.TestID} - ${d17.Description}`, async () => {
+    test(`${d17.TestID} - ${d17.Description} @regression`, async () => {
         Allure.attachDetails(d17.Description, d17.Issue);
         await approval.verifyRecordCountMatchesGrid();
     });
 
     // ── TC18: View (Eye) icon opens details page ─────────────────────────────────
     const d18 = ExcelUtil.getTestData(SHEET, "TC18_ViewDetails");
-    test(`${d18.TestID} - ${d18.Description}`, async () => {
+    test(`${d18.TestID} - ${d18.Description} @regression`, async () => {
         Allure.attachDetails(d18.Description, d18.Issue);
         await approval.clickFirstViewButton();
         await approval.verifyDetailsPageOpened();
@@ -185,7 +185,7 @@ test.describe("Notification Approval", () => {
 
     // ── TC19: Details page shows correct information ──────────────────────────────
     const d19 = ExcelUtil.getTestData(SHEET, "TC19_DetailsContent");
-    test(`${d19.TestID} - ${d19.Description}`, async () => {
+    test(`${d19.TestID} - ${d19.Description} @regression`, async () => {
         Allure.attachDetails(d19.Description, d19.Issue);
         await approval.clickFirstViewButton();
         await approval.verifyDetailsPageContent();
@@ -194,7 +194,7 @@ test.describe("Notification Approval", () => {
 
     // ── TC20: Notification Stats section ─────────────────────────────────────────
     const d20 = ExcelUtil.getTestData(SHEET, "TC20_NotificationStats");
-    test(`${d20.TestID} - ${d20.Description}`, async () => {
+    test(`${d20.TestID} - ${d20.Description} @regression`, async () => {
         Allure.attachDetails(d20.Description, d20.Issue);
         await approval.clickFirstViewButton();
         await approval.verifyNotificationStatsSection();
@@ -203,7 +203,7 @@ test.describe("Notification Approval", () => {
 
     // ── TC21: Template Configuration details ─────────────────────────────────────
     const d21 = ExcelUtil.getTestData(SHEET, "TC21_TemplateConfig");
-    test(`${d21.TestID} - ${d21.Description}`, async () => {
+    test(`${d21.TestID} - ${d21.Description} @regression`, async () => {
         Allure.attachDetails(d21.Description, d21.Issue);
         await approval.clickFirstViewButton();
         await approval.verifyTemplateConfigSection();
@@ -212,7 +212,7 @@ test.describe("Notification Approval", () => {
 
     // ── TC22: Notification body displayed ────────────────────────────────────────
     const d22 = ExcelUtil.getTestData(SHEET, "TC22_NotificationBody");
-    test(`${d22.TestID} - ${d22.Description}`, async () => {
+    test(`${d22.TestID} - ${d22.Description} @regression`, async () => {
         Allure.attachDetails(d22.Description, d22.Issue);
         await approval.clickFirstViewButton();
         await approval.verifyNotificationBodyDisplayed();
@@ -221,7 +221,7 @@ test.describe("Notification Approval", () => {
 
     // ── TC23: Download link ───────────────────────────────────────────────────────
     const d23 = ExcelUtil.getTestData(SHEET, "TC23_DownloadFile");
-    test(`${d23.TestID} - ${d23.Description}`, async () => {
+    test(`${d23.TestID} - ${d23.Description} @regression`, async () => {
         Allure.attachDetails(d23.Description, d23.Issue);
         await approval.clickFirstViewButton();
         await approval.verifyDownloadLink();
@@ -230,7 +230,7 @@ test.describe("Notification Approval", () => {
 
     // ── TC24: Back button navigation ─────────────────────────────────────────────
     const d24 = ExcelUtil.getTestData(SHEET, "TC24_BackButton");
-    test(`${d24.TestID} - ${d24.Description}`, async () => {
+    test(`${d24.TestID} - ${d24.Description} @regression`, async () => {
         Allure.attachDetails(d24.Description, d24.Issue);
         await approval.clickFirstViewButton();
         await approval.verifyDetailsPageOpened();
@@ -240,7 +240,7 @@ test.describe("Notification Approval", () => {
 
     // ── TC25: Combined filters (Date + Type + Status) ────────────────────────────
     const d25 = ExcelUtil.getTestData(SHEET, "TC25_CombinedFilters");
-    test(`${d25.TestID} - ${d25.Description}`, async () => {
+    test(`${d25.TestID} - ${d25.Description} @regression`, async () => {
         Allure.attachDetails(d25.Description, d25.Issue);
         const [dateFilter, typeFilter, statusFilter] = String(d25.FilterValue)
             .split("|").map((v) => v.trim());
@@ -250,21 +250,21 @@ test.describe("Notification Approval", () => {
 
     // ── TC26 (Negative): No records for unmatched search ─────────────────────────
     const d26 = ExcelUtil.getTestData(SHEET, "TC26_NoRecordsFound");
-    test(`${d26.TestID} - ${d26.Description}`, async () => {
+    test(`${d26.TestID} - ${d26.Description} @regression`, async () => {
         Allure.attachDetails(d26.Description, d26.Issue);
         await approval.searchAndVerifyNoRecords(d26.SearchTerm);
     });
 
     // ── TC27 (Negative): Special characters in search ────────────────────────────
     const d27 = ExcelUtil.getTestData(SHEET, "TC27_SpecialCharSearch");
-    test(`${d27.TestID} - ${d27.Description}`, async () => {
+    test(`${d27.TestID} - ${d27.Description} @regression`, async () => {
         Allure.attachDetails(d27.Description, d27.Issue);
         await approval.verifySpecialCharsInSearchHandledSafely(d27.SearchTerm);
     });
 
     // ── TC28 (Negative): SQL Injection in search ─────────────────────────────────
     const d28 = ExcelUtil.getTestData(SHEET, "TC28_SQLInjection");
-    test(`${d28.TestID} - ${d28.Description}`, async () => {
+    test(`${d28.TestID} - ${d28.Description} @regression`, async () => {
         Allure.attachDetails(d28.Description, d28.Issue);
         await approval.verifySQLInjectionBlocked(d28.SearchTerm);
     });
@@ -272,7 +272,7 @@ test.describe("Notification Approval", () => {
     // ── TC29 (Negative): Unauthorized access ─────────────────────────────────────
     // This TC navigates to the route after logout, so it manages its own page instance.
     const d29 = ExcelUtil.getTestData(SHEET, "TC29_UnauthorizedAccess");
-    test(`${d29.TestID} - ${d29.Description}`, async ({ browser }) => {
+    test(`${d29.TestID} - ${d29.Description} @regression`, async ({ browser }) => {
         Allure.attachDetails(d29.Description, d29.Issue);
         const privatePage = await browser.newPage();
         try {
@@ -288,7 +288,7 @@ test.describe("Notification Approval", () => {
 
     // ── TC30 (Negative): Missing / corrupted data handled gracefully ──────────────
     const d30 = ExcelUtil.getTestData(SHEET, "TC30_MissingDataGraceful");
-    test(`${d30.TestID} - ${d30.Description}`, async () => {
+    test(`${d30.TestID} - ${d30.Description} @regression`, async () => {
         Allure.attachDetails(d30.Description, d30.Issue);
         // Apply a future-only filter (Last 7 Days) to the Status=Rejected bucket.
         // If no records exist in that window the empty-state renders — no crash.

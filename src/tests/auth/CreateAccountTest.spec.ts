@@ -8,7 +8,7 @@ const sheet = "CreateAccountTest";
 const testData = ExcelUtil.getTestDataArray(sheet);
 // eslint-disable-next-line no-restricted-syntax
 for (const data of testData) {
-    test(`${data.TestID} - ${data.Description}`, async ({ page }) => {
+    test(`${data.TestID} - ${data.Description} @regression @auth`, async ({ page }) => {
         Allure.attachDetails(data.Description, data.Issue);
         const home = new HomeSteps(page);
         await home.launchApplication();

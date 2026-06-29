@@ -15,7 +15,7 @@ const scenarios = [
 scenarios.forEach((scenario) => {
     const data = ExcelUtil.getTestData(SHEET, scenario);
 
-    test(`${data.TestID} - ${data.Description}`, async ({ page }) => {
+    test(`${data.TestID} - ${data.Description} @regression @auth`, async ({ page }) => {
         Allure.attachDetails(data.Description, data.Issue);
 
         const home = new HomeSteps(page);

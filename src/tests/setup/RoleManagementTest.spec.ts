@@ -1,7 +1,7 @@
 import HomeSteps from "@uiSteps/HomeSteps";
 import RoleManagementSteps from "@uiSteps/RoleManagementSteps";
 import RolePermissionSteps from "@uiSteps/RolePermissionSteps";
-import { test, expect } from "@base-test";
+import { test, expect, applySessionState } from "@base-test";
 import Allure from "@allure";
 import RolePermissionPage from "@pages/RolePermissionPage";
 import ExcelUtil from "@utils/ExcelUtil";
@@ -10,6 +10,8 @@ import RolePage from "@pages/RolePage";
 import RoleManagementConstants from "@uiConstants/RoleManagementConstants";
 
 const SHEET = "RoleManagementTest";
+
+test.use({ storageState: 'playwright/.auth/admin.json' });
 
 // ── Credentials ───────────────────────────────────────────────────────────────
 const credential = getCredential(Role.ADMIN);
@@ -26,9 +28,8 @@ function val(v: string, fallback: string): string {
 }
 
 async function loginAsAdmin(home: HomeSteps) {
+    await applySessionState(home['page'], PERSONA);
     await home.launchApplication();
-    await home.login(credential.email, credential.password, PERSONA);
-    await home.validateLogin(credential.email);
 }
 
 async function cleanUpRole(role: RoleManagementSteps, page: any, roleName: string) {
@@ -59,7 +60,7 @@ async function cleanUpRole(role: RoleManagementSteps, page: any, roleName: strin
 
 // ── TC01: Verify Role page loads successfully ─────────────────────────────────
 const d01 = ExcelUtil.getTestData(SHEET, "TC01_RolePageLoad");
-test(`${d01.TestID} - ${d01.Description}`, async ({ page }) => {
+test(`${d01.TestID} - ${d01.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d01.Description, d01.Issue);
     const home = new HomeSteps(page);
     const role = new RoleManagementSteps(page);
@@ -71,7 +72,7 @@ test(`${d01.TestID} - ${d01.Description}`, async ({ page }) => {
 
 // ── TC02: Verify role grid displays ──────────────────────────────────────────
 const d02 = ExcelUtil.getTestData(SHEET, "TC02_RoleGridDisplay");
-test(`${d02.TestID} - ${d02.Description}`, async ({ page }) => {
+test(`${d02.TestID} - ${d02.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d02.Description, d02.Issue);
     const home = new HomeSteps(page);
     const role = new RoleManagementSteps(page);
@@ -87,7 +88,7 @@ test(`${d02.TestID} - ${d02.Description}`, async ({ page }) => {
 
 // ── TC03: Verify search with valid role ───────────────────────────────────────
 const d03 = ExcelUtil.getTestData(SHEET, "TC03_SearchValidRole");
-test(`${d03.TestID} - ${d03.Description}`, async ({ page }) => {
+test(`${d03.TestID} - ${d03.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d03.Description, d03.Issue);
     const home = new HomeSteps(page);
     const role = new RoleManagementSteps(page);
@@ -101,7 +102,7 @@ test(`${d03.TestID} - ${d03.Description}`, async ({ page }) => {
 
 // ── TC04: Verify search with invalid role ─────────────────────────────────────
 const d04 = ExcelUtil.getTestData(SHEET, "TC04_SearchInvalidRole");
-test(`${d04.TestID} - ${d04.Description}`, async ({ page }) => {
+test(`${d04.TestID} - ${d04.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d04.Description, d04.Issue);
     const home = new HomeSteps(page);
     const role = new RoleManagementSteps(page);
@@ -114,7 +115,7 @@ test(`${d04.TestID} - ${d04.Description}`, async ({ page }) => {
 
 // ── TC05: Verify Create Role button opens popup ───────────────────────────────
 const d05 = ExcelUtil.getTestData(SHEET, "TC05_CreateRoleButtonPopup");
-test(`${d05.TestID} - ${d05.Description}`, async ({ page }) => {
+test(`${d05.TestID} - ${d05.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d05.Description, d05.Issue);
     const home = new HomeSteps(page);
     const role = new RoleManagementSteps(page);
@@ -135,7 +136,7 @@ test(`${d05.TestID} - ${d05.Description}`, async ({ page }) => {
 
 // ── TC06: Verify Lock icon opens Role Permission page ─────────────────────────
 const d06 = ExcelUtil.getTestData(SHEET, "TC06_LockIconPermPage");
-test(`${d06.TestID} - ${d06.Description}`, async ({ page }) => {
+test(`${d06.TestID} - ${d06.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d06.Description, d06.Issue);
     const home = new HomeSteps(page);
     const role = new RoleManagementSteps(page);
@@ -149,7 +150,7 @@ test(`${d06.TestID} - ${d06.Description}`, async ({ page }) => {
 
 // ── TC07: Verify Edit icon opens Edit popup ───────────────────────────────────
 const d07 = ExcelUtil.getTestData(SHEET, "TC07_EditIconPopup");
-test(`${d07.TestID} - ${d07.Description}`, async ({ page }) => {
+test(`${d07.TestID} - ${d07.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d07.Description, d07.Issue);
     const home = new HomeSteps(page);
     const role = new RoleManagementSteps(page);
@@ -170,7 +171,7 @@ test(`${d07.TestID} - ${d07.Description}`, async ({ page }) => {
 
 // ── TC08: Verify Delete icon opens confirmation popup ────────────────────────
 const d08 = ExcelUtil.getTestData(SHEET, "TC08_DeleteIconPopup");
-test(`${d08.TestID} - ${d08.Description}`, async ({ page }) => {
+test(`${d08.TestID} - ${d08.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d08.Description, d08.Issue);
     const home = new HomeSteps(page);
     const role = new RoleManagementSteps(page);
@@ -184,7 +185,7 @@ test(`${d08.TestID} - ${d08.Description}`, async ({ page }) => {
 
 // ── TC09: Verify Refresh reloads role list ────────────────────────────────────
 const d09 = ExcelUtil.getTestData(SHEET, "TC09_RefreshReloads");
-test(`${d09.TestID} - ${d09.Description}`, async ({ page }) => {
+test(`${d09.TestID} - ${d09.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d09.Description, d09.Issue);
     const home = new HomeSteps(page);
     const role = new RoleManagementSteps(page);
@@ -197,7 +198,7 @@ test(`${d09.TestID} - ${d09.Description}`, async ({ page }) => {
 
 // ── TC10: Verify pagination controls ─────────────────────────────────────────
 const d10 = ExcelUtil.getTestData(SHEET, "TC10_PaginationVisible");
-test(`${d10.TestID} - ${d10.Description}`, async ({ page }) => {
+test(`${d10.TestID} - ${d10.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d10.Description, d10.Issue);
     const home = new HomeSteps(page);
     const role = new RoleManagementSteps(page);
@@ -213,7 +214,7 @@ test(`${d10.TestID} - ${d10.Description}`, async ({ page }) => {
 
 // ── TC11: Verify role created successfully ────────────────────────────────────
 const d11 = ExcelUtil.getTestData(SHEET, "TC11_CreateRoleSuccess");
-test(`${d11.TestID} - ${d11.Description}`, async ({ page }) => {
+test(`${d11.TestID} - ${d11.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d11.Description, d11.Issue);
     const roleName = uniqueRoleName(val(d11.RoleName, RoleManagementConstants.ROLE_PREFIX));
     const description = val(d11.Description_Input, "Automation Role Description");
@@ -236,7 +237,7 @@ test(`${d11.TestID} - ${d11.Description}`, async ({ page }) => {
 
 // ── TC12: Verify created role appears in listing ──────────────────────────────
 const d12 = ExcelUtil.getTestData(SHEET, "TC12_CreatedRoleInListing");
-test(`${d12.TestID} - ${d12.Description}`, async ({ page }) => {
+test(`${d12.TestID} - ${d12.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d12.Description, d12.Issue);
     const roleName = uniqueRoleName(val(d12.RoleName, RoleManagementConstants.ROLE_PREFIX));
     const description = val(d12.Description_Input, "Automation Role Description");
@@ -256,7 +257,7 @@ test(`${d12.TestID} - ${d12.Description}`, async ({ page }) => {
 
 // ── TC13: Verify Cancel closes Create popup ───────────────────────────────────
 const d13 = ExcelUtil.getTestData(SHEET, "TC13_CancelClosesCreatePopup");
-test(`${d13.TestID} - ${d13.Description}`, async ({ page }) => {
+test(`${d13.TestID} - ${d13.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d13.Description, d13.Issue);
     const home = new HomeSteps(page);
     const role = new RoleManagementSteps(page);
@@ -271,7 +272,7 @@ test(`${d13.TestID} - ${d13.Description}`, async ({ page }) => {
 
 // ── TC14: Verify Close (X) closes Create popup ────────────────────────────────
 const d14 = ExcelUtil.getTestData(SHEET, "TC14_CloseXClosesCreatePopup");
-test(`${d14.TestID} - ${d14.Description}`, async ({ page }) => {
+test(`${d14.TestID} - ${d14.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d14.Description, d14.Issue);
     const home = new HomeSteps(page);
     const role = new RoleManagementSteps(page);
@@ -286,7 +287,7 @@ test(`${d14.TestID} - ${d14.Description}`, async ({ page }) => {
 
 // ── TC15: Verify Role Name required validation ────────────────────────────────
 const d15 = ExcelUtil.getTestData(SHEET, "TC15_RoleNameRequiredValidation");
-test(`${d15.TestID} - ${d15.Description}`, async ({ page }) => {
+test(`${d15.TestID} - ${d15.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d15.Description, d15.Issue);
     const description = val(d15.Description_Input, "Automation Role Description");
     const home = new HomeSteps(page);
@@ -312,7 +313,7 @@ test(`${d15.TestID} - ${d15.Description}`, async ({ page }) => {
 
 // ── TC16: Verify spaces-only Role Name validation ─────────────────────────────
 const d16 = ExcelUtil.getTestData(SHEET, "TC16_SpacesOnlyRoleName");
-test(`${d16.TestID} - ${d16.Description}`, async ({ page }) => {
+test(`${d16.TestID} - ${d16.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d16.Description, d16.Issue);
     // RoleName column has "     " (spaces) in the Excel sheet
     const spacesRoleName = d16.RoleName || "     ";
@@ -339,7 +340,7 @@ test(`${d16.TestID} - ${d16.Description}`, async ({ page }) => {
 
 // ── TC17: Verify duplicate role validation ────────────────────────────────────
 const d17 = ExcelUtil.getTestData(SHEET, "TC17_DuplicateRoleValidation");
-test(`${d17.TestID} - ${d17.Description}`, async ({ page }) => {
+test(`${d17.TestID} - ${d17.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d17.Description, d17.Issue);
     const roleName = uniqueRoleName(val(d17.RoleName, RoleManagementConstants.ROLE_PREFIX));
     const description = val(d17.Description_Input, "Automation Role Description");
@@ -370,7 +371,7 @@ test(`${d17.TestID} - ${d17.Description}`, async ({ page }) => {
 
 // ── TC18: Verify permission page opens ────────────────────────────────────────
 const d18 = ExcelUtil.getTestData(SHEET, "TC18_PermissionPageOpens");
-test(`${d18.TestID} - ${d18.Description}`, async ({ page }) => {
+test(`${d18.TestID} - ${d18.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d18.Description, d18.Issue);
     const home = new HomeSteps(page);
     const role = new RoleManagementSteps(page);
@@ -384,7 +385,7 @@ test(`${d18.TestID} - ${d18.Description}`, async ({ page }) => {
 
 // ── TC19: Assign permission successfully ──────────────────────────────────────
 const d19 = ExcelUtil.getTestData(SHEET, "TC19_AssignPermissionToast");
-test(`${d19.TestID} - ${d19.Description}`, async ({ page }) => {
+test(`${d19.TestID} - ${d19.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d19.Description, d19.Issue);
     const home = new HomeSteps(page);
     const role = new RoleManagementSteps(page);
@@ -401,7 +402,7 @@ test(`${d19.TestID} - ${d19.Description}`, async ({ page }) => {
 
 // ── TC20: Verify permission count increments ──────────────────────────────────
 const d20 = ExcelUtil.getTestData(SHEET, "TC20_PermissionCountIncrements");
-test(`${d20.TestID} - ${d20.Description}`, async ({ page }) => {
+test(`${d20.TestID} - ${d20.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d20.Description, d20.Issue);
     const home = new HomeSteps(page);
     const role = new RoleManagementSteps(page);
@@ -421,7 +422,7 @@ test(`${d20.TestID} - ${d20.Description}`, async ({ page }) => {
 
 // ── TC21: Verify permission search works ──────────────────────────────────────
 const d21 = ExcelUtil.getTestData(SHEET, "TC21_PermissionSearchValid");
-test(`${d21.TestID} - ${d21.Description}`, async ({ page }) => {
+test(`${d21.TestID} - ${d21.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d21.Description, d21.Issue);
     const home = new HomeSteps(page);
     const role = new RoleManagementSteps(page);
@@ -446,7 +447,7 @@ test(`${d21.TestID} - ${d21.Description}`, async ({ page }) => {
 
 // ── TC22: Verify invalid permission search ────────────────────────────────────
 const d22 = ExcelUtil.getTestData(SHEET, "TC22_PermissionSearchInvalid");
-test(`${d22.TestID} - ${d22.Description}`, async ({ page }) => {
+test(`${d22.TestID} - ${d22.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d22.Description, d22.Issue);
     const home = new HomeSteps(page);
     const role = new RoleManagementSteps(page);
@@ -462,7 +463,7 @@ test(`${d22.TestID} - ${d22.Description}`, async ({ page }) => {
 
 // ── TC23: Verify permission deletion ─────────────────────────────────────────
 const d23 = ExcelUtil.getTestData(SHEET, "TC23_DeletePermission");
-test(`${d23.TestID} - ${d23.Description}`, async ({ page }) => {
+test(`${d23.TestID} - ${d23.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d23.Description, d23.Issue);
     const home = new HomeSteps(page);
     const role = new RoleManagementSteps(page);
@@ -484,7 +485,7 @@ test(`${d23.TestID} - ${d23.Description}`, async ({ page }) => {
 
 // ── TC24: Verify permission count decrements ──────────────────────────────────
 const d24 = ExcelUtil.getTestData(SHEET, "TC24_PermissionCountDecrements");
-test(`${d24.TestID} - ${d24.Description}`, async ({ page }) => {
+test(`${d24.TestID} - ${d24.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d24.Description, d24.Issue);
     const home = new HomeSteps(page);
     const role = new RoleManagementSteps(page);
@@ -506,7 +507,7 @@ test(`${d24.TestID} - ${d24.Description}`, async ({ page }) => {
 
 // ── TC25: Verify Back button returns to Role listing ──────────────────────────
 const d25 = ExcelUtil.getTestData(SHEET, "TC25_BackButtonReturnsListing");
-test(`${d25.TestID} - ${d25.Description}`, async ({ page }) => {
+test(`${d25.TestID} - ${d25.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d25.Description, d25.Issue);
     const home = new HomeSteps(page);
     const role = new RoleManagementSteps(page);
@@ -522,7 +523,7 @@ test(`${d25.TestID} - ${d25.Description}`, async ({ page }) => {
 
 // ── TC26: Verify assign without selecting permission shows validation ──────────
 const d26 = ExcelUtil.getTestData(SHEET, "TC26_AssignWithoutSelectValidation");
-test(`${d26.TestID} - ${d26.Description}`, async ({ page }) => {
+test(`${d26.TestID} - ${d26.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d26.Description, d26.Issue);
     const home = new HomeSteps(page);
     const role = new RoleManagementSteps(page);
@@ -542,7 +543,7 @@ test(`${d26.TestID} - ${d26.Description}`, async ({ page }) => {
 
 // ── TC27: Verify edit popup pre-populated ─────────────────────────────────────
 const d27 = ExcelUtil.getTestData(SHEET, "TC27_EditPopupPrePopulated");
-test(`${d27.TestID} - ${d27.Description}`, async ({ page }) => {
+test(`${d27.TestID} - ${d27.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d27.Description, d27.Issue);
     const home = new HomeSteps(page);
     const role = new RoleManagementSteps(page);
@@ -564,7 +565,7 @@ test(`${d27.TestID} - ${d27.Description}`, async ({ page }) => {
 
 // ── TC28: Update description ──────────────────────────────────────────────────
 const d28 = ExcelUtil.getTestData(SHEET, "TC28_UpdateDescription");
-test(`${d28.TestID} - ${d28.Description}`, async ({ page }) => {
+test(`${d28.TestID} - ${d28.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d28.Description, d28.Issue);
     const roleName = uniqueRoleName(val(d28.RoleName, RoleManagementConstants.EDIT_PREFIX));
     const updatedDescription = `${val(d28.Description_Input, "Updated_Desc_")}${Date.now()}`;
@@ -589,7 +590,7 @@ test(`${d28.TestID} - ${d28.Description}`, async ({ page }) => {
 
 // ── TC29: Verify updated description saved ────────────────────────────────────
 const d29 = ExcelUtil.getTestData(SHEET, "TC29_UpdatedDescriptionSaved");
-test(`${d29.TestID} - ${d29.Description}`, async ({ page }) => {
+test(`${d29.TestID} - ${d29.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d29.Description, d29.Issue);
     const roleName = uniqueRoleName(val(d29.RoleName, RoleManagementConstants.EDIT_PREFIX));
     const updatedDescription = `${val(d29.Description_Input, "SavedDesc_")}${Date.now()}`;
@@ -617,7 +618,7 @@ test(`${d29.TestID} - ${d29.Description}`, async ({ page }) => {
 
 // ── TC30: Verify Cancel closes edit popup ─────────────────────────────────────
 const d30 = ExcelUtil.getTestData(SHEET, "TC30_CancelClosesEditPopup");
-test(`${d30.TestID} - ${d30.Description}`, async ({ page }) => {
+test(`${d30.TestID} - ${d30.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d30.Description, d30.Issue);
     const home = new HomeSteps(page);
     const role = new RoleManagementSteps(page);
@@ -632,7 +633,7 @@ test(`${d30.TestID} - ${d30.Description}`, async ({ page }) => {
 
 // ── TC31: Verify Close (X) closes edit popup ──────────────────────────────────
 const d31 = ExcelUtil.getTestData(SHEET, "TC31_CloseXClosesEditPopup");
-test(`${d31.TestID} - ${d31.Description}`, async ({ page }) => {
+test(`${d31.TestID} - ${d31.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d31.Description, d31.Issue);
     const home = new HomeSteps(page);
     const role = new RoleManagementSteps(page);
@@ -647,7 +648,7 @@ test(`${d31.TestID} - ${d31.Description}`, async ({ page }) => {
 
 // ── TC32: Verify empty description validation ─────────────────────────────────
 const d32 = ExcelUtil.getTestData(SHEET, "TC32_EmptyDescriptionValidation");
-test(`${d32.TestID} - ${d32.Description}`, async ({ page }) => {
+test(`${d32.TestID} - ${d32.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d32.Description, d32.Issue);
     const home = new HomeSteps(page);
     const role = new RoleManagementSteps(page);
@@ -671,7 +672,7 @@ test(`${d32.TestID} - ${d32.Description}`, async ({ page }) => {
 
 // ── TC33: Verify spaces-only description validation ───────────────────────────
 const d33 = ExcelUtil.getTestData(SHEET, "TC33_SpacesDescriptionValidation");
-test(`${d33.TestID} - ${d33.Description}`, async ({ page }) => {
+test(`${d33.TestID} - ${d33.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d33.Description, d33.Issue);
     // Description_Input column has "      " (spaces) in the Excel sheet
     const spacesDesc = d33.Description_Input || "      ";
@@ -701,7 +702,7 @@ test(`${d33.TestID} - ${d33.Description}`, async ({ page }) => {
 
 // ── TC34: Verify delete popup displayed ───────────────────────────────────────
 const d34 = ExcelUtil.getTestData(SHEET, "TC34_DeletePopupVisible");
-test(`${d34.TestID} - ${d34.Description}`, async ({ page }) => {
+test(`${d34.TestID} - ${d34.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d34.Description, d34.Issue);
     const home = new HomeSteps(page);
     const role = new RoleManagementSteps(page);
@@ -715,7 +716,7 @@ test(`${d34.TestID} - ${d34.Description}`, async ({ page }) => {
 
 // ── TC35: Verify cancel delete ────────────────────────────────────────────────
 const d35 = ExcelUtil.getTestData(SHEET, "TC35_CancelDeletePreservesRole");
-test(`${d35.TestID} - ${d35.Description}`, async ({ page }) => {
+test(`${d35.TestID} - ${d35.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d35.Description, d35.Issue);
     const roleName = uniqueRoleName(val(d35.RoleName, RoleManagementConstants.DELETE_PREFIX));
     const description = val(d35.Description_Input, "Automation Role Description");
@@ -740,7 +741,7 @@ test(`${d35.TestID} - ${d35.Description}`, async ({ page }) => {
 
 // ── TC36: Verify confirm delete ───────────────────────────────────────────────
 const d36 = ExcelUtil.getTestData(SHEET, "TC36_ConfirmDeleteSuccess");
-test(`${d36.TestID} - ${d36.Description}`, async ({ page }) => {
+test(`${d36.TestID} - ${d36.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d36.Description, d36.Issue);
     const roleName = uniqueRoleName(val(d36.RoleName, RoleManagementConstants.DELETE_PREFIX));
     const description = val(d36.Description_Input, "Automation Role Description");
@@ -763,7 +764,7 @@ test(`${d36.TestID} - ${d36.Description}`, async ({ page }) => {
 
 // ── TC37: Verify deleted role removed from listing ────────────────────────────
 const d37 = ExcelUtil.getTestData(SHEET, "TC37_DeletedRoleNotInListing");
-test(`${d37.TestID} - ${d37.Description}`, async ({ page }) => {
+test(`${d37.TestID} - ${d37.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d37.Description, d37.Issue);
     const roleName = uniqueRoleName(val(d37.RoleName, RoleManagementConstants.DELETE_PREFIX));
     const description = val(d37.Description_Input, "Automation Role Description");
@@ -788,7 +789,7 @@ test(`${d37.TestID} - ${d37.Description}`, async ({ page }) => {
 
 // ── TC38: Verify success message displayed after deletion ─────────────────────
 const d38 = ExcelUtil.getTestData(SHEET, "TC38_DeleteSuccessMessage");
-test(`${d38.TestID} - ${d38.Description}`, async ({ page }) => {
+test(`${d38.TestID} - ${d38.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d38.Description, d38.Issue);
     const roleName = uniqueRoleName(val(d38.RoleName, RoleManagementConstants.DELETE_PREFIX));
     const description = val(d38.Description_Input, "Automation Role Description");

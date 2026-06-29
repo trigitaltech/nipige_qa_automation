@@ -8,7 +8,7 @@ import { getCredential, Role } from "@config/Credentials";
 const SHEET = "ServiceTicketTest";
 
 const data2 = ExcelUtil.getTestData(SHEET, "TC02_InvalidTicketID");
-test(`${data2.TestID} - ${data2.Description}`, async ({ page }) => {
+test(`${data2.TestID} - ${data2.Description} @regression @operations`, async ({ page }) => {
     Allure.attachDetails(data2.Description, data2.Issue);
 
     const credential = getCredential(Role.TENANT);

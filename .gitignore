@@ -9,4 +9,4 @@ node_modules
 # Secrets — never commit real credentials
 # .env
 .env.local
-/.auth
+/playwright/.auth/

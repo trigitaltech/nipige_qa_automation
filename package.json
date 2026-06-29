@@ -12,6 +12,9 @@
     "report": "allure serve",
     "create:suite": "cd ./src/framework/manager & npx ts-node SuiteManager.ts",
     "test": "playwright test --project=suite",
+    "test:regression": "npm run create:suite -- SHEET=Regression && npm test",
+    "test:smoke": "npm run create:suite -- SHEET=Smoke && npm test",
+    "test:sanity": "npm run create:suite -- SHEET=Sanity && npm test",
     "local:test": "playwright test --project=local",
     "local:test:ui": "playwright test --project=local --ui"
   },

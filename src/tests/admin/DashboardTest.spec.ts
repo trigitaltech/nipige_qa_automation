@@ -24,8 +24,7 @@ for (const scenario of scenarios) {
         scenario
     );
 
-    test(
-        `${data.TestID} - ${data.Description}`,
+    test(`${data.TestID} - ${data.Description} @regression @admin @sanity`,
         async ({ page }) => {
 
             Allure.attachDetails(

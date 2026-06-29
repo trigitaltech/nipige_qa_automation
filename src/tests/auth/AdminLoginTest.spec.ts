@@ -12,7 +12,7 @@ test.describe.configure({ retries: 2 });
 const SHEET = "LoginTest";
 
 const data1 = ExcelUtil.getTestData(SHEET, "TC06_AdminValidLogin");
-test(`${data1.TestID} - ${data1.Description}`, async ({ page }) => {
+test(`${data1.TestID} - ${data1.Description} @regression @auth`, async ({ page }) => {
     Allure.attachDetails(data1.Description, data1.Issue);
     const credential = getCredential(Role.ADMIN);
     const home = new HomeSteps(page);
@@ -23,7 +23,7 @@ test(`${data1.TestID} - ${data1.Description}`, async ({ page }) => {
 });
 
 const data2 = ExcelUtil.getTestData(SHEET, "TC07_AdminInvalidUsername");
-test(`${data2.TestID} - ${data2.Description}`, async ({ page }) => {
+test(`${data2.TestID} - ${data2.Description} @regression @auth`, async ({ page }) => {
     Allure.attachDetails(data2.Description, data2.Issue);
     const home = new HomeSteps(page);
     await home.launchApplication();
@@ -32,7 +32,7 @@ test(`${data2.TestID} - ${data2.Description}`, async ({ page }) => {
 });
 
 const data3 = ExcelUtil.getTestData(SHEET, "TC08_AdminInvalidPassword");
-test(`${data3.TestID} - ${data3.Description}`, async ({ page }) => {
+test(`${data3.TestID} - ${data3.Description} @regression @auth`, async ({ page }) => {
     Allure.attachDetails(data3.Description, data3.Issue);
     const home = new HomeSteps(page);
     await home.launchApplication();
@@ -41,7 +41,7 @@ test(`${data3.TestID} - ${data3.Description}`, async ({ page }) => {
 });
 
 const data4 = ExcelUtil.getTestData(SHEET, "TC09_AdminInvalidUsernameAndPassword");
-test(`${data4.TestID} - ${data4.Description}`, async ({ page }) => {
+test(`${data4.TestID} - ${data4.Description} @regression @auth`, async ({ page }) => {
     Allure.attachDetails(data4.Description, data4.Issue);
     const home = new HomeSteps(page);
     await home.launchApplication();

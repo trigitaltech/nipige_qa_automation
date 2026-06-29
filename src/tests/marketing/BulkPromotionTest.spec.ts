@@ -43,7 +43,7 @@ test.describe("Bulk Promotion", () => {
 
     // ── TC01: Customer — First Name ───────────────────────────────────────────────
     const d01 = ExcelUtil.getTestData(SHEET, "TC01_Customer_FirstName");
-    test(`${d01.TestID} - ${d01.Description}`, async () => {
+    test(`${d01.TestID} - ${d01.Description} @regression @marketing`, async () => {
         Allure.attachDetails(d01.Description, d01.Issue);
         await bulk.selectEntity(d01.Entity);
         await bulk.runCriteriaFlow(d01.Criteria, d01.Value, d01.Operator);
@@ -51,7 +51,7 @@ test.describe("Bulk Promotion", () => {
 
     // ── TC02: Customer — Last Name ────────────────────────────────────────────────
     const d02 = ExcelUtil.getTestData(SHEET, "TC02_Customer_LastName");
-    test(`${d02.TestID} - ${d02.Description}`, async () => {
+    test(`${d02.TestID} - ${d02.Description} @regression @marketing`, async () => {
         Allure.attachDetails(d02.Description, d02.Issue);
         await bulk.selectEntity(d02.Entity);
         await bulk.runCriteriaFlow(d02.Criteria, d02.Value, d02.Operator);
@@ -59,7 +59,7 @@ test.describe("Bulk Promotion", () => {
 
     // ── TC03: Customer — Email ────────────────────────────────────────────────────
     const d03 = ExcelUtil.getTestData(SHEET, "TC03_Customer_Email");
-    test(`${d03.TestID} - ${d03.Description}`, async () => {
+    test(`${d03.TestID} - ${d03.Description} @regression @marketing`, async () => {
         Allure.attachDetails(d03.Description, d03.Issue);
         await bulk.selectEntity(d03.Entity);
         await bulk.runCriteriaFlow(d03.Criteria, d03.Value, d03.Operator);
@@ -67,7 +67,7 @@ test.describe("Bulk Promotion", () => {
 
     // ── TC04: Customer — Phone ────────────────────────────────────────────────────
     const d04 = ExcelUtil.getTestData(SHEET, "TC04_Customer_Phone");
-    test(`${d04.TestID} - ${d04.Description}`, async () => {
+    test(`${d04.TestID} - ${d04.Description} @regression @marketing`, async () => {
         Allure.attachDetails(d04.Description, d04.Issue);
         await bulk.selectEntity(d04.Entity);
         await bulk.runPhoneCriteriaFlow(d04.Criteria, d04.Value, d04.Operator);
@@ -75,7 +75,7 @@ test.describe("Bulk Promotion", () => {
 
     // ── TC05: Customer — Customer No ──────────────────────────────────────────────
     const d05 = ExcelUtil.getTestData(SHEET, "TC05_Customer_CustomerNo");
-    test(`${d05.TestID} - ${d05.Description}`, async () => {
+    test(`${d05.TestID} - ${d05.Description} @regression @marketing`, async () => {
         Allure.attachDetails(d05.Description, d05.Issue);
         await bulk.selectEntity(d05.Entity);
         await bulk.runCriteriaFlow(d05.Criteria, d05.Value, d05.Operator);
@@ -83,7 +83,7 @@ test.describe("Bulk Promotion", () => {
 
     // ── TC06: Customer — City ─────────────────────────────────────────────────────
     const d06 = ExcelUtil.getTestData(SHEET, "TC06_Customer_City");
-    test(`${d06.TestID} - ${d06.Description}`, async () => {
+    test(`${d06.TestID} - ${d06.Description} @regression @marketing`, async () => {
         Allure.attachDetails(d06.Description, d06.Issue);
         await bulk.selectEntity(d06.Entity);
         await bulk.runCriteriaFlow(d06.Criteria, d06.Value, d06.Operator);
@@ -91,7 +91,7 @@ test.describe("Bulk Promotion", () => {
 
     // ── TC07: Customer — State ────────────────────────────────────────────────────
     const d07 = ExcelUtil.getTestData(SHEET, "TC07_Customer_State");
-    test(`${d07.TestID} - ${d07.Description}`, async () => {
+    test(`${d07.TestID} - ${d07.Description} @regression @marketing`, async () => {
         Allure.attachDetails(d07.Description, d07.Issue);
         await bulk.selectEntity(d07.Entity);
         await bulk.runCriteriaFlow(d07.Criteria, d07.Value, d07.Operator);
@@ -99,7 +99,7 @@ test.describe("Bulk Promotion", () => {
 
     // ── TC08: Customer — Date ─────────────────────────────────────────────────────
     const d08 = ExcelUtil.getTestData(SHEET, "TC08_Customer_Date");
-    test(`${d08.TestID} - ${d08.Description}`, async () => {
+    test(`${d08.TestID} - ${d08.Description} @regression @marketing`, async () => {
         Allure.attachDetails(d08.Description, d08.Issue);
         const [fromDate, toDate] = String(d08.Value).split("|").map((value) => value.trim());
         await bulk.selectEntity(d08.Entity);
@@ -108,7 +108,7 @@ test.describe("Bulk Promotion", () => {
 
     // TC09: Customer - Invalid Email
     const d09 = ExcelUtil.getTestData(SHEET, "TC09_Customer_InvalidEmail");
-    test(`${d09.TestID} - ${d09.Description}`, async () => {
+    test(`${d09.TestID} - ${d09.Description} @regression @marketing`, async () => {
         Allure.attachDetails(d09.Description, d09.Issue);
         await bulk.selectEntity(d09.Entity);
         await bulk.runCriteriaFlow(d09.Criteria, d09.Value, d09.Operator);
@@ -116,7 +116,7 @@ test.describe("Bulk Promotion", () => {
 
     // TC10: Customer - Invalid Phone
     const d10 = ExcelUtil.getTestData(SHEET, "TC10_Customer_InvalidPhone");
-    test(`${d10.TestID} - ${d10.Description}`, async () => {
+    test(`${d10.TestID} - ${d10.Description} @regression @marketing`, async () => {
         Allure.attachDetails(d10.Description, d10.Issue);
         await bulk.selectEntity(d10.Entity);
         await bulk.runCriteriaFlow(d10.Criteria, d10.Value, d10.Operator);
@@ -124,7 +124,7 @@ test.describe("Bulk Promotion", () => {
 
     // TC11: Customer - Invalid Customer No
     const d11 = ExcelUtil.getTestData(SHEET, "TC11_Customer_InvalidCustomerNo");
-    test(`${d11.TestID} - ${d11.Description}`, async () => {
+    test(`${d11.TestID} - ${d11.Description} @regression @marketing`, async () => {
         Allure.attachDetails(d11.Description, d11.Issue);
         await bulk.selectEntity(d11.Entity);
         await bulk.runCriteriaFlow(d11.Criteria, d11.Value, d11.Operator);
@@ -132,7 +132,7 @@ test.describe("Bulk Promotion", () => {
 
     // ── TC12: Order — City ────────────────────────────────────────────────────────
     const d12 = ExcelUtil.getTestData(SHEET, "TC12_Order_City");
-    test(`${d12.TestID} - ${d12.Description}`, async () => {
+    test(`${d12.TestID} - ${d12.Description} @regression @marketing`, async () => {
         Allure.attachDetails(d12.Description, d12.Issue);
         await bulk.selectEntity(d12.Entity);
         await bulk.runCriteriaFlow(d12.Criteria, d12.Value, d12.Operator);
@@ -140,7 +140,7 @@ test.describe("Bulk Promotion", () => {
 
     // ── TC13: Order — Date ────────────────────────────────────────────────────────
     const d13 = ExcelUtil.getTestData(SHEET, "TC13_Order_Date");
-    test(`${d13.TestID} - ${d13.Description}`, async () => {
+    test(`${d13.TestID} - ${d13.Description} @regression @marketing`, async () => {
         Allure.attachDetails(d13.Description, d13.Issue);
         const [fromDate, toDate] = String(d13.Value).split("|").map((v) => v.trim());
         await bulk.selectEntity(d13.Entity);
@@ -149,7 +149,7 @@ test.describe("Bulk Promotion", () => {
 
     // ── TC14: Order — Order Amount (Range) ────────────────────────────────────────
     const d14 = ExcelUtil.getTestData(SHEET, "TC14_Order_OrderAmount");
-    test(`${d14.TestID} - ${d14.Description}`, async () => {
+    test(`${d14.TestID} - ${d14.Description} @regression @marketing`, async () => {
         Allure.attachDetails(d14.Description, d14.Issue);
         const [minAmount, maxAmount] = String(d14.Value).split("|").map((v) => v.trim());
         await bulk.selectEntity(d14.Entity);
@@ -158,7 +158,7 @@ test.describe("Bulk Promotion", () => {
 
     // ── TC15: Order — Invalid City (negative) ────────────────────────────────────
     const d15 = ExcelUtil.getTestData(SHEET, "TC15_Order_InvalidCity");
-    test(`${d15.TestID} - ${d15.Description}`, async () => {
+    test(`${d15.TestID} - ${d15.Description} @regression @marketing`, async () => {
         Allure.attachDetails(d15.Description, d15.Issue);
         await bulk.selectEntity(d15.Entity);
         await bulk.runCriteriaFlow(d15.Criteria, d15.Value, d15.Operator);
@@ -166,7 +166,7 @@ test.describe("Bulk Promotion", () => {
 
     // ── TC16: Order — Invalid Order Amount (negative) ────────────────────────────
     const d16 = ExcelUtil.getTestData(SHEET, "TC16_Order_InvalidOrderAmount");
-    test(`${d16.TestID} - ${d16.Description}`, async () => {
+    test(`${d16.TestID} - ${d16.Description} @regression @marketing`, async () => {
         Allure.attachDetails(d16.Description, d16.Issue);
         const [minAmount, maxAmount] = String(d16.Value).split("|").map((v) => v.trim());
         await bulk.selectEntity(d16.Entity);
@@ -175,7 +175,7 @@ test.describe("Bulk Promotion", () => {
 
     // ── Legacy commented-out stubs (kept for reference) ──────────────────────────
     // const d08 = ExcelUtil.getTestData(SHEET, "TC08_Customer_RefererId");
-    // test(`${d08.TestID} - ${d08.Description}`, async () => {
+    // test(`${d08.TestID} - ${d08.Description} @regression @marketing`, async () => {
     //     Allure.attachDetails(d08.Description, d08.Issue);
     //     await bulk.clickCreate();
     //     await bulk.selectEntity(d08.Entity);
@@ -183,7 +183,7 @@ test.describe("Bulk Promotion", () => {
     // });
 
     // const d09 = ExcelUtil.getTestData(SHEET, "TC09_Customer_RefererId");
-    // test(`${d09.TestID} - ${d09.Description}`, async () => {
+    // test(`${d09.TestID} - ${d09.Description} @regression @marketing`, async () => {
     //     Allure.attachDetails(d09.Description, d09.Issue);
     //     await bulk.clickCreate();
     //     await bulk.selectEntity(d09.Entity);
@@ -191,7 +191,7 @@ test.describe("Bulk Promotion", () => {
     // });
 
     // const d10 = ExcelUtil.getTestData(SHEET, "TC10_AddConditionRow");
-    // test(`${d10.TestID} - ${d10.Description}`, async () => {
+    // test(`${d10.TestID} - ${d10.Description} @regression @marketing`, async () => {
     //     Allure.attachDetails(d10.Description, d10.Issue);
     //     await bulk.clickCreate();
     //     await bulk.selectEntity(d10.Entity);
@@ -200,7 +200,7 @@ test.describe("Bulk Promotion", () => {
     // });
 
     // const d11 = ExcelUtil.getTestData(SHEET, "TC11_RemoveConditionRow");
-    // test(`${d11.TestID} - ${d11.Description}`, async () => {
+    // test(`${d11.TestID} - ${d11.Description} @regression @marketing`, async () => {
     //     Allure.attachDetails(d11.Description, d11.Issue);
     //     await bulk.clickCreate();
     //     await bulk.selectEntity(d11.Entity);
@@ -211,7 +211,7 @@ test.describe("Bulk Promotion", () => {
     // });
 
     // const d12 = ExcelUtil.getTestData(SHEET, "TC12_OrOperator");
-    // test(`${d12.TestID} - ${d12.Description}`, async () => {
+    // test(`${d12.TestID} - ${d12.Description} @regression @marketing`, async () => {
     //     Allure.attachDetails(d12.Description, d12.Issue);
     //     await bulk.clickCreate();
     //     await bulk.selectEntity(d12.Entity);
@@ -229,7 +229,7 @@ test.describe("Bulk Promotion", () => {
     // });
 
     // const d13 = ExcelUtil.getTestData(SHEET, "TC13_ViewImpactedCustomer");
-    // test(`${d13.TestID} - ${d13.Description}`, async () => {
+    // test(`${d13.TestID} - ${d13.Description} @regression @marketing`, async () => {
     //     Allure.attachDetails(d13.Description, d13.Issue);
     //     await bulk.clickCreate();
     //     await bulk.selectEntity(d13.Entity);
@@ -237,7 +237,7 @@ test.describe("Bulk Promotion", () => {
     // });
 
     // const d14 = ExcelUtil.getTestData(SHEET, "TC14_DownloadButton");
-    // test(`${d14.TestID} - ${d14.Description}`, async () => {
+    // test(`${d14.TestID} - ${d14.Description} @regression @marketing`, async () => {
     //     Allure.attachDetails(d14.Description, d14.Issue);
     //     await bulk.clickCreate();
     //     await bulk.selectEntity(d14.Entity);

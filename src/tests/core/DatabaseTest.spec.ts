@@ -6,7 +6,7 @@ import { test } from "@base-test";
 const testData = ExcelUtil.getTestDataArray("DatabaseTest");
 // eslint-disable-next-line no-restricted-syntax
 for (const data of testData) {
-    test(`${data.TestID} - ${data.Description}`, async ({ }) => {
+    test(`${data.TestID} - ${data.Description} @regression`, async ({ }) => {
         Allure.attachDetails(data.Description, data.Issue);
         const db = new DatabaseStep();
         const result = await db.executeMSSQLQuery(data.Query);
