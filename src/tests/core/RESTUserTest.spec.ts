@@ -11,7 +11,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 const allUserData = ExcelUtil.getTestData(SHEET, "TC01_GetAllUserTest");
-test(`${allUserData.TestID} - ${allUserData.Description}`, async ({ gData }) => {
+test(`${allUserData.TestID} - ${allUserData.Description} @regression`, async ({ gData }) => {
     Allure.attachDetails(allUserData.Description, allUserData.Issue);
     const response = await user.get(allUserData.EndPoint, allUserData.Operation);
     await user.verifyStatusCode(response, allUserData.Status);
@@ -21,7 +21,7 @@ test(`${allUserData.TestID} - ${allUserData.Description}`, async ({ gData }) => 
 });
 
 const singleUserData = ExcelUtil.getTestData(SHEET, "TC02_GetSingleUser");
-test(`${singleUserData.TestID} - ${singleUserData.Description}`, async ({ gData }) => {
+test(`${singleUserData.TestID} - ${singleUserData.Description} @regression`, async ({ gData }) => {
     Allure.attachDetails(singleUserData.Description, singleUserData.Issue);
     const endPoint = StringUtil.formatStringValue(singleUserData.EndPoint, { ID: gData.get("id") });
     const response = await user.get(endPoint, singleUserData.Operation);
@@ -30,7 +30,7 @@ test(`${singleUserData.TestID} - ${singleUserData.Description}`, async ({ gData 
 });
 
 const addUserData = ExcelUtil.getTestData(SHEET, "TC03_AddUser");
-test(`${addUserData.TestID} - ${addUserData.Description}`, async ({ gData }) => {
+test(`${addUserData.TestID} - ${addUserData.Description} @regression`, async ({ gData }) => {
     Allure.attachDetails(addUserData.Description, addUserData.Issue);
     const userName = StringUtil.randomAlphabeticString(5);
     const password = StringUtil.randomAlphanumericString(5);
@@ -49,7 +49,7 @@ test(`${addUserData.TestID} - ${addUserData.Description}`, async ({ gData }) => 
 });
 
 const updateUserData = ExcelUtil.getTestData(SHEET, "TC04_UpdateUser");
-test(`${updateUserData.TestID} - ${updateUserData.Description}`, async ({ gData }) => {
+test(`${updateUserData.TestID} - ${updateUserData.Description} @regression`, async ({ gData }) => {
     Allure.attachDetails(updateUserData.Description, updateUserData.Issue);
     const endPoint = StringUtil.formatStringValue(updateUserData.EndPoint, { ID: gData.get("id") });
     const phoneNumber = StringUtil.randomNumberString(10);
@@ -67,7 +67,7 @@ test(`${updateUserData.TestID} - ${updateUserData.Description}`, async ({ gData 
 });
 
 const loginData = ExcelUtil.getTestData(SHEET, "TC05_StoreLogin");
-test(`${loginData.TestID} - ${loginData.Description}`, async ({ gData }) => {
+test(`${loginData.TestID} - ${loginData.Description} @regression`, async ({ gData }) => {
     Allure.attachDetails(loginData.Description, loginData.Issue);
     const requestData = {
         userName: gData.get("userName"),
@@ -79,7 +79,7 @@ test(`${loginData.TestID} - ${loginData.Description}`, async ({ gData }) => {
 });
 
 const deleteData = ExcelUtil.getTestData(SHEET, "TC06_DeleteUser");
-test(`${deleteData.TestID} - ${deleteData.Description}`, async ({ gData }) => {
+test(`${deleteData.TestID} - ${deleteData.Description} @regression`, async ({ gData }) => {
     Allure.attachDetails(deleteData.Description, deleteData.Issue);
     const endPoint = StringUtil.formatStringValue(deleteData.EndPoint, { ID: gData.get("id") });
     const response = await user.delete(endPoint, deleteData.Operation);

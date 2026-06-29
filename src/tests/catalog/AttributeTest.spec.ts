@@ -212,13 +212,13 @@ test.describe("Attribute Management Data-Driven Suite", () => {
     // SECTION 1: Attribute List Screen — Positive
     // ═══════════════════════════════════════════════════════════════════════
 
-    test(`${tcList01.TestID} - ${tcList01.Description}`, async () => {
+    test(`${tcList01.TestID} - ${tcList01.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         await steps.verifyPageLoaded();
         await steps.verifyGridColumnsDisplayed();
     });
 
-    test(`${tcList02.TestID} - ${tcList02.Description}`, async () => {
+    test(`${tcList02.TestID} - ${tcList02.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         await steps.searchAttribute(tcList02.FieldName);
         await steps.verifySearchResultsContainTerm(tcList02.ExpectedResult);
@@ -228,7 +228,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
     // TC_LIST_03 and TC_LIST_04 require sharedAttrName to exist — created later in TC_CREATE_02.
     // They are placed after create to maintain serial dependency order.
 
-    test(`${tcList06.TestID} - ${tcList06.Description}`, async () => {
+    test(`${tcList06.TestID} - ${tcList06.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         await steps.clickCreateButton();
         await steps.verifyCreatePageLoaded();
@@ -236,13 +236,13 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.verifyPageLoaded();
     });
 
-    test(`${tcList09.TestID} - ${tcList09.Description}`, async () => {
+    test(`${tcList09.TestID} - ${tcList09.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         await steps.verifyPageLoaded();
         await steps.verifyPaginationNextNavigates();
     });
 
-    test(`${tcList10.TestID} - ${tcList10.Description}`, async () => {
+    test(`${tcList10.TestID} - ${tcList10.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         await steps.clickRefresh();
         await steps.verifyPageLoaded();
@@ -252,28 +252,28 @@ test.describe("Attribute Management Data-Driven Suite", () => {
     // SECTION 1: Attribute List Screen — Negative
     // ═══════════════════════════════════════════════════════════════════════
 
-    test(`${tcListNeg01.TestID} - ${tcListNeg01.Description}`, async () => {
+    test(`${tcListNeg01.TestID} - ${tcListNeg01.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         await steps.searchAttribute(tcListNeg01.FieldName);
         await steps.verifyNoRecordsMessage();
         await steps.clearSearch();
     });
 
-    test(`${tcListNeg02.TestID} - ${tcListNeg02.Description}`, async () => {
+    test(`${tcListNeg02.TestID} - ${tcListNeg02.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         await steps.searchAttribute(tcListNeg02.FieldName);
         await steps.verifyEmptyOrNoRecords();
         await steps.clearSearch();
     });
 
-    test(`${tcListNeg03.TestID} - ${tcListNeg03.Description}`, async () => {
+    test(`${tcListNeg03.TestID} - ${tcListNeg03.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         await steps.searchAttribute(tcListNeg03.FieldName);
         await steps.verifyEmptyOrNoRecords();
         await steps.clearSearch();
     });
 
-    test(`${tcListNeg08.TestID} - ${tcListNeg08.Description}`, async ({ browser }) => {
+    test(`${tcListNeg08.TestID} - ${tcListNeg08.Description} @regression @catalog`, async ({ browser }) => {
         const context = await browser.newContext();
         const unauthPage = await context.newPage();
         await unauthPage.goto(`${process.env.BASE_URL}${AttributePage.ATTRIBUTE_PATH}`);
@@ -286,7 +286,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await context.close();
     });
 
-    test(`${tcListNeg09.TestID} - ${tcListNeg09.Description}`, async () => {
+    test(`${tcListNeg09.TestID} - ${tcListNeg09.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         const nextBtn = sharedPage.locator(AttributePage.NEXT_BTN).first();
         if (await nextBtn.isVisible()) {
@@ -296,7 +296,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.verifyPageLoaded();
     });
 
-    test(`${tcListNeg10.TestID} - ${tcListNeg10.Description}`, async () => {
+    test(`${tcListNeg10.TestID} - ${tcListNeg10.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         // Double-click actions on list rows should not cause duplicate errors
         const firstRow = sharedPage.locator(AttributePage.TABLE_ROWS).first();
@@ -315,7 +315,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
     // SECTION 2: Create Attribute Screen — Positive
     // ═══════════════════════════════════════════════════════════════════════
 
-    test(`${tcCreate01.TestID} - ${tcCreate01.Description}`, async () => {
+    test(`${tcCreate01.TestID} - ${tcCreate01.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         await steps.clickCreateButton();
         await steps.verifyCreatePageLoaded();
@@ -325,7 +325,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
     });
 
     // TC_CREATE_02: Creates sharedAttrName — all subsequent tests depend on this
-    test(`${tcCreate02.TestID} - ${tcCreate02.Description}`, async () => {
+    test(`${tcCreate02.TestID} - ${tcCreate02.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         await steps.clickCreateButton();
         await steps.verifyCreatePageLoaded();
@@ -346,7 +346,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.clearSearch();
     });
 
-    test(`${tcCreate03.TestID} - ${tcCreate03.Description}`, async () => {
+    test(`${tcCreate03.TestID} - ${tcCreate03.Description} @regression @catalog`, async () => {
         const objAttr = steps.generateUniqueAttributeName("OBJ");
         await steps.navigateToAttribute();
         await steps.clickCreateButton();
@@ -362,7 +362,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.clickBack();
     });
 
-    test(`${tcCreate04.TestID} - ${tcCreate04.Description}`, async () => {
+    test(`${tcCreate04.TestID} - ${tcCreate04.Description} @regression @catalog`, async () => {
         const arrAttr = steps.generateUniqueAttributeName("ARR");
         await steps.navigateToAttribute();
         await steps.clickCreateButton();
@@ -377,7 +377,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.clickBack();
     });
 
-    test(`${tcCreate05.TestID} - ${tcCreate05.Description}`, async () => {
+    test(`${tcCreate05.TestID} - ${tcCreate05.Description} @regression @catalog`, async () => {
         const attr05 = steps.generateUniqueAttributeName("CR05");
         await steps.navigateToAttribute();
         await steps.clickCreateButton();
@@ -392,7 +392,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.verifySuccessMessage();
     });
 
-    test(`${tcCreate06.TestID} - ${tcCreate06.Description}`, async () => {
+    test(`${tcCreate06.TestID} - ${tcCreate06.Description} @regression @catalog`, async () => {
         const attr06 = steps.generateUniqueAttributeName("CR06");
         await steps.navigateToAttribute();
         await steps.clickCreateButton();
@@ -407,7 +407,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.verifySuccessMessage();
     });
 
-    test(`${tcCreate07.TestID} - ${tcCreate07.Description}`, async () => {
+    test(`${tcCreate07.TestID} - ${tcCreate07.Description} @regression @catalog`, async () => {
         const attr07 = steps.generateUniqueAttributeName("CR07");
         await steps.navigateToAttribute();
         await steps.clickCreateButton();
@@ -422,7 +422,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.verifySuccessMessage();
     });
 
-    test(`${tcCreate08.TestID} - ${tcCreate08.Description}`, async () => {
+    test(`${tcCreate08.TestID} - ${tcCreate08.Description} @regression @catalog`, async () => {
         const multiLangAttr = steps.generateUniqueAttributeName("LANG");
         await steps.navigateToAttribute();
         await steps.clickCreateButton();
@@ -437,7 +437,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.verifySuccessMessage();
     });
 
-    test(`${tcCreate09.TestID} - ${tcCreate09.Description}`, async () => {
+    test(`${tcCreate09.TestID} - ${tcCreate09.Description} @regression @catalog`, async () => {
         const attr09 = steps.generateUniqueAttributeName("CR09");
         await steps.navigateToAttribute();
         await steps.clickCreateButton();
@@ -452,7 +452,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.verifySuccessMessage();
     });
 
-    test(`${tcCreate10.TestID} - ${tcCreate10.Description}`, async () => {
+    test(`${tcCreate10.TestID} - ${tcCreate10.Description} @regression @catalog`, async () => {
         const attr10 = steps.generateUniqueAttributeName("CR10");
         await steps.navigateToAttribute();
         await steps.clickCreateButton();
@@ -473,7 +473,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.clearSearch();
     });
 
-    test(`${tcCreate11.TestID} - ${tcCreate11.Description}`, async () => {
+    test(`${tcCreate11.TestID} - ${tcCreate11.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         await steps.clickCreateButton();
         await steps.verifyCreatePageLoaded();
@@ -481,7 +481,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.verifyPageLoaded();
     });
 
-    test(`${tcCreate12.TestID} - ${tcCreate12.Description}`, async () => {
+    test(`${tcCreate12.TestID} - ${tcCreate12.Description} @regression @catalog`, async () => {
         const strAttr = steps.generateUniqueAttributeName("STR");
         await steps.navigateToAttribute();
         await steps.clickCreateButton();
@@ -496,7 +496,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.verifySuccessMessage();
     });
 
-    test(`${tcCreate13.TestID} - ${tcCreate13.Description}`, async () => {
+    test(`${tcCreate13.TestID} - ${tcCreate13.Description} @regression @catalog`, async () => {
         const numAttr = steps.generateUniqueAttributeName("NUM");
         await steps.navigateToAttribute();
         await steps.clickCreateButton();
@@ -512,7 +512,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.verifySuccessMessage();
     });
 
-    test(`${tcCreate14.TestID} - ${tcCreate14.Description}`, async () => {
+    test(`${tcCreate14.TestID} - ${tcCreate14.Description} @regression @catalog`, async () => {
         const boolAttr = steps.generateUniqueAttributeName("BOOL");
         await steps.navigateToAttribute();
         await steps.clickCreateButton();
@@ -527,7 +527,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.verifySuccessMessage();
     });
 
-    test(`${tcCreate15.TestID} - ${tcCreate15.Description}`, async () => {
+    test(`${tcCreate15.TestID} - ${tcCreate15.Description} @regression @catalog`, async () => {
         const dateAttr = steps.generateUniqueAttributeName("DATE");
         await steps.navigateToAttribute();
         await steps.clickCreateButton();
@@ -542,7 +542,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.verifySuccessMessage();
     });
 
-    test(`${tcCreate16.TestID} - ${tcCreate16.Description}`, async () => {
+    test(`${tcCreate16.TestID} - ${tcCreate16.Description} @regression @catalog`, async () => {
         const imgAttr = steps.generateUniqueAttributeName("IMG");
         await steps.navigateToAttribute();
         await steps.clickCreateButton();
@@ -557,7 +557,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.verifySuccessMessage();
     });
 
-    test(`${tcCreate17.TestID} - ${tcCreate17.Description}`, async () => {
+    test(`${tcCreate17.TestID} - ${tcCreate17.Description} @regression @catalog`, async () => {
         const attr17 = steps.generateUniqueAttributeName("CR17");
         await steps.navigateToAttribute();
         await steps.clickCreateButton();
@@ -573,7 +573,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.verifySuccessMessage();
     });
 
-    test(`${tcCreate18.TestID} - ${tcCreate18.Description}`, async () => {
+    test(`${tcCreate18.TestID} - ${tcCreate18.Description} @regression @catalog`, async () => {
         const attr18 = steps.generateUniqueAttributeName("CR18");
         await steps.navigateToAttribute();
         await steps.clickCreateButton();
@@ -593,7 +593,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
     // SECTION 2: Create Attribute Screen — Negative
     // ═══════════════════════════════════════════════════════════════════════
 
-    test(`${tcCreateNeg01.TestID} - ${tcCreateNeg01.Description}`, async () => {
+    test(`${tcCreateNeg01.TestID} - ${tcCreateNeg01.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         await steps.clickCreateButton();
         await steps.verifyCreatePageLoaded();
@@ -602,7 +602,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.clickBack();
     });
 
-    test(`${tcCreateNeg02.TestID} - ${tcCreateNeg02.Description}`, async () => {
+    test(`${tcCreateNeg02.TestID} - ${tcCreateNeg02.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         await steps.clickCreateButton();
         await steps.fillCreateForm({
@@ -617,7 +617,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.clickBack();
     });
 
-    test(`${tcCreateNeg03.TestID} - ${tcCreateNeg03.Description}`, async () => {
+    test(`${tcCreateNeg03.TestID} - ${tcCreateNeg03.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         await steps.clickCreateButton();
         await steps.verifyCreatePageLoaded();
@@ -640,7 +640,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.clickBack();
     });
 
-    test(`${tcCreateNeg04.TestID} - ${tcCreateNeg04.Description}`, async () => {
+    test(`${tcCreateNeg04.TestID} - ${tcCreateNeg04.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         await steps.clickCreateButton();
         await steps.verifyCreatePageLoaded();
@@ -666,7 +666,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.clickBack();
     });
 
-    test(`${tcCreateNeg05.TestID} - ${tcCreateNeg05.Description}`, async () => {
+    test(`${tcCreateNeg05.TestID} - ${tcCreateNeg05.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         await steps.clickCreateButton();
         await steps.fillCreateForm({
@@ -681,7 +681,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.clickBack();
     });
 
-    test(`${tcCreateNeg06.TestID} - ${tcCreateNeg06.Description}`, async () => {
+    test(`${tcCreateNeg06.TestID} - ${tcCreateNeg06.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         await steps.clickCreateButton();
         await steps.fillCreateForm({
@@ -708,7 +708,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         }
     });
 
-    test(`${tcCreateNeg07.TestID} - ${tcCreateNeg07.Description}`, async () => {
+    test(`${tcCreateNeg07.TestID} - ${tcCreateNeg07.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         await steps.clickCreateButton();
         await steps.fillCreateForm({
@@ -723,7 +723,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.clickBack();
     });
 
-    test(`${tcCreateNeg08.TestID} - ${tcCreateNeg08.Description}`, async () => {
+    test(`${tcCreateNeg08.TestID} - ${tcCreateNeg08.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         await steps.clickCreateButton();
         await steps.fillCreateForm({
@@ -737,7 +737,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.navigateToAttribute();
     });
 
-    test(`${tcCreateNeg09.TestID} - ${tcCreateNeg09.Description}`, async () => {
+    test(`${tcCreateNeg09.TestID} - ${tcCreateNeg09.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         await steps.clickCreateButton();
         await steps.fillCreateForm({
@@ -751,7 +751,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.navigateToAttribute();
     });
 
-    test(`${tcCreateNeg10.TestID} - ${tcCreateNeg10.Description}`, async () => {
+    test(`${tcCreateNeg10.TestID} - ${tcCreateNeg10.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         await steps.clickCreateButton();
         await steps.fillCreateForm({
@@ -784,7 +784,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         }
     });
 
-    test(`${tcCreateNeg11.TestID} - ${tcCreateNeg11.Description}`, async () => {
+    test(`${tcCreateNeg11.TestID} - ${tcCreateNeg11.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         await steps.clickCreateButton();
         await steps.fillCreateForm({
@@ -816,7 +816,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         }
     });
 
-    test(`${tcCreateNeg12.TestID} - ${tcCreateNeg12.Description}`, async () => {
+    test(`${tcCreateNeg12.TestID} - ${tcCreateNeg12.Description} @regression @catalog`, async () => {
         const attrNeg12 = steps.generateUniqueAttributeName("NEG12");
         await steps.navigateToAttribute();
         await steps.clickCreateButton();
@@ -841,7 +841,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.clearSearch();
     });
 
-    test(`${tcCreateNeg13.TestID} - ${tcCreateNeg13.Description}`, async () => {
+    test(`${tcCreateNeg13.TestID} - ${tcCreateNeg13.Description} @regression @catalog`, async () => {
         // API failure scenario — verify graceful handling
         await steps.navigateToAttribute();
         await steps.clickCreateButton();
@@ -858,7 +858,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.clickBack();
     });
 
-    test(`${tcCreateNeg14.TestID} - ${tcCreateNeg14.Description}`, async () => {
+    test(`${tcCreateNeg14.TestID} - ${tcCreateNeg14.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         await steps.clickCreateButton();
         await steps.verifyCreatePageLoaded();
@@ -878,7 +878,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.navigateToAttribute();
     });
 
-    test(`${tcCreateNeg15.TestID} - ${tcCreateNeg15.Description}`, async ({ browser }) => {
+    test(`${tcCreateNeg15.TestID} - ${tcCreateNeg15.Description} @regression @catalog`, async ({ browser }) => {
         const context = await browser.newContext();
         const unauthPage = await context.newPage();
         await unauthPage.goto(`${process.env.BASE_URL}${AttributePage.ATTRIBUTE_PATH}?mode=create`);
@@ -897,7 +897,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await context.close();
     });
 
-    test(`${tcCreateNeg16.TestID} - ${tcCreateNeg16.Description}`, async ({ browser }) => {
+    test(`${tcCreateNeg16.TestID} - ${tcCreateNeg16.Description} @regression @catalog`, async ({ browser }) => {
         const context = await browser.newContext();
         const unauthPage = await context.newPage();
         await unauthPage.goto(`${process.env.BASE_URL}${AttributePage.ATTRIBUTE_PATH}?mode=create`);
@@ -915,7 +915,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await context.close();
     });
 
-    test(`${tcCreateNeg17.TestID} - ${tcCreateNeg17.Description}`, async () => {
+    test(`${tcCreateNeg17.TestID} - ${tcCreateNeg17.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         await steps.clickCreateButton();
         await steps.verifyCreatePageLoaded();
@@ -942,7 +942,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.clickBack();
     });
 
-    test(`${tcCreateNeg18.TestID} - ${tcCreateNeg18.Description}`, async () => {
+    test(`${tcCreateNeg18.TestID} - ${tcCreateNeg18.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         await steps.clickCreateButton();
         await steps.verifyCreatePageLoaded();
@@ -961,7 +961,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
     // SECTION 1 (cont.): List tests that depend on sharedAttrName existing
     // ═══════════════════════════════════════════════════════════════════════
 
-    test(`${tcList03.TestID} - ${tcList03.Description}`, async () => {
+    test(`${tcList03.TestID} - ${tcList03.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         await steps.searchAttribute(sharedAttrName);
         await steps.verifyAttributeInTable(sharedAttrName);
@@ -972,7 +972,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.clearSearch();
     });
 
-    test(`${tcList04.TestID} - ${tcList04.Description}`, async () => {
+    test(`${tcList04.TestID} - ${tcList04.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         await steps.searchAttribute(sharedAttrName);
         await steps.verifyAttributeInTable(sharedAttrName);
@@ -983,7 +983,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.clearSearch();
     });
 
-    test(`${tcList05.TestID} - ${tcList05.Description}`, async () => {
+    test(`${tcList05.TestID} - ${tcList05.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         await steps.searchAttribute(sharedAttrName);
         await steps.clickEditIconForRow(sharedAttrName);
@@ -1011,7 +1011,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
     });
 
     // TC_LIST_07 creates a fresh attribute and deletes it (for TC_LIST_08)
-    test(`${tcList07.TestID} - ${tcList07.Description}`, async () => {
+    test(`${tcList07.TestID} - ${tcList07.Description} @regression @catalog`, async () => {
         deleteTestAttrName = steps.generateUniqueAttributeName("LIST07");
         await steps.navigateToAttribute();
         await steps.clickCreateButton();
@@ -1031,7 +1031,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.clearSearch();
     });
 
-    test(`${tcList08.TestID} - ${tcList08.Description}`, async () => {
+    test(`${tcList08.TestID} - ${tcList08.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         await steps.searchAttribute(deleteTestAttrName);
         await steps.verifyAttributeInTable(deleteTestAttrName);
@@ -1041,7 +1041,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.verifyAttributeRemoved(deleteTestAttrName);
     });
 
-    test(`${tcListNeg04.TestID} - ${tcListNeg04.Description}`, async () => {
+    test(`${tcListNeg04.TestID} - ${tcListNeg04.Description} @regression @catalog`, async () => {
         // Ghost attribute that doesn't exist — clicking Edit should show error or not find row
         await steps.navigateToAttribute();
         await steps.searchAttribute(tcListNeg04.FieldName);
@@ -1056,7 +1056,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.clearSearch();
     });
 
-    test(`${tcListNeg05.TestID} - ${tcListNeg05.Description}`, async () => {
+    test(`${tcListNeg05.TestID} - ${tcListNeg05.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         await steps.searchAttribute(tcListNeg05.FieldName);
         const isVisible = await steps.isAttributeVisible(tcListNeg05.FieldName);
@@ -1070,7 +1070,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.clearSearch();
     });
 
-    test(`${tcListNeg06.TestID} - ${tcListNeg06.Description}`, async () => {
+    test(`${tcListNeg06.TestID} - ${tcListNeg06.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         await steps.searchAttribute(tcListNeg06.FieldName);
         const isVisible = await steps.isAttributeVisible(tcListNeg06.FieldName);
@@ -1085,7 +1085,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.navigateToAttribute();
     });
 
-    test(`${tcListNeg07.TestID} - ${tcListNeg07.Description}`, async () => {
+    test(`${tcListNeg07.TestID} - ${tcListNeg07.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         await steps.searchAttribute(tcListNeg07.FieldName);
         const isVisible = await steps.isAttributeVisible(tcListNeg07.FieldName);
@@ -1103,7 +1103,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
     // SECTION 3: View Attribute Screen — Positive
     // ═══════════════════════════════════════════════════════════════════════
 
-    test(`${tcView01.TestID} - ${tcView01.Description}`, async () => {
+    test(`${tcView01.TestID} - ${tcView01.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         await steps.searchAttribute(sharedAttrName);
         await steps.clickViewIconForRow(sharedAttrName);
@@ -1114,7 +1114,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.clearSearch();
     });
 
-    test(`${tcView02.TestID} - ${tcView02.Description}`, async () => {
+    test(`${tcView02.TestID} - ${tcView02.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         await steps.searchAttribute(sharedAttrName);
         await steps.clickViewIconForRow(sharedAttrName);
@@ -1124,7 +1124,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.clearSearch();
     });
 
-    test(`${tcView03.TestID} - ${tcView03.Description}`, async () => {
+    test(`${tcView03.TestID} - ${tcView03.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         await steps.searchAttribute(sharedAttrName);
         await steps.clickViewIconForRow(sharedAttrName);
@@ -1134,7 +1134,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.clearSearch();
     });
 
-    test(`${tcView04.TestID} - ${tcView04.Description}`, async () => {
+    test(`${tcView04.TestID} - ${tcView04.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         await steps.searchAttribute(sharedAttrName);
         await steps.clickViewIconForRow(sharedAttrName);
@@ -1144,7 +1144,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.clearSearch();
     });
 
-    test(`${tcView05.TestID} - ${tcView05.Description}`, async () => {
+    test(`${tcView05.TestID} - ${tcView05.Description} @regression @catalog`, async () => {
         // View the attribute and verify UI Concern if it was set in a prior edit
         await steps.navigateToAttribute();
         await steps.searchAttribute(sharedAttrName);
@@ -1156,7 +1156,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.clearSearch();
     });
 
-    test(`${tcView06.TestID} - ${tcView06.Description}`, async () => {
+    test(`${tcView06.TestID} - ${tcView06.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         await steps.searchAttribute(sharedAttrName);
         await steps.clickViewIconForRow(sharedAttrName);
@@ -1174,7 +1174,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.clearSearch();
     });
 
-    test(`${tcView07.TestID} - ${tcView07.Description}`, async () => {
+    test(`${tcView07.TestID} - ${tcView07.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         await steps.searchAttribute(sharedAttrName);
         await steps.clickViewIconForRow(sharedAttrName);
@@ -1184,7 +1184,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.clearSearch();
     });
 
-    test(`${tcView08.TestID} - ${tcView08.Description}`, async () => {
+    test(`${tcView08.TestID} - ${tcView08.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         await steps.searchAttribute(sharedAttrName);
         await steps.clickViewIconForRow(sharedAttrName);
@@ -1199,7 +1199,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.clearSearch();
     });
 
-    test(`${tcView09.TestID} - ${tcView09.Description}`, async () => {
+    test(`${tcView09.TestID} - ${tcView09.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         await steps.searchAttribute(sharedAttrName);
         await steps.clickViewIconForRow(sharedAttrName);
@@ -1209,7 +1209,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.clearSearch();
     });
 
-    test(`${tcView10.TestID} - ${tcView10.Description}`, async () => {
+    test(`${tcView10.TestID} - ${tcView10.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         await steps.searchAttribute(sharedAttrName);
         await steps.clickViewIconForRow(sharedAttrName);
@@ -1223,7 +1223,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
     // SECTION 3: View Attribute Screen — Negative
     // ═══════════════════════════════════════════════════════════════════════
 
-    test(`${tcViewNeg01.TestID} - ${tcViewNeg01.Description}`, async () => {
+    test(`${tcViewNeg01.TestID} - ${tcViewNeg01.Description} @regression @catalog`, async () => {
         await sharedPage.goto(`${process.env.BASE_URL}attribute?mode=view&id=${tcViewNeg01.FieldName}`);
         await sharedPage.waitForLoadState("networkidle").catch(() => {});
         // App may redirect, show error toast, inline validation, or empty form — all are acceptable
@@ -1241,7 +1241,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.navigateToAttribute();
     });
 
-    test(`${tcViewNeg02.TestID} - ${tcViewNeg02.Description}`, async () => {
+    test(`${tcViewNeg02.TestID} - ${tcViewNeg02.Description} @regression @catalog`, async () => {
         await sharedPage.goto(`${process.env.BASE_URL}attribute?mode=view&id=${tcViewNeg02.FieldName}`);
         await sharedPage.waitForLoadState("networkidle").catch(() => {});
         const bodyText = (await sharedPage.locator("body").innerText().catch(() => "")).toLowerCase();
@@ -1258,7 +1258,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.navigateToAttribute();
     });
 
-    test(`${tcViewNeg03.TestID} - ${tcViewNeg03.Description}`, async ({ browser }) => {
+    test(`${tcViewNeg03.TestID} - ${tcViewNeg03.Description} @regression @catalog`, async ({ browser }) => {
         const context = await browser.newContext();
         const unauthPage = await context.newPage();
         await unauthPage.goto(`${process.env.BASE_URL}attribute?mode=view&id=some-id`);
@@ -1276,20 +1276,20 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await context.close();
     });
 
-    test(`${tcViewNeg04.TestID} - ${tcViewNeg04.Description}`, async () => {
+    test(`${tcViewNeg04.TestID} - ${tcViewNeg04.Description} @regression @catalog`, async () => {
         // Navigate to view with invalid id — page should not break on missing field name
         await sharedPage.goto(`${process.env.BASE_URL}attribute?mode=view&id=missing-field-id`);
         await steps.verifyPageStable();
         await steps.navigateToAttribute();
     });
 
-    test(`${tcViewNeg05.TestID} - ${tcViewNeg05.Description}`, async () => {
+    test(`${tcViewNeg05.TestID} - ${tcViewNeg05.Description} @regression @catalog`, async () => {
         await sharedPage.goto(`${process.env.BASE_URL}attribute?mode=view&id=missing-desc-id`);
         await steps.verifyPageStable();
         await steps.navigateToAttribute();
     });
 
-    test(`${tcViewNeg06.TestID} - ${tcViewNeg06.Description}`, async () => {
+    test(`${tcViewNeg06.TestID} - ${tcViewNeg06.Description} @regression @catalog`, async () => {
         // Viewing an attribute with no enum values — page should still render
         await steps.navigateToAttribute();
         const rows = sharedPage.locator(AttributePage.TABLE_ROWS);
@@ -1302,13 +1302,13 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         }
     });
 
-    test(`${tcViewNeg07.TestID} - ${tcViewNeg07.Description}`, async () => {
+    test(`${tcViewNeg07.TestID} - ${tcViewNeg07.Description} @regression @catalog`, async () => {
         await sharedPage.goto(`${process.env.BASE_URL}attribute?mode=view&id=api-fail-sim-id`);
         await steps.verifyPageStable();
         await steps.navigateToAttribute();
     });
 
-    test(`${tcViewNeg08.TestID} - ${tcViewNeg08.Description}`, async () => {
+    test(`${tcViewNeg08.TestID} - ${tcViewNeg08.Description} @regression @catalog`, async () => {
         // Open view page for the shared attr and ensure no scripts run from field content
         await steps.navigateToAttribute();
         await steps.searchAttribute(sharedAttrName);
@@ -1322,7 +1322,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.clearSearch();
     });
 
-    test(`${tcViewNeg09.TestID} - ${tcViewNeg09.Description}`, async () => {
+    test(`${tcViewNeg09.TestID} - ${tcViewNeg09.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         await steps.searchAttribute(sharedAttrName);
         await steps.clickViewIconForRow(sharedAttrName);
@@ -1332,7 +1332,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.clearSearch();
     });
 
-    test(`${tcViewNeg10.TestID} - ${tcViewNeg10.Description}`, async () => {
+    test(`${tcViewNeg10.TestID} - ${tcViewNeg10.Description} @regression @catalog`, async () => {
         // View attributes with long names — use the shared attr (generated with timestamp suffix)
         await steps.navigateToAttribute();
         await steps.searchAttribute(sharedAttrName);
@@ -1347,7 +1347,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
     // SECTION 4: Edit Attribute Screen — Positive
     // ═══════════════════════════════════════════════════════════════════════
 
-    test(`${tcEdit01.TestID} - ${tcEdit01.Description}`, async () => {
+    test(`${tcEdit01.TestID} - ${tcEdit01.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         await steps.searchAttribute(sharedAttrName);
         await steps.clickEditIconForRow(sharedAttrName);
@@ -1357,7 +1357,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.clearSearch();
     });
 
-    test(`${tcEdit02.TestID} - ${tcEdit02.Description}`, async () => {
+    test(`${tcEdit02.TestID} - ${tcEdit02.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         await steps.searchAttribute(sharedAttrName);
         await steps.clickEditIconForRow(sharedAttrName);
@@ -1374,7 +1374,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.clearSearch();
     });
 
-    test(`${tcEdit03.TestID} - ${tcEdit03.Description}`, async () => {
+    test(`${tcEdit03.TestID} - ${tcEdit03.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         await steps.searchAttribute(sharedAttrName);
         await steps.clickEditIconForRow(sharedAttrName);
@@ -1391,7 +1391,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.clearSearch();
     });
 
-    test(`${tcEdit04.TestID} - ${tcEdit04.Description}`, async () => {
+    test(`${tcEdit04.TestID} - ${tcEdit04.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         await steps.searchAttribute(sharedAttrName);
         await steps.clickEditIconForRow(sharedAttrName);
@@ -1408,7 +1408,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.clearSearch();
     });
 
-    test(`${tcEdit05.TestID} - ${tcEdit05.Description}`, async () => {
+    test(`${tcEdit05.TestID} - ${tcEdit05.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         await steps.searchAttribute(sharedAttrName);
         await steps.clickEditIconForRow(sharedAttrName);
@@ -1450,7 +1450,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.clearSearch();
     });
 
-    test(`${tcEdit06.TestID} - ${tcEdit06.Description}`, async () => {
+    test(`${tcEdit06.TestID} - ${tcEdit06.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         await steps.searchAttribute(sharedAttrName);
         await steps.clickEditIconForRow(sharedAttrName);
@@ -1474,7 +1474,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.clearSearch();
     });
 
-    test(`${tcEdit07.TestID} - ${tcEdit07.Description}`, async () => {
+    test(`${tcEdit07.TestID} - ${tcEdit07.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         await steps.searchAttribute(sharedAttrName);
         await steps.clickEditIconForRow(sharedAttrName);
@@ -1490,7 +1490,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.clearSearch();
     });
 
-    test(`${tcEdit08.TestID} - ${tcEdit08.Description}`, async () => {
+    test(`${tcEdit08.TestID} - ${tcEdit08.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         await steps.searchAttribute(sharedAttrName);
         await steps.clickEditIconForRow(sharedAttrName);
@@ -1509,7 +1509,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.clearSearch();
     });
 
-    test(`${tcEdit09.TestID} - ${tcEdit09.Description}`, async () => {
+    test(`${tcEdit09.TestID} - ${tcEdit09.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         await steps.searchAttribute(sharedAttrName);
         await steps.clickEditIconForRow(sharedAttrName);
@@ -1525,7 +1525,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.clearSearch();
     });
 
-    test(`${tcEdit10.TestID} - ${tcEdit10.Description}`, async () => {
+    test(`${tcEdit10.TestID} - ${tcEdit10.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         await steps.searchAttribute(sharedAttrName);
         await steps.clickEditIconForRow(sharedAttrName);
@@ -1546,7 +1546,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
     // SECTION 4: Edit Attribute Screen — Negative
     // ═══════════════════════════════════════════════════════════════════════
 
-    test(`${tcEditNeg01.TestID} - ${tcEditNeg01.Description}`, async () => {
+    test(`${tcEditNeg01.TestID} - ${tcEditNeg01.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         await steps.searchAttribute(sharedAttrName);
         await steps.clickEditIconForRow(sharedAttrName);
@@ -1558,7 +1558,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.clearSearch();
     });
 
-    test(`${tcEditNeg02.TestID} - ${tcEditNeg02.Description}`, async () => {
+    test(`${tcEditNeg02.TestID} - ${tcEditNeg02.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         await steps.searchAttribute(sharedAttrName);
         await steps.clickEditIconForRow(sharedAttrName);
@@ -1582,7 +1582,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.clearSearch();
     });
 
-    test(`${tcEditNeg03.TestID} - ${tcEditNeg03.Description}`, async () => {
+    test(`${tcEditNeg03.TestID} - ${tcEditNeg03.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         await steps.searchAttribute(sharedAttrName);
         await steps.clickEditIconForRow(sharedAttrName);
@@ -1605,7 +1605,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.clearSearch();
     });
 
-    test(`${tcEditNeg04.TestID} - ${tcEditNeg04.Description}`, async () => {
+    test(`${tcEditNeg04.TestID} - ${tcEditNeg04.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         await steps.searchAttribute(sharedAttrName);
         await steps.clickEditIconForRow(sharedAttrName);
@@ -1638,7 +1638,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.clearSearch();
     });
 
-    test(`${tcEditNeg05.TestID} - ${tcEditNeg05.Description}`, async () => {
+    test(`${tcEditNeg05.TestID} - ${tcEditNeg05.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         await steps.searchAttribute(sharedAttrName);
         await steps.clickEditIconForRow(sharedAttrName);
@@ -1658,7 +1658,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.clearSearch();
     });
 
-    test(`${tcEditNeg06.TestID} - ${tcEditNeg06.Description}`, async () => {
+    test(`${tcEditNeg06.TestID} - ${tcEditNeg06.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         await steps.searchAttribute(sharedAttrName);
         await steps.clickEditIconForRow(sharedAttrName);
@@ -1674,7 +1674,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.clearSearch();
     });
 
-    test(`${tcEditNeg07.TestID} - ${tcEditNeg07.Description}`, async () => {
+    test(`${tcEditNeg07.TestID} - ${tcEditNeg07.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         await steps.searchAttribute(sharedAttrName);
         await steps.clickEditIconForRow(sharedAttrName);
@@ -1702,7 +1702,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.clearSearch();
     });
 
-    test(`${tcEditNeg08.TestID} - ${tcEditNeg08.Description}`, async () => {
+    test(`${tcEditNeg08.TestID} - ${tcEditNeg08.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         await steps.searchAttribute(sharedAttrName);
         await steps.clickEditIconForRow(sharedAttrName);
@@ -1715,7 +1715,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.clearSearch();
     });
 
-    test(`${tcEditNeg09.TestID} - ${tcEditNeg09.Description}`, async () => {
+    test(`${tcEditNeg09.TestID} - ${tcEditNeg09.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         await steps.searchAttribute(sharedAttrName);
         await steps.clickEditIconForRow(sharedAttrName);
@@ -1740,7 +1740,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.clearSearch();
     });
 
-    test(`${tcEditNeg10.TestID} - ${tcEditNeg10.Description}`, async ({ browser }) => {
+    test(`${tcEditNeg10.TestID} - ${tcEditNeg10.Description} @regression @catalog`, async ({ browser }) => {
         const context = await browser.newContext();
         const unauthPage = await context.newPage();
         await unauthPage.goto(`${process.env.BASE_URL}attribute?mode=edit&id=some-id`);
@@ -1760,7 +1760,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
     // Create a fresh attribute dedicated to delete popup tests
     let delPopupAttrName = "";
 
-    test(`${tcDel05.TestID} - ${tcDel05.Description}`, async () => {
+    test(`${tcDel05.TestID} - ${tcDel05.Description} @regression @catalog`, async () => {
         // Create attr for delete popup tests
         delPopupAttrName = steps.generateUniqueAttributeName("DELPOP");
         await steps.navigateToAttribute();
@@ -1784,7 +1784,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.clearSearch();
     });
 
-    test(`${tcDel02.TestID} - ${tcDel02.Description}`, async () => {
+    test(`${tcDel02.TestID} - ${tcDel02.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         await steps.searchAttribute(delPopupAttrName || sharedAttrName);
         const targetName = delPopupAttrName || sharedAttrName;
@@ -1796,7 +1796,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.clearSearch();
     });
 
-    test(`${tcDel06.TestID} - ${tcDel06.Description}`, async () => {
+    test(`${tcDel06.TestID} - ${tcDel06.Description} @regression @catalog`, async () => {
         // Create a second attribute to verify only the target gets deleted
         const secondAttr = steps.generateUniqueAttributeName("DELSEC");
         await steps.navigateToAttribute();
@@ -1831,7 +1831,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.clearSearch();
     });
 
-    test(`${tcDel03.TestID} - ${tcDel03.Description}`, async () => {
+    test(`${tcDel03.TestID} - ${tcDel03.Description} @regression @catalog`, async () => {
         // Create a fresh attr to delete and verify success message
         const delAttr03 = steps.generateUniqueAttributeName("DEL03");
         await steps.navigateToAttribute();
@@ -1854,7 +1854,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.clearSearch();
     });
 
-    test(`${tcDel04.TestID} - ${tcDel04.Description}`, async () => {
+    test(`${tcDel04.TestID} - ${tcDel04.Description} @regression @catalog`, async () => {
         // Create attr, delete it, then verify it doesn't appear in listing
         const delAttr04 = steps.generateUniqueAttributeName("DEL04");
         await steps.navigateToAttribute();
@@ -1881,7 +1881,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
     // SECTION 5: Attribute Delete Popup — Negative
     // ═══════════════════════════════════════════════════════════════════════
 
-    test(`${tcDelNeg01.TestID} - ${tcDelNeg01.Description}`, async () => {
+    test(`${tcDelNeg01.TestID} - ${tcDelNeg01.Description} @regression @catalog`, async () => {
         // Create an attr, open delete popup, press Escape/click outside
         const delNeg01Attr = steps.generateUniqueAttributeName("DELN1");
         await steps.navigateToAttribute();
@@ -1910,7 +1910,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.clearSearch();
     });
 
-    test(`${tcDelNeg02.TestID} - ${tcDelNeg02.Description}`, async () => {
+    test(`${tcDelNeg02.TestID} - ${tcDelNeg02.Description} @regression @catalog`, async () => {
         // Mapped attribute scenario — tries to delete and expects error
         await steps.navigateToAttribute();
         await steps.searchAttribute(tcDelNeg02.FieldName || tcDelNeg04.FieldName);
@@ -1926,14 +1926,14 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.navigateToAttribute();
     });
 
-    test(`${tcDelNeg03.TestID} - ${tcDelNeg03.Description}`, async () => {
+    test(`${tcDelNeg03.TestID} - ${tcDelNeg03.Description} @regression @catalog`, async () => {
         // Try to delete a non-existent attribute (already deleted)
         await sharedPage.goto(`${process.env.BASE_URL}attribute?mode=delete&id=already-deleted-id`);
         await steps.verifyPageStable();
         await steps.navigateToAttribute();
     });
 
-    test(`${tcDelNeg04.TestID} - ${tcDelNeg04.Description}`, async () => {
+    test(`${tcDelNeg04.TestID} - ${tcDelNeg04.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         await steps.searchAttribute(tcDelNeg04.FieldName);
         const isVisible = await steps.isAttributeVisible(tcDelNeg04.FieldName);
@@ -1947,7 +1947,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.navigateToAttribute();
     });
 
-    test(`${tcDelNeg05.TestID} - ${tcDelNeg05.Description}`, async ({ browser }) => {
+    test(`${tcDelNeg05.TestID} - ${tcDelNeg05.Description} @regression @catalog`, async ({ browser }) => {
         const context = await browser.newContext();
         const unauthPage = await context.newPage();
         await unauthPage.goto(`${process.env.BASE_URL}attribute`);
@@ -1960,7 +1960,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await context.close();
     });
 
-    test(`${tcDelNeg06.TestID} - ${tcDelNeg06.Description}`, async () => {
+    test(`${tcDelNeg06.TestID} - ${tcDelNeg06.Description} @regression @catalog`, async () => {
         const delNeg06Attr = steps.generateUniqueAttributeName("DELN6");
         await steps.navigateToAttribute();
         await steps.clickCreateButton();
@@ -1993,7 +1993,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
     // FINAL: Delete the primary shared attribute
     // ═══════════════════════════════════════════════════════════════════════
 
-    test(`${tcDel01.TestID} - ${tcDel01.Description}`, async () => {
+    test(`${tcDel01.TestID} - ${tcDel01.Description} @regression @catalog`, async () => {
         await steps.navigateToAttribute();
         await steps.searchAttribute(sharedAttrName);
         await steps.verifyAttributeInTable(sharedAttrName);

@@ -21,8 +21,7 @@ for (const testCase of testCases) {
         testCase
     );
 
-    test(
-        `${data.TestID} - ${data.Description}`,
+    test(`${data.TestID} - ${data.Description} @regression @operations @smoke`,
         async ({ page }) => {
 
             Allure.attachDetails(

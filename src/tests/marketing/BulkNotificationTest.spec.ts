@@ -49,7 +49,7 @@ test.describe("Bulk Notification", () => {
 
     // ── TC01: Create Criteria opens the Create page ──────────────────────────────
     const d01 = ExcelUtil.getTestData(SHEET, "TC01_CreateCriteriaPage");
-    test(`${d01.TestID} - ${d01.Description}`, async () => {
+    test(`${d01.TestID} - ${d01.Description} @regression @marketing`, async () => {
         Allure.attachDetails(d01.Description, d01.Issue);
         await bulk.clickCreate();
         await bulk.verifyCreatePageOpened();
@@ -57,7 +57,7 @@ test.describe("Bulk Notification", () => {
 
     // ── TC02: Select Entity dropdown shows available entities ────────────────────
     const d02 = ExcelUtil.getTestData(SHEET, "TC02_EntityDropdownOptions");
-    test(`${d02.TestID} - ${d02.Description}`, async () => {
+    test(`${d02.TestID} - ${d02.Description} @regression @marketing`, async () => {
         Allure.attachDetails(d02.Description, d02.Issue);
         await bulk.clickCreate();
         await bulk.verifyEntityDropdownOptions(d02.Entity);
@@ -65,7 +65,7 @@ test.describe("Bulk Notification", () => {
 
     // ── TC03: Selecting Customer loads the criteria fields ───────────────────────
     const d03 = ExcelUtil.getTestData(SHEET, "TC03_SelectEntityLoadsCriteria");
-    test(`${d03.TestID} - ${d03.Description}`, async () => {
+    test(`${d03.TestID} - ${d03.Description} @regression @marketing`, async () => {
         Allure.attachDetails(d03.Description, d03.Issue);
         await bulk.clickCreate();
         await bulk.selectEntity(d03.Entity);
@@ -74,7 +74,7 @@ test.describe("Bulk Notification", () => {
 
     // ── TC04: Select Criteria dropdown shows all criteria options ────────────────
     const d04 = ExcelUtil.getTestData(SHEET, "TC04_CriteriaDropdownOptions");
-    test(`${d04.TestID} - ${d04.Description}`, async () => {
+    test(`${d04.TestID} - ${d04.Description} @regression @marketing`, async () => {
         Allure.attachDetails(d04.Description, d04.Issue);
         await bulk.clickCreate();
         await bulk.selectEntity(d04.Entity);
@@ -84,7 +84,7 @@ test.describe("Bulk Notification", () => {
 
     // ── TC05: Select criterion/operator/value and add via (+) ────────────────────
     const d05 = ExcelUtil.getTestData(SHEET, "TC05_AddConditionRow");
-    test(`${d05.TestID} - ${d05.Description}`, async () => {
+    test(`${d05.TestID} - ${d05.Description} @regression @marketing`, async () => {
         Allure.attachDetails(d05.Description, d05.Issue);
         await bulk.clickCreate();
         await bulk.selectEntity(d05.Entity);
@@ -97,7 +97,7 @@ test.describe("Bulk Notification", () => {
     // clicking (+) right after is what renders the row (this is addConditionRow's proven sequence,
     // same as TC05). To add a second row, repeat the same select-criteria-then-(+) sequence again.
     const d06 = ExcelUtil.getTestData(SHEET, "TC06_MultipleConditionRows");
-    test(`${d06.TestID} - ${d06.Description}`, async () => {
+    test(`${d06.TestID} - ${d06.Description} @regression @marketing`, async () => {
         Allure.attachDetails(d06.Description, d06.Issue);
         const [value1, value2] = String(d06.Value).split("|").map((v) => v.trim());
         const [operator1, operator2] = String(d06.Operator).split("|").map((v) => v.trim());
@@ -110,7 +110,7 @@ test.describe("Bulk Notification", () => {
 
     // ── TC07: Impacted Customer Count calculated correctly ───────────────────────
     const d07 = ExcelUtil.getTestData(SHEET, "TC07_ImpactedCustomerCount");
-    test(`${d07.TestID} - ${d07.Description}`, async () => {
+    test(`${d07.TestID} - ${d07.Description} @regression @marketing`, async () => {
         Allure.attachDetails(d07.Description, d07.Issue);
         await bulk.clickCreate();
         await bulk.selectEntity(d07.Entity);
@@ -119,7 +119,7 @@ test.describe("Bulk Notification", () => {
 
     // ── TC08: View Impacted Customer displays the filtered list ──────────────────
     const d08 = ExcelUtil.getTestData(SHEET, "TC08_ViewImpactedCustomerList");
-    test(`${d08.TestID} - ${d08.Description}`, async () => {
+    test(`${d08.TestID} - ${d08.Description} @regression @marketing`, async () => {
         Allure.attachDetails(d08.Description, d08.Issue);
         await bulk.clickCreate();
         await bulk.selectEntity(d08.Entity);
@@ -131,7 +131,7 @@ test.describe("Bulk Notification", () => {
 
     // ── TC09: Download button downloads the impacted customer list (count > 0) ──
     const d09 = ExcelUtil.getTestData(SHEET, "TC09_DownloadImpactedList");
-    test(`${d09.TestID} - ${d09.Description}`, async () => {
+    test(`${d09.TestID} - ${d09.Description} @regression @marketing`, async () => {
         Allure.attachDetails(d09.Description, d09.Issue);
         await bulk.clickCreate();
         await bulk.selectEntity(d09.Entity);
@@ -153,7 +153,7 @@ test.describe("Bulk Notification", () => {
 
     // ── TC10: Notification Type, Template, Schedule Date/Time, Submit ────────────
     const d10 = ExcelUtil.getTestData(SHEET, "TC10_SubmitNotification");
-    test(`${d10.TestID} - ${d10.Description}`, async () => {
+    test(`${d10.TestID} - ${d10.Description} @regression @marketing`, async () => {
         Allure.attachDetails(d10.Description, d10.Issue);
         await bulk.clickCreate();
         await bulk.selectEntity(d10.Entity);
@@ -168,7 +168,7 @@ test.describe("Bulk Notification", () => {
     // is selected, so this case can never reach "Template chosen, Notification Type blank" — it
     // verifies the disabled-Template + blocked-Submit state directly instead.
     const d11 = ExcelUtil.getTestData(SHEET, "TC11_MissingNotificationType");
-    test(`${d11.TestID} - ${d11.Description}`, async () => {
+    test(`${d11.TestID} - ${d11.Description} @regression @marketing`, async () => {
         Allure.attachDetails(d11.Description, d11.Issue);
         await bulk.clickCreate();
         await bulk.selectEntity(d11.Entity);
@@ -180,7 +180,7 @@ test.describe("Bulk Notification", () => {
 
     // ── TC12 (Negative): Submit without Template ──────────────────────────────────
     const d12 = ExcelUtil.getTestData(SHEET, "TC12_MissingTemplate");
-    test(`${d12.TestID} - ${d12.Description}`, async () => {
+    test(`${d12.TestID} - ${d12.Description} @regression @marketing`, async () => {
         Allure.attachDetails(d12.Description, d12.Issue);
         await bulk.clickCreate();
         await bulk.selectEntity(d12.Entity);
@@ -192,7 +192,7 @@ test.describe("Bulk Notification", () => {
 
     // ── TC13 (Negative): Prevent submission when mandatory criteria are blank ────
     const d13 = ExcelUtil.getTestData(SHEET, "TC13_BlankMandatoryCriteria");
-    test(`${d13.TestID} - ${d13.Description}`, async () => {
+    test(`${d13.TestID} - ${d13.Description} @regression @marketing`, async () => {
         Allure.attachDetails(d13.Description, d13.Issue);
         await bulk.clickCreate();
         await bulk.selectEntity(d13.Entity);
@@ -201,7 +201,7 @@ test.describe("Bulk Notification", () => {
 
     // ── TC14 (Negative): Download disabled when Impacted Customer Count is zero ──
     const d14 = ExcelUtil.getTestData(SHEET, "TC14_DownloadDisabledZeroCount");
-    test(`${d14.TestID} - ${d14.Description}`, async () => {
+    test(`${d14.TestID} - ${d14.Description} @regression @marketing`, async () => {
         Allure.attachDetails(d14.Description, d14.Issue);
         await bulk.clickCreate();
         await bulk.selectEntity(d14.Entity);
@@ -213,7 +213,7 @@ test.describe("Bulk Notification", () => {
 
     // ── TC15 (Negative): Special characters/invalid data in criteria value ───────
     const d15 = ExcelUtil.getTestData(SHEET, "TC15_SpecialCharacterValue");
-    test(`${d15.TestID} - ${d15.Description}`, async () => {
+    test(`${d15.TestID} - ${d15.Description} @regression @marketing`, async () => {
         Allure.attachDetails(d15.Description, d15.Issue);
         await bulk.clickCreate();
         await bulk.selectEntity(d15.Entity);
@@ -222,7 +222,7 @@ test.describe("Bulk Notification", () => {
 
     // ── TC16 (Negative): Operator selected without entering a value ──────────────
     const d16 = ExcelUtil.getTestData(SHEET, "TC16_OperatorWithoutValue");
-    test(`${d16.TestID} - ${d16.Description}`, async () => {
+    test(`${d16.TestID} - ${d16.Description} @regression @marketing`, async () => {
         Allure.attachDetails(d16.Description, d16.Issue);
         await bulk.clickCreate();
         await bulk.selectEntity(d16.Entity);
@@ -231,7 +231,7 @@ test.describe("Bulk Notification", () => {
 
     // ── TC17 (Negative): Past date/time scheduling is rejected ───────────────────
     const d17 = ExcelUtil.getTestData(SHEET, "TC17_PastScheduleRejected");
-    test(`${d17.TestID} - ${d17.Description}`, async () => {
+    test(`${d17.TestID} - ${d17.Description} @regression @marketing`, async () => {
         Allure.attachDetails(d17.Description, d17.Issue);
         const [pastDate, pastTime] = String(d17.Value).split("|").map((v) => v.trim());
         await bulk.clickCreate();
@@ -245,7 +245,7 @@ test.describe("Bulk Notification", () => {
 
     // ── TC18 (Negative): No customers match the selected criteria ────────────────
     const d18 = ExcelUtil.getTestData(SHEET, "TC18_NoMatchingCustomers");
-    test(`${d18.TestID} - ${d18.Description}`, async () => {
+    test(`${d18.TestID} - ${d18.Description} @regression @marketing`, async () => {
         Allure.attachDetails(d18.Description, d18.Issue);
         await bulk.clickCreate();
         await bulk.selectEntity(d18.Entity);
@@ -257,7 +257,7 @@ test.describe("Bulk Notification", () => {
 
     // ── TC19: Listing date filter (Today / 7 days / 30 days / Custom) ────────────
     const d19 = ExcelUtil.getTestData(SHEET, "TC19_ListingDateFilter");
-    test(`${d19.TestID} - ${d19.Description}`, async () => {
+    test(`${d19.TestID} - ${d19.Description} @regression @marketing`, async () => {
         Allure.attachDetails(d19.Description, d19.Issue);
         const filters = String(d19.Value).split("|").map((v) => v.trim());
         await filters.reduce(async (previous, filter) => {
@@ -269,7 +269,7 @@ test.describe("Bulk Notification", () => {
 
     // ── TC20 (Negative): Invalid Custom date range (From > To) ───────────────────
     const d20 = ExcelUtil.getTestData(SHEET, "TC20_InvalidCustomDateRange");
-    test(`${d20.TestID} - ${d20.Description}`, async () => {
+    test(`${d20.TestID} - ${d20.Description} @regression @marketing`, async () => {
         Allure.attachDetails(d20.Description, d20.Issue);
         const [fromDate, toDate] = String(d20.Value).split("|").map((v) => v.trim());
         await bulk.selectCustomDateRange(fromDate, toDate);

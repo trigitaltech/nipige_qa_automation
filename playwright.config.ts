@@ -65,13 +65,19 @@ const config: PlaywrightTestConfig = {
 
   projects: [
     {
+      name: "setup",
+      testMatch: "**/*.setup.ts",
+    },
+    {
       name: "local",
+      dependencies: ["setup"],
       testMatch: process.env.TEST_NAME
         ? process.env.TEST_NAME.split(",").map((name) => `**/*${name.trim()}*.spec.ts`)
         : ["**/*.spec.ts"],
     },
     {
       name: "suite",
+      dependencies: ["setup"],
       testMatch: "**/*.test.ts",
     },
   ],

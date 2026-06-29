@@ -11,7 +11,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 const createData = ExcelUtil.getTestData(SHEET, "TC01_AccountCreateRequest");
-test(`${createData.TestID} - ${createData.Description}`, async ({ gData }) => {
+test(`${createData.TestID} - ${createData.Description} @regression`, async ({ gData }) => {
     Allure.attachDetails(createData.Description, createData.Issue);
     const userName = StringUtil.randomAlphabeticString(5);
     const password = `${StringUtil.randomUppercaseString(1)}${StringUtil.randomLowercaseString(4)}${StringUtil.randomNumberString(3)}`;
@@ -32,7 +32,7 @@ test(`${createData.TestID} - ${createData.Description}`, async ({ gData }) => {
 });
 
 const loginData = ExcelUtil.getTestData(SHEET, "TC02_AccountLoginRequest");
-test(`${loginData.TestID} - ${loginData.Description}`, async ({ gData }) => {
+test(`${loginData.TestID} - ${loginData.Description} @regression`, async ({ gData }) => {
     Allure.attachDetails(loginData.Description, loginData.Issue);
     const requestData = {
         userName: gData.get("userName"),
@@ -47,7 +47,7 @@ test(`${loginData.TestID} - ${loginData.Description}`, async ({ gData }) => {
 });
 
 const logoutData = ExcelUtil.getTestData(SHEET, "TC03_AccountLogoutRequest");
-test(`${logoutData.TestID} - ${logoutData.Description}`, async ({ gData }) => {
+test(`${logoutData.TestID} - ${logoutData.Description} @regression`, async ({ gData }) => {
     Allure.attachDetails(logoutData.Description, logoutData.Issue);
     const requestData = {
         token: gData.get("token"),
@@ -59,7 +59,7 @@ test(`${logoutData.TestID} - ${logoutData.Description}`, async ({ gData }) => {
 });
 
 const searchData = ExcelUtil.getTestData(SHEET, "TC04_CountrySearchRequest");
-test(`${searchData.TestID} - ${searchData.Description}`, async ({ }) => {
+test(`${searchData.TestID} - ${searchData.Description} @regression`, async ({ }) => {
     Allure.attachDetails(searchData.Description, searchData.Issue);
     const response = await account.request(searchData.EndPoint, searchData.RequestBody,
         { countryStartingWith: searchData.Result }, searchData.Operation);

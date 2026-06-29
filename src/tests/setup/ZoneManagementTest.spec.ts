@@ -1,12 +1,14 @@
 import HomeSteps from "@uiSteps/HomeSteps";
 import ZoneManagementSteps, { SlotTime } from "@uiSteps/ZoneManagementSteps";
-import { test, expect } from "@base-test";
+import { test, expect, applySessionState } from "@base-test";
 import Allure from "@allure";
 import ExcelUtil from "@utils/ExcelUtil";
 import ZoneManagementPage from "@pages/ZoneManagementPage";
 import { getCredential, Role } from "@config/Credentials";
 
 const SHEET = "ZoneManagementTest";
+
+test.use({ storageState: 'playwright/.auth/tenant.json' });
 
 // ── Credentials ───────────────────────────────────────────────────────────────
 const credential = getCredential(Role.TENANT);
@@ -41,9 +43,8 @@ function uniquePair(): { zoneName: string; zoneCode: string } {
 function val(v: string, fallback: string) { return v && v.trim() ? v.trim() : fallback; }
 
 async function loginAsTenant(home: HomeSteps) {
+    await applySessionState(home['page'], PERSONA);
     await home.launchApplication();
-    await home.login(credential.email, credential.password, PERSONA);
-    await home.validateLogin(credential.email);
 }
 
 async function createZone(zone: ZoneManagementSteps, zoneName: string, zoneCode: string) {
@@ -68,7 +69,7 @@ async function createZone(zone: ZoneManagementSteps, zoneName: string, zoneCode:
 // ═════════════════════════════════════════════════════════════════════════════
 
 const d01 = ExcelUtil.getTestData(SHEET, "TC01_PageLoadSuccess");
-test(`${d01.TestID} - ${d01.Description}`, async ({ page }) => {
+test(`${d01.TestID} - ${d01.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d01.Description, d01.Issue);
     const home = new HomeSteps(page);
     const zone = new ZoneManagementSteps(page);
@@ -80,7 +81,7 @@ test(`${d01.TestID} - ${d01.Description}`, async ({ page }) => {
 });
 
 const d02 = ExcelUtil.getTestData(SHEET, "TC02_PageLoadAPIFailure");
-test(`${d02.TestID} - ${d02.Description}`, async ({ page }) => {
+test(`${d02.TestID} - ${d02.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d02.Description, d02.Issue);
     const home = new HomeSteps(page);
     const zone = new ZoneManagementSteps(page);
@@ -115,7 +116,7 @@ test(`${d02.TestID} - ${d02.Description}`, async ({ page }) => {
 // ═════════════════════════════════════════════════════════════════════════════
 
 const d03 = ExcelUtil.getTestData(SHEET, "TC03_SearchExistingZone");
-test(`${d03.TestID} - ${d03.Description}`, async ({ page }) => {
+test(`${d03.TestID} - ${d03.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d03.Description, d03.Issue);
     const home = new HomeSteps(page);
     const zone = new ZoneManagementSteps(page);
@@ -129,7 +130,7 @@ test(`${d03.TestID} - ${d03.Description}`, async ({ page }) => {
 });
 
 const d04 = ExcelUtil.getTestData(SHEET, "TC04_SearchNonExistingZone");
-test(`${d04.TestID} - ${d04.Description}`, async ({ page }) => {
+test(`${d04.TestID} - ${d04.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d04.Description, d04.Issue);
     const home = new HomeSteps(page);
     const zone = new ZoneManagementSteps(page);
@@ -145,7 +146,7 @@ test(`${d04.TestID} - ${d04.Description}`, async ({ page }) => {
 // ═════════════════════════════════════════════════════════════════════════════
 
 const d05 = ExcelUtil.getTestData(SHEET, "TC05_SelectZoneLoadsDetails");
-test(`${d05.TestID} - ${d05.Description}`, async ({ page }) => {
+test(`${d05.TestID} - ${d05.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d05.Description, d05.Issue);
     const home = new HomeSteps(page);
     const zone = new ZoneManagementSteps(page);
@@ -160,7 +161,7 @@ test(`${d05.TestID} - ${d05.Description}`, async ({ page }) => {
 });
 
 const d06 = ExcelUtil.getTestData(SHEET, "TC06_SelectInvalidZone");
-test(`${d06.TestID} - ${d06.Description}`, async ({ page }) => {
+test(`${d06.TestID} - ${d06.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d06.Description, d06.Issue);
     const home = new HomeSteps(page);
     const zone = new ZoneManagementSteps(page);
@@ -176,7 +177,7 @@ test(`${d06.TestID} - ${d06.Description}`, async ({ page }) => {
 // ═════════════════════════════════════════════════════════════════════════════
 
 const d07 = ExcelUtil.getTestData(SHEET, "TC07_ClickUpdateEntersEditMode");
-test(`${d07.TestID} - ${d07.Description}`, async ({ page }) => {
+test(`${d07.TestID} - ${d07.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d07.Description, d07.Issue);
     const home = new HomeSteps(page);
     const zone = new ZoneManagementSteps(page);
@@ -193,7 +194,7 @@ test(`${d07.TestID} - ${d07.Description}`, async ({ page }) => {
 });
 
 const d08 = ExcelUtil.getTestData(SHEET, "TC08_UpdateButtonDisabledNoPermission");
-test(`${d08.TestID} - ${d08.Description}`, async ({ page }) => {
+test(`${d08.TestID} - ${d08.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d08.Description, d08.Issue);
     const home = new HomeSteps(page);
     const zone = new ZoneManagementSteps(page);
@@ -209,7 +210,7 @@ test(`${d08.TestID} - ${d08.Description}`, async ({ page }) => {
 // ═════════════════════════════════════════════════════════════════════════════
 
 const d09 = ExcelUtil.getTestData(SHEET, "TC09_ZoneNameValidAlphanumeric");
-test(`${d09.TestID} - ${d09.Description}`, async ({ page }) => {
+test(`${d09.TestID} - ${d09.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d09.Description, d09.Issue);
     const home = new HomeSteps(page);
     const zone = new ZoneManagementSteps(page);
@@ -220,7 +221,7 @@ test(`${d09.TestID} - ${d09.Description}`, async ({ page }) => {
 });
 
 const d10 = ExcelUtil.getTestData(SHEET, "TC10_ZoneNameBlankBlocked");
-test(`${d10.TestID} - ${d10.Description}`, async ({ page }) => {
+test(`${d10.TestID} - ${d10.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d10.Description, d10.Issue);
     const home = new HomeSteps(page);
     const zone = new ZoneManagementSteps(page);
@@ -239,7 +240,7 @@ test(`${d10.TestID} - ${d10.Description}`, async ({ page }) => {
 // ═════════════════════════════════════════════════════════════════════════════
 
 const d11 = ExcelUtil.getTestData(SHEET, "TC11_ZoneCodeValidUnique");
-test(`${d11.TestID} - ${d11.Description}`, async ({ page }) => {
+test(`${d11.TestID} - ${d11.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d11.Description, d11.Issue);
     const home = new HomeSteps(page);
     const zone = new ZoneManagementSteps(page);
@@ -250,7 +251,7 @@ test(`${d11.TestID} - ${d11.Description}`, async ({ page }) => {
 });
 
 const d12 = ExcelUtil.getTestData(SHEET, "TC12_ZoneCodeDuplicateRejected");
-test(`${d12.TestID} - ${d12.Description}`, async ({ page }) => {
+test(`${d12.TestID} - ${d12.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d12.Description, d12.Issue);
     const home = new HomeSteps(page);
     const zone = new ZoneManagementSteps(page);
@@ -280,7 +281,7 @@ test(`${d12.TestID} - ${d12.Description}`, async ({ page }) => {
 // ═════════════════════════════════════════════════════════════════════════════
 
 const d13 = ExcelUtil.getTestData(SHEET, "TC13_DescriptionValidText");
-test(`${d13.TestID} - ${d13.Description}`, async ({ page }) => {
+test(`${d13.TestID} - ${d13.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d13.Description, d13.Issue);
     const home = new HomeSteps(page);
     const zone = new ZoneManagementSteps(page);
@@ -295,7 +296,7 @@ test(`${d13.TestID} - ${d13.Description}`, async ({ page }) => {
 });
 
 const d14 = ExcelUtil.getTestData(SHEET, "TC14_DescriptionScriptBlocked");
-test(`${d14.TestID} - ${d14.Description}`, async ({ page }) => {
+test(`${d14.TestID} - ${d14.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d14.Description, d14.Issue);
     const home = new HomeSteps(page);
     const zone = new ZoneManagementSteps(page);
@@ -321,7 +322,7 @@ test(`${d14.TestID} - ${d14.Description}`, async ({ page }) => {
 // ═════════════════════════════════════════════════════════════════════════════
 
 const d15 = ExcelUtil.getTestData(SHEET, "TC15_CityValidName");
-test(`${d15.TestID} - ${d15.Description}`, async ({ page }) => {
+test(`${d15.TestID} - ${d15.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d15.Description, d15.Issue);
     const home = new HomeSteps(page);
     const zone = new ZoneManagementSteps(page);
@@ -337,7 +338,7 @@ test(`${d15.TestID} - ${d15.Description}`, async ({ page }) => {
 });
 
 const d16 = ExcelUtil.getTestData(SHEET, "TC16_CityEmptyBlocked");
-test(`${d16.TestID} - ${d16.Description}`, async ({ page }) => {
+test(`${d16.TestID} - ${d16.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d16.Description, d16.Issue);
     const home = new HomeSteps(page);
     const zone = new ZoneManagementSteps(page);
@@ -356,7 +357,7 @@ test(`${d16.TestID} - ${d16.Description}`, async ({ page }) => {
 // ═════════════════════════════════════════════════════════════════════════════
 
 const d17 = ExcelUtil.getTestData(SHEET, "TC17_StateValidName");
-test(`${d17.TestID} - ${d17.Description}`, async ({ page }) => {
+test(`${d17.TestID} - ${d17.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d17.Description, d17.Issue);
     const home = new HomeSteps(page);
     const zone = new ZoneManagementSteps(page);
@@ -372,7 +373,7 @@ test(`${d17.TestID} - ${d17.Description}`, async ({ page }) => {
 });
 
 const d18 = ExcelUtil.getTestData(SHEET, "TC18_StateEmptyBlocked");
-test(`${d18.TestID} - ${d18.Description}`, async ({ page }) => {
+test(`${d18.TestID} - ${d18.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d18.Description, d18.Issue);
     const home = new HomeSteps(page);
     const zone = new ZoneManagementSteps(page);
@@ -391,7 +392,7 @@ test(`${d18.TestID} - ${d18.Description}`, async ({ page }) => {
 // ═════════════════════════════════════════════════════════════════════════════
 
 const d19 = ExcelUtil.getTestData(SHEET, "TC19_StatusActiveSelection");
-test(`${d19.TestID} - ${d19.Description}`, async ({ page }) => {
+test(`${d19.TestID} - ${d19.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d19.Description, d19.Issue);
     const home = new HomeSteps(page);
     const zone = new ZoneManagementSteps(page);
@@ -402,7 +403,7 @@ test(`${d19.TestID} - ${d19.Description}`, async ({ page }) => {
 });
 
 const d20 = ExcelUtil.getTestData(SHEET, "TC20_StatusInvalidRejected");
-test(`${d20.TestID} - ${d20.Description}`, async ({ page }) => {
+test(`${d20.TestID} - ${d20.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d20.Description, d20.Issue);
     const home = new HomeSteps(page);
     const zone = new ZoneManagementSteps(page);
@@ -423,7 +424,7 @@ test(`${d20.TestID} - ${d20.Description}`, async ({ page }) => {
 // ═════════════════════════════════════════════════════════════════════════════
 
 const d21 = ExcelUtil.getTestData(SHEET, "TC21_NextStep1NavigatesCoverage");
-test(`${d21.TestID} - ${d21.Description}`, async ({ page }) => {
+test(`${d21.TestID} - ${d21.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d21.Description, d21.Issue);
     const home = new HomeSteps(page);
     const zone = new ZoneManagementSteps(page);
@@ -439,7 +440,7 @@ test(`${d21.TestID} - ${d21.Description}`, async ({ page }) => {
 });
 
 const d22 = ExcelUtil.getTestData(SHEET, "TC22_NextStep1BlockedIncomplete");
-test(`${d22.TestID} - ${d22.Description}`, async ({ page }) => {
+test(`${d22.TestID} - ${d22.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d22.Description, d22.Issue);
     const home = new HomeSteps(page);
     const zone = new ZoneManagementSteps(page);
@@ -458,7 +459,7 @@ test(`${d22.TestID} - ${d22.Description}`, async ({ page }) => {
 // ═════════════════════════════════════════════════════════════════════════════
 
 const d23 = ExcelUtil.getTestData(SHEET, "TC23_ZIPCodeValidAdded");
-test(`${d23.TestID} - ${d23.Description}`, async ({ page }) => {
+test(`${d23.TestID} - ${d23.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d23.Description, d23.Issue);
     const home = new HomeSteps(page);
     const zone = new ZoneManagementSteps(page);
@@ -473,7 +474,7 @@ test(`${d23.TestID} - ${d23.Description}`, async ({ page }) => {
 });
 
 const d24 = ExcelUtil.getTestData(SHEET, "TC24_ZIPCodeInvalidRejected");
-test(`${d24.TestID} - ${d24.Description}`, async ({ page }) => {
+test(`${d24.TestID} - ${d24.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d24.Description, d24.Issue);
     const home = new HomeSteps(page);
     const zone = new ZoneManagementSteps(page);
@@ -496,7 +497,7 @@ test(`${d24.TestID} - ${d24.Description}`, async ({ page }) => {
 // ═════════════════════════════════════════════════════════════════════════════
 
 const d25 = ExcelUtil.getTestData(SHEET, "TC25_AddZIPSuccess");
-test(`${d25.TestID} - ${d25.Description}`, async ({ page }) => {
+test(`${d25.TestID} - ${d25.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d25.Description, d25.Issue);
     const home = new HomeSteps(page);
     const zone = new ZoneManagementSteps(page);
@@ -511,7 +512,7 @@ test(`${d25.TestID} - ${d25.Description}`, async ({ page }) => {
 });
 
 const d26 = ExcelUtil.getTestData(SHEET, "TC26_DuplicateZIPRejected");
-test(`${d26.TestID} - ${d26.Description}`, async ({ page }) => {
+test(`${d26.TestID} - ${d26.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d26.Description, d26.Issue);
     const home = new HomeSteps(page);
     const zone = new ZoneManagementSteps(page);
@@ -535,7 +536,7 @@ test(`${d26.TestID} - ${d26.Description}`, async ({ page }) => {
 // ═════════════════════════════════════════════════════════════════════════════
 
 const d27 = ExcelUtil.getTestData(SHEET, "TC27_PolygonDrawnSuccess");
-test(`${d27.TestID} - ${d27.Description}`, async ({ page }) => {
+test(`${d27.TestID} - ${d27.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d27.Description, d27.Issue);
     const home = new HomeSteps(page);
     const zone = new ZoneManagementSteps(page);
@@ -552,7 +553,7 @@ test(`${d27.TestID} - ${d27.Description}`, async ({ page }) => {
 });
 
 const d28 = ExcelUtil.getTestData(SHEET, "TC28_SaveBlockedNoPolygon");
-test(`${d28.TestID} - ${d28.Description}`, async ({ page }) => {
+test(`${d28.TestID} - ${d28.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d28.Description, d28.Issue);
     const home = new HomeSteps(page);
     const zone = new ZoneManagementSteps(page);
@@ -574,7 +575,7 @@ test(`${d28.TestID} - ${d28.Description}`, async ({ page }) => {
 // ═════════════════════════════════════════════════════════════════════════════
 
 const d29 = ExcelUtil.getTestData(SHEET, "TC29_CoverageSummaryAfterZIP");
-test(`${d29.TestID} - ${d29.Description}`, async ({ page }) => {
+test(`${d29.TestID} - ${d29.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d29.Description, d29.Issue);
     const home = new HomeSteps(page);
     const zone = new ZoneManagementSteps(page);
@@ -590,7 +591,7 @@ test(`${d29.TestID} - ${d29.Description}`, async ({ page }) => {
 });
 
 const d30 = ExcelUtil.getTestData(SHEET, "TC30_CoverageSummaryAbsent");
-test(`${d30.TestID} - ${d30.Description}`, async ({ page }) => {
+test(`${d30.TestID} - ${d30.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d30.Description, d30.Issue);
     const home = new HomeSteps(page);
     const zone = new ZoneManagementSteps(page);
@@ -613,7 +614,7 @@ test(`${d30.TestID} - ${d30.Description}`, async ({ page }) => {
 // ═════════════════════════════════════════════════════════════════════════════
 
 const d31 = ExcelUtil.getTestData(SHEET, "TC31_NextStep2OpensSlotConfig");
-test(`${d31.TestID} - ${d31.Description}`, async ({ page }) => {
+test(`${d31.TestID} - ${d31.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d31.Description, d31.Issue);
     const home = new HomeSteps(page);
     const zone = new ZoneManagementSteps(page);
@@ -631,7 +632,7 @@ test(`${d31.TestID} - ${d31.Description}`, async ({ page }) => {
 });
 
 const d32 = ExcelUtil.getTestData(SHEET, "TC32_NextStep2BlockedIncomplete");
-test(`${d32.TestID} - ${d32.Description}`, async ({ page }) => {
+test(`${d32.TestID} - ${d32.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d32.Description, d32.Issue);
     const home = new HomeSteps(page);
     const zone = new ZoneManagementSteps(page);
@@ -654,7 +655,7 @@ test(`${d32.TestID} - ${d32.Description}`, async ({ page }) => {
 // ═════════════════════════════════════════════════════════════════════════════
 
 const d33 = ExcelUtil.getTestData(SHEET, "TC33_SlotBookingToggleEnabled");
-test(`${d33.TestID} - ${d33.Description}`, async ({ page }) => {
+test(`${d33.TestID} - ${d33.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d33.Description, d33.Issue);
     const home = new HomeSteps(page);
     const zone = new ZoneManagementSteps(page);
@@ -675,7 +676,7 @@ test(`${d33.TestID} - ${d33.Description}`, async ({ page }) => {
 });
 
 const d34 = ExcelUtil.getTestData(SHEET, "TC34_SlotBookingDisabledPrevents");
-test(`${d34.TestID} - ${d34.Description}`, async ({ page }) => {
+test(`${d34.TestID} - ${d34.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d34.Description, d34.Issue);
     const home = new HomeSteps(page);
     const zone = new ZoneManagementSteps(page);
@@ -699,7 +700,7 @@ test(`${d34.TestID} - ${d34.Description}`, async ({ page }) => {
 // ═════════════════════════════════════════════════════════════════════════════
 
 const d35 = ExcelUtil.getTestData(SHEET, "TC35_OperatingHoursConfigured");
-test(`${d35.TestID} - ${d35.Description}`, async ({ page }) => {
+test(`${d35.TestID} - ${d35.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d35.Description, d35.Issue);
     const home = new HomeSteps(page);
     const zone = new ZoneManagementSteps(page);
@@ -710,7 +711,7 @@ test(`${d35.TestID} - ${d35.Description}`, async ({ page }) => {
 });
 
 const d36 = ExcelUtil.getTestData(SHEET, "TC36_EndTimeBeforeStartRejected");
-test(`${d36.TestID} - ${d36.Description}`, async ({ page }) => {
+test(`${d36.TestID} - ${d36.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d36.Description, d36.Issue);
     const home = new HomeSteps(page);
     const zone = new ZoneManagementSteps(page);
@@ -734,7 +735,7 @@ test(`${d36.TestID} - ${d36.Description}`, async ({ page }) => {
 // ═════════════════════════════════════════════════════════════════════════════
 
 const d37 = ExcelUtil.getTestData(SHEET, "TC37_CapacityValidNumeric");
-test(`${d37.TestID} - ${d37.Description}`, async ({ page }) => {
+test(`${d37.TestID} - ${d37.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d37.Description, d37.Issue);
     const home = new HomeSteps(page);
     const zone = new ZoneManagementSteps(page);
@@ -755,7 +756,7 @@ test(`${d37.TestID} - ${d37.Description}`, async ({ page }) => {
 });
 
 const d38 = ExcelUtil.getTestData(SHEET, "TC38_CapacityZeroRejected");
-test(`${d38.TestID} - ${d38.Description}`, async ({ page }) => {
+test(`${d38.TestID} - ${d38.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d38.Description, d38.Issue);
     const home = new HomeSteps(page);
     const zone = new ZoneManagementSteps(page);
@@ -780,7 +781,7 @@ test(`${d38.TestID} - ${d38.Description}`, async ({ page }) => {
 // ═════════════════════════════════════════════════════════════════════════════
 
 const d39 = ExcelUtil.getTestData(SHEET, "TC39_AdvanceBookingValid");
-test(`${d39.TestID} - ${d39.Description}`, async ({ page }) => {
+test(`${d39.TestID} - ${d39.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d39.Description, d39.Issue);
     const home = new HomeSteps(page);
     const zone = new ZoneManagementSteps(page);
@@ -801,7 +802,7 @@ test(`${d39.TestID} - ${d39.Description}`, async ({ page }) => {
 });
 
 const d40 = ExcelUtil.getTestData(SHEET, "TC40_AdvanceBookingNegative");
-test(`${d40.TestID} - ${d40.Description}`, async ({ page }) => {
+test(`${d40.TestID} - ${d40.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d40.Description, d40.Issue);
     const home = new HomeSteps(page);
     const zone = new ZoneManagementSteps(page);
@@ -826,7 +827,7 @@ test(`${d40.TestID} - ${d40.Description}`, async ({ page }) => {
 // ═════════════════════════════════════════════════════════════════════════════
 
 const d41 = ExcelUtil.getTestData(SHEET, "TC41_UpdateZoneSaved");
-test(`${d41.TestID} - ${d41.Description}`, async ({ page }) => {
+test(`${d41.TestID} - ${d41.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d41.Description, d41.Issue);
     const home = new HomeSteps(page);
     const zone = new ZoneManagementSteps(page);
@@ -867,7 +868,7 @@ test(`${d41.TestID} - ${d41.Description}`, async ({ page }) => {
 });
 
 const d42 = ExcelUtil.getTestData(SHEET, "TC42_UpdateMissingFieldBlocked");
-test(`${d42.TestID} - ${d42.Description}`, async ({ page }) => {
+test(`${d42.TestID} - ${d42.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d42.Description, d42.Issue);
     const home = new HomeSteps(page);
     const zone = new ZoneManagementSteps(page);
@@ -894,7 +895,7 @@ test(`${d42.TestID} - ${d42.Description}`, async ({ page }) => {
 // ═════════════════════════════════════════════════════════════════════════════
 
 const d43 = ExcelUtil.getTestData(SHEET, "TC43_DeleteZoneConfirmed");
-test(`${d43.TestID} - ${d43.Description}`, async ({ page }) => {
+test(`${d43.TestID} - ${d43.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d43.Description, d43.Issue);
     const home = new HomeSteps(page);
     const zone = new ZoneManagementSteps(page);
@@ -917,7 +918,7 @@ test(`${d43.TestID} - ${d43.Description}`, async ({ page }) => {
 });
 
 const d44 = ExcelUtil.getTestData(SHEET, "TC44_DeleteZoneCancelled");
-test(`${d44.TestID} - ${d44.Description}`, async ({ page }) => {
+test(`${d44.TestID} - ${d44.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d44.Description, d44.Issue);
     // The application performs deletion immediately without a confirmation dialog.
     // A cancel-delete workflow does not exist in the current UI, so this test verifies
@@ -945,7 +946,7 @@ test(`${d44.TestID} - ${d44.Description}`, async ({ page }) => {
 // ═════════════════════════════════════════════════════════════════════════════
 
 const d45 = ExcelUtil.getTestData(SHEET, "TC45_DeletedZoneAbsentSearch");
-test(`${d45.TestID} - ${d45.Description}`, async ({ page }) => {
+test(`${d45.TestID} - ${d45.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d45.Description, d45.Issue);
     const home = new HomeSteps(page);
     const zone = new ZoneManagementSteps(page);
@@ -968,7 +969,7 @@ test(`${d45.TestID} - ${d45.Description}`, async ({ page }) => {
 });
 
 const d46 = ExcelUtil.getTestData(SHEET, "TC46_DeleteBlockedActiveDependency");
-test(`${d46.TestID} - ${d46.Description}`, async ({ page }) => {
+test(`${d46.TestID} - ${d46.Description} @regression @setup`, async ({ page }) => {
     Allure.attachDetails(d46.Description, d46.Issue);
     const home = new HomeSteps(page);
     const zone = new ZoneManagementSteps(page);

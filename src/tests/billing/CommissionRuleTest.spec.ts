@@ -3,7 +3,7 @@ import type { Page } from "@playwright/test";
 import HomeSteps from "@uiSteps/HomeSteps";
 import CommissionRuleSteps, { CommissionRuleFormData } from "@uiSteps/CommissionRuleSteps";
 import Assert from "@asserts/Assert";
-import CommissionRulePage from "../advantage/pages/CommissionRulePage";
+import CommissionRulePage from "../../advantage/pages/CommissionRulePage";
 import CommissionRuleConstants from "@uiConstants/CommissionRuleConstants";
 
 const EMAIL = process.env.TENANT_EMAIL || "freshcart@gmail.com";
