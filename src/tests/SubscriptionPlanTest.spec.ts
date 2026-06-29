@@ -33,7 +33,7 @@ test.afterEach(async ({ tenantPage }, testInfo) => {
     }
 });
 
-test.describe.configure({ retries: 1, mode: 'serial' });
+test.describe.configure({ retries: 1 });
 
 const SUB_ROWS = ExcelUtil.getTestDataArray(SHEET);
 function row(id: string) {

@@ -36,7 +36,7 @@ export default class CatalogPage {
     static readonly DETAIL_NAME = [
         'input[name="name"]',
         'input[placeholder*="Name" i]:not([placeholder*="Display"])',
-        // Row-based: label "Name" then input in same row
+        'div:has(> label:text-is("Name")) input',
         'div:has(> p:text-is("Name")) input',
         'div:has(> span:text-is("Name")) input',
         'tr:has(td:text-is("Name")) input',
@@ -45,6 +45,7 @@ export default class CatalogPage {
     static readonly DETAIL_DISPLAY_NAME = [
         'input[name="displayName"]',
         'input[placeholder*="Display Name" i]',
+        'div:has(> label:text-is("Display Name")) input',
         'div:has(> p:text-is("Display Name")) input',
         'div:has(> span:text-is("Display Name")) input',
         'tr:has(td:text-is("Display Name")) input',
@@ -54,6 +55,7 @@ export default class CatalogPage {
         'textarea[name="longDescription"]',
         'input[name="longDescription"]',
         'textarea[placeholder*="Long" i]',
+        'div:has(> label:text-is("Long Description")) input',
         'div:has(> p:text-is("Long Description")) input',
         'div:has(> p:text-is("Long Description")) textarea',
         'tr:has(td:text-is("Long Description")) input',
@@ -63,6 +65,7 @@ export default class CatalogPage {
         'textarea[name="shortDescription"]',
         'input[name="shortDescription"]',
         'textarea[placeholder*="Short" i]',
+        'div:has(> label:text-is("Short Description")) input',
         'div:has(> p:text-is("Short Description")) input',
         'div:has(> p:text-is("Short Description")) textarea',
         'tr:has(td:text-is("Short Description")) input',
@@ -71,6 +74,7 @@ export default class CatalogPage {
     static readonly DETAIL_CATALOG_TYPE = [
         'input[name="catalogType"]',
         'select[name="catalogType"]',
+        'div:has(> label:text-is("Catalog Type")) input',
         'div:has(> p:text-is("Catalog Type")) input',
         'div:has(> span:text-is("Catalog Type")) input',
         'tr:has(td:text-is("Catalog Type")) input',
@@ -78,6 +82,7 @@ export default class CatalogPage {
 
     // Attribute Count shows the number "0" as a text node next to the label
     static readonly DETAIL_ATTRIBUTE_COUNT = [
+        'div:has(> label:text-is("Attribute Count")) input',
         'div:has(> p:text-is("Attribute Count")) p:not(:text-is("Attribute Count"))',
         'div:has(> p:text-is("Attribute Count")) span',
         'tr:has(td:text-is("Attribute Count")) td:last-child',
@@ -131,18 +136,21 @@ export default class CatalogPage {
         'input[name="name"]',
         'input[placeholder*="Name" i]:not([placeholder*="Display"])',
         'label:has-text("Name") + input',
+        'div:has(> label:has-text("Name")) input',
     ].join(', ');
 
     static readonly FORM_DISPLAY_NAME_INPUT = [
         'input[name="displayName"]',
         'input[placeholder*="Display Name" i]',
         'label:has-text("Display Name") + input',
+        'div:has(> label:has-text("Display Name")) input',
     ].join(', ');
 
     static readonly FORM_LONG_DESC_INPUT = [
         'textarea[name="longDescription"]',
         'textarea[placeholder*="Long" i]',
         'label:has-text("Long Description") + textarea',
+        'div:has(> label:has-text("Long Description")) textarea',
         'input[name="longDescription"]',
     ].join(', ');
 
@@ -150,6 +158,7 @@ export default class CatalogPage {
         'textarea[name="shortDescription"]',
         'textarea[placeholder*="Short" i]',
         'label:has-text("Short Description") + textarea',
+        'div:has(> label:has-text("Short Description")) textarea',
         'input[name="shortDescription"]',
     ].join(', ');
 
@@ -164,6 +173,7 @@ export default class CatalogPage {
         'select[name="parentCatalog"]',
         'label:has-text("Parent") + select',
         'label:has-text("Parent Catalog") + select',
+        'div:has(> label:has-text("Parent")) select',
     ].join(', ');
 
     static readonly FORM_LANGUAGE_SELECT = [

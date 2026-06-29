@@ -20,7 +20,7 @@ const test = base.extend<{ partnerPage: Page }>({
     }, { scope: "worker" }]
 });
 
-test.describe.configure({ mode: "serial", retries: 0 });
+test.describe.configure({ retries: 0 });
 
 const ROWS = ExcelUtil.getTestDataArray(SHEET);
 function row(id: string) {

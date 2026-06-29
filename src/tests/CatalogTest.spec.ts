@@ -784,31 +784,31 @@ test.describe("Catalog Test", () => {
     test(`${d91.TestID} - ${d91.Description}`, async () => {
         Allure.attachDetails(d91.Description, d91.Issue);
         await catalog.navigateToCatalog();
-        await catalog.selectTreeNode(d91.CatalogNode);
+        await catalog.selectTreeNode(d91.CatalogNode || d91.ChildNode);
         await catalog.clickDeleteCatalog();
         await catalog.verifyDeletePopupDisplayed();
         await catalog.confirmDelete();
         await catalog.verifySuccessToast();
-        await catalog.verifyNodeRemovedFromTree(d91.CatalogNode);
+        await catalog.verifyNodeRemovedFromTree(d91.CatalogNode || d91.ChildNode);
     });
 
     const d92 = ExcelUtil.getTestData(SHEET, "TC92_Delete_CancelKeeps");
     test(`${d92.TestID} - ${d92.Description}`, async () => {
         Allure.attachDetails(d92.Description, d92.Issue);
         await catalog.navigateToCatalog();
-        await catalog.selectTreeNode(d92.CatalogNode);
+        await catalog.selectTreeNode(d92.CatalogNode || d92.ChildNode);
         await catalog.clickDeleteCatalog();
         await catalog.verifyDeletePopupDisplayed();
         await catalog.cancelDelete();
         await catalog.verifyDeletePopupClosed();
-        await catalog.verifyNodeStillInTree(d92.CatalogNode);
+        await catalog.verifyNodeStillInTree(d92.CatalogNode || d92.ChildNode);
     });
 
     const d93 = ExcelUtil.getTestData(SHEET, "TC93_Delete_PopupDisplayed");
     test(`${d93.TestID} - ${d93.Description}`, async () => {
         Allure.attachDetails(d93.Description, d93.Issue);
         await catalog.navigateToCatalog();
-        await catalog.selectTreeNode(d93.CatalogNode);
+        await catalog.selectTreeNode(d93.CatalogNode || d93.ChildNode);
         await catalog.clickDeleteCatalog();
         await catalog.verifyDeletePopupDisplayed();
         await catalog.cancelDelete();
@@ -818,7 +818,7 @@ test.describe("Catalog Test", () => {
     test(`${d94.TestID} - ${d94.Description}`, async () => {
         Allure.attachDetails(d94.Description, d94.Issue);
         await catalog.navigateToCatalog();
-        await catalog.selectTreeNode(d94.CatalogNode);
+        await catalog.selectTreeNode(d94.CatalogNode || d94.ChildNode);
         await catalog.clickDeleteCatalog();
         await catalog.verifyDeletePopupDisplayed();
         await catalog.confirmDelete();
@@ -829,7 +829,7 @@ test.describe("Catalog Test", () => {
     test(`${d95.TestID} - ${d95.Description}`, async () => {
         Allure.attachDetails(d95.Description, d95.Issue);
         await catalog.navigateToCatalog();
-        await catalog.selectTreeNode(d95.CatalogNode);
+        await catalog.selectTreeNode(d95.CatalogNode || d95.ChildNode);
         await catalog.clickDeleteCatalog();
         await catalog.verifyDeletePopupDisplayed();
         await catalog.confirmDelete();
@@ -843,24 +843,24 @@ test.describe("Catalog Test", () => {
     test(`${d96.TestID} - ${d96.Description}`, async () => {
         Allure.attachDetails(d96.Description, d96.Issue);
         await catalog.navigateToCatalog();
-        await catalog.selectTreeNode(d96.CatalogNode);
+        await catalog.selectTreeNode(d96.CatalogNode || d96.ChildNode);
         await catalog.clickDeleteCatalog();
         await catalog.verifyDeletePopupDisplayed();
         await catalog.cancelDelete();
         await catalog.verifyDeletePopupClosed();
-        await catalog.verifyNodeStillInTree(d96.CatalogNode);
+        await catalog.verifyNodeStillInTree(d96.CatalogNode || d96.ChildNode);
     });
 
     const d97 = ExcelUtil.getTestData(SHEET, "TC97_Delete_CloseNoDelete");
     test(`${d97.TestID} - ${d97.Description}`, async () => {
         Allure.attachDetails(d97.Description, d97.Issue);
         await catalog.navigateToCatalog();
-        await catalog.selectTreeNode(d97.CatalogNode);
+        await catalog.selectTreeNode(d97.CatalogNode || d97.ChildNode);
         await catalog.clickDeleteCatalog();
         await catalog.verifyDeletePopupDisplayed();
         await catalog.closeDeletePopup();
         await catalog.verifyDeletePopupClosed();
-        await catalog.verifyNodeStillInTree(d97.CatalogNode);
+        await catalog.verifyNodeStillInTree(d97.CatalogNode || d97.ChildNode);
     });
 
     const d98 = ExcelUtil.getTestData(SHEET, "TC98_Delete_APIError");
@@ -874,7 +874,7 @@ test.describe("Catalog Test", () => {
     test(`${d99.TestID} - ${d99.Description}`, async () => {
         Allure.attachDetails(d99.Description, d99.Issue);
         await catalog.navigateToCatalog();
-        await catalog.selectTreeNode(d99.CatalogNode);
+        await catalog.selectTreeNode(d99.CatalogNode || d99.ChildNode);
         await catalog.clickDeleteCatalog();
         await catalog.verifyDeletePopupDisplayed();
         await catalog.confirmDelete();
@@ -885,7 +885,7 @@ test.describe("Catalog Test", () => {
     test(`${d100.TestID} - ${d100.Description}`, async () => {
         Allure.attachDetails(d100.Description, d100.Issue);
         await catalog.navigateToCatalog();
-        await catalog.selectTreeNode(d100.CatalogNode);
+        await catalog.selectTreeNode(d100.CatalogNode || d100.ChildNode);
         await catalog.clickDeleteCatalog();
         await catalog.verifyDeletePopupDisplayed();
         await catalog.confirmDelete();
