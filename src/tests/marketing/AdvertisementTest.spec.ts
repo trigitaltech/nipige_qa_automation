@@ -16,16 +16,17 @@ let sharedPage!: Page;
 let advSteps!: AdvertisementSteps;
 
 // - Shared state written by create tests, read by downstream tests -
-let rowCountBeforeCreate = 0;   // row count just before TC_ADV_11 creates a Banner
-let deleteTestPreCount = 0;     // row count before the delete-specific record is created
+let rowCountBeforeCreate = 0; // row count just before TC_ADV_11 creates a Banner
+let deleteTestPreCount = 0; // row count before the delete-specific record is created
+let deleteTestPlacement = ""; // placement of the created delete-test record
 
 // ── Cleanup tracking ──────────────────────────────────────────────────────────
 // _cleanupQueue  : records that can be deleted right after their creating test.
 //                  Processed in afterEach and then cleared.
 // _suiteCleanup  : records that must survive for downstream tests (TC_ADV_11/13).
 //                  Processed once at the very start of afterAll before closing the page.
-let _cleanupQueue: string[] = [];
-let _suiteCleanup: string[] = [];
+const _cleanupQueue: string[] = [];
+const _suiteCleanup: string[] = [];
 
 // Execution summary counters
 let _totalCreated = 0;
@@ -63,8 +64,7 @@ test.describe("Advertisement", () => {
             for (const tag of _suiteCleanup) {
                 if (!tag) continue;
                 const deleted = await advSteps.deleteAdvertisementByName(tag).catch(() => false);
-                if (deleted) { _totalDeleted++; }
-                else { _cleanupFailures.push(`${tag} (suite cleanup)`); }
+                if (deleted) { _totalDeleted++; } else { _cleanupFailures.push(`${tag} (suite cleanup)`); }
             }
         }
 
@@ -78,7 +78,7 @@ test.describe("Advertisement", () => {
         console.log(`║  Cleanup Failures       : ${String(_cleanupFailures.length).padEnd(27)}║`);
         if (_cleanupFailures.length > 0) {
             console.log(`╠${sep}╣`);
-            _cleanupFailures.forEach(f => console.log(`║  ✗ ${f.padEnd(51)}║`));
+            _cleanupFailures.forEach((f) => console.log(`║  ✗ ${f.padEnd(51)}║`));
         }
         console.log(`╚${sep}╝\n`);
 
@@ -324,7 +324,7 @@ test.describe("Advertisement", () => {
             visibility: AdvertisementConstants.VISIBILITY_GLOBAL,
             startDate: START,
             endDate: END,
-            frequency: "5",   // SLIDER requires Frequency  --  pick "5 sec"
+            frequency: "5", // SLIDER requires Frequency  --  pick "5 sec"
         });
         await advSteps.clickContinue();
 
@@ -533,10 +533,9 @@ test.describe("Advertisement", () => {
         await advSteps.fillStep1({
             type: AdvertisementConstants.TYPE_SLIDER,
             visibility: AdvertisementConstants.VISIBILITY_GLOBAL,
-            placement: "PLACEMENTONE",
             startDate: START,
             endDate: LATER_END,
-            frequency: "5"
+            frequency: "5",
         });
         await advSteps.clickContinue();
 
@@ -550,10 +549,12 @@ test.describe("Advertisement", () => {
         // STRICT: creation must succeed
         const toastText = await advSteps.assertSuccessToast();
         console.log(`[TC_ADV_22] PASS  --  Delete-test record created: '${toastText}'`);
-        _totalCreated++;  // TC_ADV_25 will delete this record (reflected in _totalDeleted there)
+        _totalCreated++; // TC_ADV_25 will delete this record (reflected in _totalDeleted there)
 
         await advSteps.navigateToAdvertisement();
         await advSteps.waitForTableStable();
+        deleteTestPlacement = await advSteps.getFirstRowPlacement() || "";
+        console.log(`[TC_ADV_22] Created delete-test record placement: '${deleteTestPlacement}'`);
     });
 
     test("TC_ADV_23 - Delete popup: cancel/confirm visible; click-outside/Escape must NOT delete record", async () => {
@@ -619,7 +620,8 @@ test.describe("Advertisement", () => {
     test("TC_ADV_25 - Confirm delete: STRICT  --  success toast shown AND row count decreases", async () => {
         await advSteps.navigateToAdvertisement();
         await advSteps.waitForTableStable();
-        await advSteps.searchAdvertisement("PLACEMENTONE");
+        const searchTag = deleteTestPlacement || "PLACEMENTONE";
+        await advSteps.searchAdvertisement(searchTag);
 
         const countBefore = await advSteps.getTableRowCount();
         if (countBefore === 0) {
@@ -632,7 +634,7 @@ test.describe("Advertisement", () => {
         // STRICT: success toast must appear
         const toastText = await advSteps.assertSuccessToast();
         console.log(`[TC_ADV_25] Delete toast: '${toastText}'`);
-        _totalDeleted++;  // TC_ADV_22 created this record
+        _totalDeleted++; // TC_ADV_22 created this record
 
         await advSteps.waitForTableStable();
         let countAfter = await advSteps.getTableRowCount();
@@ -641,7 +643,7 @@ test.describe("Advertisement", () => {
             await sharedPage.reload();
             await sharedPage.waitForLoadState("networkidle");
             await advSteps.waitForTableStable();
-            await advSteps.searchAdvertisement("PLACEMENTONE");
+            await advSteps.searchAdvertisement(searchTag);
             countAfter = await advSteps.getTableRowCount();
         }
         
@@ -712,8 +714,8 @@ test.describe("Advertisement", () => {
         await advSteps.fillStep1({
             type: AdvertisementConstants.TYPE_BANNER,
             visibility: AdvertisementConstants.VISIBILITY_GLOBAL,
-            startDate: LATER_END,   // reversed: far future as start
-            endDate: START,         // reversed: near future as end (start > end)
+            startDate: LATER_END, // reversed: far future as start
+            endDate: START, // reversed: near future as end (start > end)
         });
         await advSteps.clickContinue();
 
@@ -814,7 +816,7 @@ test.describe("Advertisement", () => {
 
         // Log all buttons visible on Step 2
         const allBtnTexts = await sharedPage.locator("button").allInnerTexts().catch(() => [] as string[]);
-        console.log(`[TC_ADV_31] Step 2 visible buttons: ${JSON.stringify(allBtnTexts.map(t => t.trim()).filter(Boolean))}`);
+        console.log(`[TC_ADV_31] Step 2 visible buttons: ${JSON.stringify(allBtnTexts.map((t) => t.trim()).filter(Boolean))}`);
 
         const sectionsBefore = await sharedPage.locator(AdvertisementPage.BANNER_CONTENT_EDITOR).count();
         console.log(`[TC_ADV_31] Sections BEFORE click: ${sectionsBefore}`);
@@ -1002,7 +1004,7 @@ test.describe("Advertisement", () => {
         // Verify Basic Details
         await advSteps.verifyViewPageSections();
         await advSteps.verifyViewPageData({
-            visibility: firstRowVisibility
+            visibility: firstRowVisibility,
         });
         // Verify Media preview
         await advSteps.verifyViewPageMedia("image");
@@ -1076,7 +1078,8 @@ test.describe("Advertisement", () => {
         const positiveEditUrl = sharedPage.url();
 
         // Log current visibility before change
-        const visBeforeChange = await sharedPage.locator("select").nth(2).locator("option:checked").innerText().catch(() => "unknown");
+        const visBeforeChange = await sharedPage.locator("select").nth(2).locator("option:checked").innerText()
+.catch(() => "unknown");
         console.log(`[TC_ADV_39] Visibility BEFORE change: '${visBeforeChange}'`);
 
         // Update Visibility to Partner
@@ -1100,14 +1103,15 @@ test.describe("Advertisement", () => {
         // Log all select values on re-opened edit page to see what was saved
         const selectsOnReopen = await sharedPage.locator("select").count();
         for (let i = 0; i < selectsOnReopen; i++) {
-            const savedLabel = await sharedPage.locator("select").nth(i).locator("option:checked").innerText({ timeout: 2000 }).catch(() => "");
+            const savedLabel = await sharedPage.locator("select").nth(i).locator("option:checked").innerText({ timeout: 2000 })
+.catch(() => "");
             if (savedLabel.trim()) console.log(`[TC_ADV_39] Saved select[${i}]: '${savedLabel}'`);
         }
 
         await advSteps.verifyEditPageData({
             visibility: "Partner",
             startDate: START,
-            endDate: LATER_END
+            endDate: LATER_END,
         });
 
         // Revert changes back to Global
@@ -1260,7 +1264,7 @@ test.describe("Advertisement", () => {
             placement: "HOME_BOTTOM",
             startDate: START,
             endDate: END,
-            frequency: "5"
+            frequency: "5",
         });
         await advSteps.clickContinue();
         await advSteps.assertStep2Reached();
@@ -1307,7 +1311,7 @@ test.describe("Advertisement", () => {
             type: AdvertisementConstants.TYPE_VIDEO,
             visibility: AdvertisementConstants.VISIBILITY_GLOBAL,
             startDate: START,
-            endDate: END
+            endDate: END,
         });
         await advSteps.clickContinue();
         await advSteps.assertStep2Reached("VIDEO"); // Use VIDEO-specific Step 2 indicators
@@ -1442,7 +1446,7 @@ test.describe("Advertisement", () => {
             type: AdvertisementConstants.TYPE_BANNER,
             visibility: AdvertisementConstants.VISIBILITY_GLOBAL,
             startDate: START,
-            endDate: END
+            endDate: END,
         });
         await advSteps.clickContinue();
         await advSteps.assertStep2Reached();
@@ -1474,7 +1478,7 @@ test.describe("Advertisement", () => {
             type: AdvertisementConstants.TYPE_BANNER,
             visibility: AdvertisementConstants.VISIBILITY_GLOBAL,
             startDate: START,
-            endDate: END
+            endDate: END,
         });
         await advSteps.clickContinue();
         await advSteps.assertStep2Reached();
@@ -1550,7 +1554,7 @@ test.describe("Advertisement", () => {
             type: AdvertisementConstants.TYPE_BANNER,
             visibility: AdvertisementConstants.VISIBILITY_GLOBAL,
             startDate: START,
-            endDate: END
+            endDate: END,
         });
         await advSteps.clickContinue();
         await advSteps.assertStep2Reached();
@@ -1576,7 +1580,7 @@ test.describe("Advertisement", () => {
             type: AdvertisementConstants.TYPE_BANNER,
             visibility: AdvertisementConstants.VISIBILITY_GLOBAL,
             startDate: START,
-            endDate: END
+            endDate: END,
         });
         await advSteps.clickContinue();
         await advSteps.assertStep2Reached();
@@ -1695,7 +1699,7 @@ test.describe("Advertisement", () => {
             type: AdvertisementConstants.TYPE_BANNER,
             visibility: AdvertisementConstants.VISIBILITY_GLOBAL,
             startDate: START,
-            endDate: END
+            endDate: END,
         });
         await advSteps.clickContinue();
         await advSteps.assertStep2Reached();

@@ -30,8 +30,8 @@ const test = base.extend<{ adminPage: Page }, { workerAdminPage: Page }>({
 });
 
 // Shared logo fixture (PNG image from resources)
-const LOGO_PATH = path.resolve(__dirname, "../resources/images/test-logo.png");
-const FALLBACK_LOGO = path.resolve(__dirname, "../resources/images/logo.png");
+const LOGO_PATH = path.resolve("test-data/uploads/valid-logo.png");
+const FALLBACK_LOGO = path.resolve("test-data/uploads/images/icon.jpg");
 
 function getLogoPath(): string {
     try {
@@ -750,8 +750,12 @@ test.describe("Business Plan Module — Regression Suite", () => {
         Allure.attachDetails(row("TC_CREATE_24")["Test Scenario"], "");
         await bp.navigateToCreatePage();
         const fs = require("fs");
-        const fakeFilePath = path.resolve(__dirname, "../resources/test-invalid.txt");
+        const fakeFilePath = path.resolve("test-data/uploads/unsupported.txt");
         if (!fs.existsSync(fakeFilePath)) {
+            const fakeFileDir = path.dirname(fakeFilePath);
+            if (!fs.existsSync(fakeFileDir)) {
+                fs.mkdirSync(fakeFileDir, { recursive: true });
+            }
             fs.writeFileSync(fakeFilePath, "This is a plain text file — not a valid image for logo upload.");
         }
         const fileInput = adminPage.locator(BusinessPlanPage.LOGO_FILE_INPUT).first();
@@ -785,11 +789,15 @@ test.describe("Business Plan Module — Regression Suite", () => {
         Allure.attachDetails(row("TC_CREATE_25")["Test Scenario"], "");
         await bp.navigateToCreatePage();
         const fs = require("fs");
-        const largeFilePath = path.resolve(__dirname, "../resources/large-test-logo.jpg");
+        const largeFilePath = path.resolve("test-data/uploads/large-test-logo.jpg");
         // Create a 6 MB dummy file (typical logo size limit is 2–5 MB)
         const SIZE_6MB = 6 * 1024 * 1024;
         const buf = Buffer.alloc(SIZE_6MB, 0xab);
         buf[0] = 0xff; buf[1] = 0xd8; // JPEG SOI magic bytes
+        const largeFileDir = path.dirname(largeFilePath);
+        if (!fs.existsSync(largeFileDir)) {
+            fs.mkdirSync(largeFileDir, { recursive: true });
+        }
         fs.writeFileSync(largeFilePath, buf);
         try {
             const fileInput = adminPage.locator(BusinessPlanPage.LOGO_FILE_INPUT).first();
@@ -983,8 +991,12 @@ test.describe("Business Plan Module — Regression Suite", () => {
         Allure.attachDetails(row("TC_CREATE_36")["Test Scenario"], "");
         await bp.navigateToCreatePage();
         const fs = require("fs");
-        const corruptedFile = path.resolve(__dirname, "../resources/corrupted-test.jpg");
+        const corruptedFile = path.resolve("test-data/uploads/corrupted-test.jpg");
         // Write garbage bytes with .jpg extension — not a valid image
+        const corruptedFileDir = path.dirname(corruptedFile);
+        if (!fs.existsSync(corruptedFileDir)) {
+            fs.mkdirSync(corruptedFileDir, { recursive: true });
+        }
         fs.writeFileSync(corruptedFile, Buffer.from("NOT_A_JPEG_CORRUPTED_DATA\x00\x01\x02\xff\xfe\xfd"));
         try {
             const fileInput = adminPage.locator(BusinessPlanPage.LOGO_FILE_INPUT).first();
