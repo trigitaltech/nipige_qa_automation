@@ -73,7 +73,7 @@ jobs:
 
       - name: Run Playwright tests
         run: |
-          npm run local:test
+          npm run test:regression
 
       - name: Upload HTML Report
         if: always()
