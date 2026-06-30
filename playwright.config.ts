@@ -2,7 +2,7 @@ import { PlaywrightTestConfig } from "@playwright/test";
 import dotenv from "dotenv";
 import Browser from "./src/framework/manager/Browser";
 
-dotenv.config();
+const result = dotenv.config();
 
 const timeInMin: number = 60 * 1000;
 const defaultBrowser: string = String(process.env.BROWSER ?? "chromium").toLowerCase();

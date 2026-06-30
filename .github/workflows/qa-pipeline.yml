@@ -53,6 +53,11 @@ jobs:
         run: |
           npx playwright install chromium --with-deps
 
+      - name: Create .env file for CI
+        run: |
+          cp .env.example .env
+          sed -i 's|BASE_URL=http://advantageonlineshopping.com|BASE_URL=https://migration.demn8gjs27bhv.amplifyapp.com/|g' .env
+
       - name: Verify environment
         run: |
           echo "Checking environment..."
@@ -73,7 +78,7 @@ jobs:
 
       - name: Run Playwright tests
         run: |
-          npm run local:test
+          npm run test:regression
 
       - name: Upload HTML Report
         if: always()
