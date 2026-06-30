@@ -27,9 +27,24 @@ for (const { role, filename, persona } of rolesToAuthenticate) {
     
     const creds = getCredential(role);
     const home = new HomeSteps(page);
-    await home.launchApplication();
-    await home.login(creds.email, creds.password, persona);
-    await home.validateLogin(creds.email);
+
+    let attempt = 0;
+    const maxAttempts = 3;
+    while (attempt < maxAttempts) {
+      attempt++;
+      try {
+        await home.launchApplication();
+        await home.login(creds.email, creds.password, persona);
+        await home.validateLogin(creds.email);
+        break;
+      } catch (error: any) {
+        if (attempt >= maxAttempts) {
+          throw error;
+        }
+        console.warn(`Authentication attempt ${attempt} for ${role} failed: ${error.message}. Retrying in 10 seconds...`);
+        await page.waitForTimeout(10000);
+      }
+    }
     
     // Ensure parent directory exists
     const dir = path.dirname(statePath);
