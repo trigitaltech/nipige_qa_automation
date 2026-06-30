@@ -5,8 +5,8 @@ import FAQSteps, { FAQFormData } from "@uiSteps/FAQSteps";
 import Assert from "@asserts/Assert";
 import FAQConstants from "@uiConstants/FAQConstants";
 
-const EMAIL = process.env.TENANT_EMAIL ?? "freshcart@gmail.com";
-const PASS = process.env.TENANT_PASSWORD ?? "Welcome@123";
+const EMAIL = process.env.TENANT_EMAIL || "freshcart@gmail.com";
+const PASS = process.env.TENANT_PASSWORD || "Welcome@123";
 
 let sharedPage!: Page;
 let faqSteps!: FAQSteps;

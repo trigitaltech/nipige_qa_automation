@@ -29,7 +29,7 @@ export default class FAQConstants {
         FAQConstants.WITH_MEDIA_LABEL,
     ];
 
-    static readonly EXPECTED_COLUMNS = ["SCOPE", "CATEGORY", "TOPIC", "MEDIA", "VIEWS", "UPDATED", "ACTIONS"];
+    static readonly EXPECTED_COLUMNS = ["SCOPE", "CATEGORY", "TOPIC & DESCRIPTION", "MEDIA", "ACTIONS"];
 
     static readonly NO_MATCH_SEARCH = "NO_FAQ_MATCH_!@#_999999";
     static readonly SPECIAL_CHAR_SEARCH = "!@#$%^&*";
