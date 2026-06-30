@@ -3,8 +3,6 @@ import dotenv from "dotenv";
 import Browser from "./src/framework/manager/Browser";
 
 const result = dotenv.config();
-console.log("Dotenv load result:", result);
-console.log("process.env.BASE_URL on startup:", process.env.BASE_URL);
 
 const timeInMin: number = 60 * 1000;
 const defaultBrowser: string = String(process.env.BROWSER ?? "chromium").toLowerCase();
