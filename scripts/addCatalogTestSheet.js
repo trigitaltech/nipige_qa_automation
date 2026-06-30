@@ -13,7 +13,7 @@ const XLSX = require("xlsx");
 const path = require("path");
 
 const FILE = path.resolve(__dirname, "../src/resources/data/testData.xlsx");
-const SHEET = "CatalogTest";
+const SHEET = "CatalogAdminTest";
 
 const ADMIN_PERSONA = "tenant";
 const ROOT_NODE = "Root";

@@ -1,0 +1,4 @@
+allowBuilds:
+  canvas: set this to true or false
+  ibm_db: set this to true or false
+  oracledb: set this to true or false
