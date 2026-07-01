@@ -8,8 +8,8 @@ import ExcelUtil from "@utils/ExcelUtil";
 
 // ── Credentials ───────────────────────────────────────────────────────────────
 const SHEET = "Daily Registration Regression";
-const EMAIL = process.env.TENANT_EMAIL || "nipigev2@yopmail.com";
-const PASS = process.env.TENANT_PASSWORD || "admin@123";
+const EMAIL = process.env.TENANT_EMAIL || "freshcart@gmail.com";
+const PASS = process.env.TENANT_PASSWORD || "Welcome@123";
 const PERSONA = "tenant";
 
 // ── Worker-scoped login fixture ───────────────────────────────────────────────
