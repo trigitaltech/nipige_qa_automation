@@ -43,8 +43,8 @@ const config: PlaywrightTestConfig = {
   timeout: Number.parseInt(String(process.env.TEST_TIMEOUT ?? "1"), 10) * timeInMin,
   fullyParallel: false,
   workers: process.env.CI
-    ? 6
-    : Number.parseInt(String(process.env.PARALLEL_THREAD ?? "1"), 10),
+    ? 10
+    : Number.parseInt(String(process.env.PARALLEL_THREAD ?? "10"), 10),
 
   reporter: [
     ["dot"],
@@ -82,6 +82,7 @@ const config: PlaywrightTestConfig = {
       name: "suite",
       dependencies: ["setup"],
       testMatch: "**/*.test.ts",
+      fullyParallel: true,
     },
   ],
 };
