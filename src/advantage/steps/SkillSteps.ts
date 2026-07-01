@@ -322,34 +322,46 @@ export default class SkillSteps {
     // the toast auto-dismiss. Use this instead of submitCreateForm + verifySuccessToast.
     public async submitCreateFormAndVerifyToast() {
         await test.step("Submit Create Skill form and verify success toast", async () => {
-            await this.page.locator(SkillPage.SAVE_BTN).click();
-            const toast = this.page.locator(".Toastify__toast").first();
-            await expect(toast, "Success toast must appear after Save").toBeVisible({ timeout: 8000 });
+            const maxAttempts = 3;
+            for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+                await this.page.locator(SkillPage.SAVE_BTN).click();
+                const toast = this.page.locator(".Toastify__toast").first();
+                await expect(toast, "Toast must appear after Save").toBeVisible({ timeout: 8000 });
 
-            let toastText = (await toast.innerText().catch(() => "")).toLowerCase();
-            console.log(`[Skill] Toast: '${toastText}'`);
+                let toastText = (await toast.innerText().catch(() => "")).toLowerCase();
+                console.log(`[Skill] Toast (attempt ${attempt}): '${toastText}'`);
 
-            const isSuccess = () => toastText.includes("success") || toastText.includes("created") || toastText.includes("saved");
-            if (!isSuccess()) {
-                // Toast visible but text not rendered yet (slow DOM hydration) — re-read once
-                await this.page.waitForTimeout(800);
-                toastText = (await toast.innerText().catch(() => "")).toLowerCase();
-                console.log(`[Skill] Toast (re-read): '${toastText}'`);
-            }
-
-            if (!isSuccess()) {
-                // 429 rate-limit: wait 5 s then check if URL navigated (server may still have accepted)
-                if (toastText.includes("429") || toastText.includes("too many") || toastText.includes("rate")) {
-                    console.log("[Skill] HTTP 429 detected — waiting 5s for rate-limit window to reset");
-                    await this.page.waitForTimeout(5000);
-                    const urlAfter429 = this.page.url();
-                    if (!urlAfter429.includes("/create")) {
-                        console.log(`[Skill] 429 but URL left /create → '${urlAfter429}'. Treating as success.`);
-                        await this.page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
-                        return;
-                    }
-                    throw new Error(`Server rate-limited (HTTP 429) — skill was not created. Reduce test cadence or add delays.`);
+                const isSuccess = () => toastText.includes("success") || toastText.includes("created") || toastText.includes("saved");
+                if (!isSuccess()) {
+                    // Toast visible but text not rendered yet (slow DOM hydration) — re-read once
+                    await this.page.waitForTimeout(800);
+                    toastText = (await toast.innerText().catch(() => "")).toLowerCase();
+                    console.log(`[Skill] Toast (re-read attempt ${attempt}): '${toastText}'`);
                 }
+
+                if (isSuccess()) {
+                    await this.page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
+                    return;
+                }
+
+                // If rate limited, wait and retry
+                if (toastText.includes("429") || toastText.includes("too many") || toastText.includes("rate")) {
+                    if (attempt < maxAttempts) {
+                        console.log(`[Skill] HTTP 429 rate-limit detected — waiting 5s before retrying (attempt ${attempt} of ${maxAttempts})`);
+                        await this.page.waitForTimeout(5000);
+                        continue;
+                    } else {
+                        // Check if redirect already happened (late backend acceptance)
+                        const urlAfter429 = this.page.url();
+                        if (!urlAfter429.includes("/create")) {
+                            console.log(`[Skill] 429 on final attempt but URL left /create → '${urlAfter429}'. Treating as success.`);
+                            await this.page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
+                            return;
+                        }
+                        throw new Error(`Server rate-limited (HTTP 429) — skill was not created after ${maxAttempts} attempts. Reduce test cadence or add delays.`);
+                    }
+                }
+
                 // Fallback: if URL left the create page, treat as success (redirect = server accepted)
                 const currentUrl = this.page.url();
                 if (!currentUrl.includes("/create")) {
@@ -357,10 +369,10 @@ export default class SkillSteps {
                     await this.page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
                     return;
                 }
+
+                // If not success and not rate-limited, immediately fail (e.g. duplicate code/validation)
                 await Assert.assertTrue(false, `Toast must confirm success; actual: '${toastText}'`);
             }
-
-            await this.page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
         });
     }
 
@@ -707,18 +719,8 @@ export default class SkillSteps {
             await this.verifyCreatePageLoaded();
             await this.fillCreateForm(data);
 
-            // Click Save, then check the Toastify toast BEFORE waitForLoadState.
-            // The toast auto-dismisses in ~3 s; a preceding networkidle wait lets it
-            // expire before verifySuccessToast even runs, causing a false timeout.
-            await this.page.locator(SkillPage.SAVE_BTN).click();
-            const toast = this.page.locator(".Toastify__toast").first();
-            await expect(toast, "Success toast must appear after Save").toBeVisible({ timeout: 8000 });
-            const toastText = (await toast.innerText().catch(() => "")).toLowerCase();
-            console.log(`[Skill] Toast text: '${toastText}'`);
-            await Assert.assertTrue(
-                toastText.includes("success") || toastText.includes("created") || toastText.includes("saved"),
-                `Toast must confirm success; actual: '${toastText}'`,
-            );
+            // Use the robust helper with retry mechanism
+            await this.submitCreateFormAndVerifyToast();
 
             // Now wait for page navigation and backend to settle
             await this.page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});

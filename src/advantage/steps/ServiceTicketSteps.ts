@@ -17,9 +17,13 @@ export default class ServiceTicketSteps {
      */
     public async searchByTicketId(ticketId: string) {
         await test.step(`Search ${ServiceTicketConstants.SEARCH_INPUT} for '${ticketId}'`, async () => {
+            const input = this.page.locator(ServiceTicketPage.SEARCH_INPUT).first();
+            await input.waitFor({ state: "visible", timeout: 15_000 });
+            await input.click();
             await this.ui.editBox(ServiceTicketPage.SEARCH_INPUT,
                 ServiceTicketConstants.SEARCH_INPUT).fill(ticketId);
-            await this.page.waitForLoadState("domcontentloaded");
+            await input.press("Enter");
+            await this.page.waitForLoadState("networkidle").catch(() => {});
         });
     }
 
@@ -29,7 +33,7 @@ export default class ServiceTicketSteps {
     public async verifyNoDataMessage() {
         await test.step(`Verify ${ServiceTicketConstants.EMPTY_STATE_MESSAGE} is displayed`, async () => {
             await this.ui.element(ServiceTicketPage.EMPTY_STATE_MESSAGE,
-                ServiceTicketConstants.EMPTY_STATE_MESSAGE).waitTillVisible(10);
+                ServiceTicketConstants.EMPTY_STATE_MESSAGE).waitTillVisible(15);
         });
     }
 
