@@ -43,7 +43,7 @@ const config: PlaywrightTestConfig = {
   timeout: Number.parseInt(String(process.env.TEST_TIMEOUT ?? "1"), 10) * timeInMin,
   fullyParallel: false,
   workers: process.env.CI
-    ? 4
+    ? 6
     : Number.parseInt(String(process.env.PARALLEL_THREAD ?? "1"), 10),
 
   reporter: [
