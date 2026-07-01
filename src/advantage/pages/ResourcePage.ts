@@ -64,12 +64,12 @@ export default class ResourcePage {
         '[role="combobox"]:has-text("All Types")',
         '[data-slot="select-trigger"]',
     ].join(", ");
-    static readonly TYPE_FILTER_OPTION = [
+    static readonly TYPE_FILTER_OPTION = ':is(' + [
         'select option',
         '[role="option"]',
         '[role="listbox"] li',
         'li[data-slot="listbox-item"]',
-    ].join(", ");
+    ].join(", ") + ')';
 
     // ── Table ─────────────────────────────────────────────────────────────────
     static readonly TABLE = "table";

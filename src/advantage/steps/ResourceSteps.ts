@@ -1,4 +1,4 @@
-import test, { Page, expect } from "@playwright/test";
+import test, { Page, expect, Locator } from "@playwright/test";
 import Assert from "@asserts/Assert";
 import ResourcePage from "@pages/ResourcePage";
 import AddResourcePage from "@pages/AddResourcePage";
@@ -17,6 +17,22 @@ export interface ResourceFormData {
 
 export default class ResourceSteps {
     constructor(private readonly page: Page) {}
+
+    private async clickDropdownOption(opt: Locator) {
+        try {
+            await opt.click({ timeout: 4000 });
+        } catch (e: any) {
+            console.warn(`[RES] Click option failed: ${e.message}. Retrying with native center scroll and force click...`);
+            try {
+                await opt.evaluate((el) => el.scrollIntoView({ block: "center", inline: "center", behavior: "auto" })).catch(() => {});
+                await this.page.waitForTimeout(200);
+                await opt.click({ force: true, timeout: 3000 });
+            } catch (e2: any) {
+                console.warn(`[RES] Force click after native scroll failed: ${e2.message}. Dispatching click event...`);
+                await opt.dispatchEvent("click");
+            }
+        }
+    }
 
     // ═══════════════════════════════════════════════════════════════════════════
     // DEBUG
@@ -221,7 +237,11 @@ export default class ResourceSteps {
         await test.step(`Search resource: '${term}'`, async () => {
             const input = this.page.locator(ResourcePage.SEARCH_INPUT).first();
             await expect(input, "Search input must be visible").toBeVisible({ timeout: 8000 });
-            await input.fill(term);
+            await input.click();
+            await input.fill("");
+            await this.page.keyboard.type(term, { delay: 50 });
+            await this.page.keyboard.press("Enter");
+            await this.page.waitForTimeout(1000);
             await this.waitForTableStable();
         });
     }
@@ -230,7 +250,10 @@ export default class ResourceSteps {
         await test.step("Clear search field", async () => {
             const input = this.page.locator(ResourcePage.SEARCH_INPUT).first();
             if (await input.isVisible({ timeout: 2000 }).catch(() => false)) {
-                await input.clear();
+                await input.click();
+                await input.fill("");
+                await this.page.keyboard.press("Enter");
+                await this.page.waitForTimeout(1000);
                 await this.waitForTableStable();
             }
         });
@@ -258,7 +281,7 @@ export default class ResourceSteps {
             const opt = this.page
                 .locator(`${ResourcePage.TYPE_FILTER_OPTION}:has-text("${typeLabel}")`).first();
             if (await opt.isVisible({ timeout: 3000 }).catch(() => false)) {
-                await opt.click();
+                await this.clickDropdownOption(opt);
             } else {
                 await this.page.keyboard.press("Escape");
                 console.log(`[RES] filterByType: Option '${typeLabel}' not found — filter may not support this option`);
@@ -285,7 +308,7 @@ export default class ResourceSteps {
             const opt = this.page
                 .locator(`${ResourcePage.TYPE_FILTER_OPTION}:has-text("${ResourceConstants.TYPE_ALL}")`).first();
             if (await opt.isVisible({ timeout: 2000 }).catch(() => false)) {
-                await opt.click();
+                await this.clickDropdownOption(opt);
             } else {
                 await this.page.keyboard.press("Escape");
             }
@@ -360,7 +383,7 @@ export default class ResourceSteps {
                 const opt = this.page
                     .locator(`${AddResourcePage.RESOURCE_CODE_DROPDOWN_OPTION}:has-text("${code}")`).first();
                 if (await opt.isVisible({ timeout: 3000 }).catch(() => false)) {
-                    await opt.click();
+                    await this.clickDropdownOption(opt);
                     console.log(`[RES] Code '${code}' selected via combobox input`);
                     return;
                 }
@@ -379,7 +402,7 @@ export default class ResourceSteps {
             await this.page.waitForTimeout(ResourceConstants.DROPDOWN_OPEN_MS);
             const opt = this.page.locator(`[role="option"]:has-text("${code}")`).first();
             await expect(opt, `Code option '${code}' must appear`).toBeVisible({ timeout: 5000 });
-            await opt.click();
+            await this.clickDropdownOption(opt);
         });
     }
 
@@ -468,29 +491,27 @@ export default class ResourceSteps {
 
     public async selectBaseCurrency(code: string) {
         await test.step(`Select Base Currency: '${code}'`, async () => {
-            // Try input-based
-            const inputEl = this.page.locator(AddResourcePage.BASE_CURRENCY_INPUT).first();
-            if (await inputEl.isVisible({ timeout: 2000 }).catch(() => false)) {
-                await inputEl.click();
-                await this.page.waitForTimeout(ResourceConstants.DROPDOWN_OPEN_MS);
-                const opt = this.page
-                    .locator(`${AddResourcePage.BASE_CURRENCY_OPTION}:has-text("${code}")`).first();
-                if (await opt.isVisible({ timeout: 3000 }).catch(() => false)) {
-                    await opt.click();
-                    return;
-                }
-                await this.page.keyboard.press("Escape");
-            }
-            // Trigger-based
+            // 1. Locate trigger and click if not already expanded
             const trigger = this.page.locator(AddResourcePage.BASE_CURRENCY_TRIGGER).first();
-            if (await trigger.isVisible({ timeout: 1000 }).catch(() => false)) {
+            await expect(trigger, "Base currency trigger must be visible").toBeVisible({ timeout: 5000 });
+            const expanded = await trigger.getAttribute("aria-expanded").catch(() => "false");
+            if (expanded !== "true") {
                 await trigger.click();
                 await this.page.waitForTimeout(ResourceConstants.DROPDOWN_OPEN_MS);
-                const opt = this.page
-                    .locator(`${AddResourcePage.BASE_CURRENCY_OPTION}:has-text("${code}")`).first();
-                await expect(opt, `Base currency '${code}' must appear`).toBeVisible({ timeout: 5000 });
-                await opt.click();
             }
+
+            // 2. Check if a search input appeared inside the popover and type query if so
+            const searchInput = this.page.locator('input[placeholder*="search" i], input[placeholder*="filter" i], [role="combobox"] input').first();
+            if (await searchInput.isVisible({ timeout: 1000 }).catch(() => false)) {
+                await searchInput.click();
+                await searchInput.fill(code);
+                await this.page.waitForTimeout(ResourceConstants.DROPDOWN_OPEN_MS);
+            }
+
+            // 3. Locate option and click
+            const opt = this.page.locator(`${AddResourcePage.BASE_CURRENCY_OPTION}:has-text("${code}")`).first();
+            await expect(opt, `Base currency '${code}' must appear`).toBeVisible({ timeout: 6000 });
+            await this.clickDropdownOption(opt);
         });
     }
 
@@ -547,7 +568,15 @@ export default class ResourceSteps {
     }
 
     public async getRateRowCount(): Promise<number> {
-        return this.page.locator(AddResourcePage.RATE_TABLE_ROWS).count();
+        const rows = this.page.locator(AddResourcePage.RATE_TABLE_ROWS);
+        const count = await rows.count();
+        if (count === 1) {
+            const txt = (await rows.first().innerText().catch(() => "")).toLowerCase();
+            if (txt.includes("no exchange") || txt.includes("no records") || txt.includes("yet") || txt.includes("no data")) {
+                return 0;
+            }
+        }
+        return count;
     }
 
     // ─── Validation helpers ───────────────────────────────────────────────────
