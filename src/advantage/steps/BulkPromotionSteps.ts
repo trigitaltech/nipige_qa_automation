@@ -299,9 +299,8 @@ export default class BulkPromotionSteps {
         // eslint-disable-next-line no-console
         console.log(`[BulkPromotion] criteria='${criteria}' row[${rowIndex}] text: ${rowText}`);
 
-        // Extract impacted count from the row — supports both CUSTOMER and ORDER rows.
-        // Row text format: "27\nORDER\n..." or "5\nCUSTOMER\n..." or "0\nORDER\n..."
-        const rowCountMatch = rowText.match(/^(\d+)\s*(CUSTOMER|ORDER)/i);
+        // Extract impacted count from rows like "02/07/2026 06:47 PM\n2\nCUSTOMER\n...".
+        const rowCountMatch = rowText.match(/(?:^|\s)(\d+)\s*(CUSTOMER|ORDER)(?:\s|$)/i);
         const rowImpactedCount = rowCountMatch ? parseInt(rowCountMatch[1], 10) : 0;
         // eslint-disable-next-line no-console
         console.log(`[BulkPromotion] criteria='${criteria}' rowImpactedCount=${rowImpactedCount}`);
