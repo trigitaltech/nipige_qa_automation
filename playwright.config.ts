@@ -37,7 +37,9 @@ const config: PlaywrightTestConfig = {
 
   testDir: "./src/tests",
   outputDir: "./test-results/failure",
-  retries: Number.parseInt(String(process.env.RETRIES ?? "0"), 10),
+  retries: process.env.CI
+    ? 2 // Set retries to 2 in CI to mitigate transient/flaky backend or network failures
+    : Number.parseInt(String(process.env.RETRIES ?? "0"), 10),
   preserveOutput: "always",
   reportSlowTests: null,
   timeout: Number.parseInt(String(process.env.TEST_TIMEOUT ?? "1"), 10) * timeInMin,
