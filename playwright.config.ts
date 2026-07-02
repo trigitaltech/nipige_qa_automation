@@ -43,7 +43,7 @@ const config: PlaywrightTestConfig = {
   timeout: Number.parseInt(String(process.env.TEST_TIMEOUT ?? "1"), 10) * timeInMin,
   fullyParallel: false,
   workers: process.env.CI
-    ? 10
+    ? 4 // Limit to 4 workers on CI to prevent overloading the 2-core runner and triggering HTTP 429 rate-limiting
     : Number.parseInt(String(process.env.PARALLEL_THREAD ?? "10"), 10),
 
   reporter: [
