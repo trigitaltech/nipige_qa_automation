@@ -8,6 +8,8 @@
  * Required .env keys (see .env.example):
  *   TENANT_EMAIL / TENANT_PASSWORD / TENANT_ID
  *   SELLER_EMAIL / SELLER_PASSWORD
+ *   DEALER_EMAIL / DEALER_PASSWORD
+ *   DISTRIBUTOR_EMAIL / DISTRIBUTOR_PASSWORD
  *   DELIVERY_EMAIL / DELIVERY_PASSWORD
  *   USER_EMAIL / USER_PASSWORD
  * Optional overrides (fall back to Excel "LoginTest" sheet):
@@ -19,6 +21,8 @@ export enum Role {
     BULK_PROMOTION_TENANT = "BULK_PROMOTION_TENANT",
     TENANT = "TENANT",
     SELLER = "SELLER",
+    DEALER = "DEALER",
+    DISTRIBUTOR = "DISTRIBUTOR",
     DELIVERY = "DELIVERY",
     USER = "USER",
 }
@@ -87,6 +91,10 @@ export function getCredential(role: Role): Credential {
                 password: process.env.SELLER_PASSWORD || sellerRow.Password,
             };
         }
+        case Role.DEALER:
+            return { role, email: required("DEALER_EMAIL"), password: required("DEALER_PASSWORD") };
+        case Role.DISTRIBUTOR:
+            return { role, email: required("DISTRIBUTOR_EMAIL"), password: required("DISTRIBUTOR_PASSWORD") };
         case Role.DELIVERY:
             return { role, email: required("DELIVERY_EMAIL"), password: required("DELIVERY_PASSWORD") };
         case Role.USER:

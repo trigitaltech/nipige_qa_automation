@@ -20,7 +20,9 @@ const config: PlaywrightTestConfig = {
       ],
       headless: process.env.CI ? true : process.env.HEADLESS === "true",
       timeout: Number.parseInt(String(process.env.BROWSER_LAUNCH_TIMEOUT ?? "30000"), 10),
-      slowMo: 100,
+      // Artificial per-action delay. Defaults to 0 (was a hard-coded 100ms on every action,
+      // which added minutes across the suite). Re-enable via SLOW_MO in .env only when debugging.
+      slowMo: Number.parseInt(String(process.env.SLOW_MO ?? "0"), 10),
       downloadsPath: "./test-results/downloads",
     },
     viewport: null,
@@ -28,8 +30,10 @@ const config: PlaywrightTestConfig = {
     acceptDownloads: true,
     actionTimeout: Number.parseInt(String(process.env.ACTION_TIMEOUT ?? "1"), 10) * timeInMin,
     navigationTimeout: Number.parseInt(String(process.env.NAVIGATION_TIMEOUT ?? "1"), 10) * timeInMin,
+    // Capture screenshots only when a test fails. "on" (a full-page PNG after every test)
+    // is a large I/O cost across a 44-spec suite and is only needed for debugging.
     screenshot: {
-      mode: "on",
+      mode: "only-on-failure",
       fullPage: true,
     },
     video: "retain-on-failure",
