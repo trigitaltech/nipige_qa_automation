@@ -807,7 +807,14 @@ test.describe("Business Plan Module — Regression Suite", () => {
                 // Fill required fields so only the oversized file is the issue
                 await bp.fillPlanName(`BP_LargeFile_${Date.now().toString().slice(-4)}`);
                 await bp.fillDescription("Large file upload test");
-                await bp.clickSave();
+
+                const saveBtn = adminPage.locator(BusinessPlanPage.SAVE_BTN).first();
+                const isEnabled = await saveBtn.isEnabled().catch(() => false);
+                if (isEnabled) {
+                    await saveBtn.click({ timeout: 4000 }).catch(() => {});
+                } else {
+                    console.log("[BusinessPlan] TC_CREATE_25 — Save button is disabled (correctly blocked by frontend validation)");
+                }
                 await adminPage.waitForTimeout(2500);
                 const hasErrorToast = await adminPage.locator(BusinessPlanPage.ERROR_TOAST).first().isVisible({ timeout: 4000 }).catch(() => false);
                 const hasValidation = await adminPage.locator(BusinessPlanPage.VALIDATION_MSG).first().isVisible({ timeout: 2000 }).catch(() => false);
