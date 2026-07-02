@@ -1,14 +1,17 @@
-
 import HomeSteps from "@uiSteps/HomeSteps";
 import PermissionSteps from "@uiSteps/PermissionSteps";
-import { test as base, applyExecutionZoom } from "@base-test";
+import { test as base } from "@base-test";
 import { Page } from "@playwright/test";
 import Allure from "@allure";
 import ExcelUtil from "@utils/ExcelUtil";
+import { getCredential, Role } from "@config/Credentials";
 
 const SHEET = "Permission( Super admin)";
 
-const ADMIN = { email: "nipigev2@yopmail.com", password: "admin@123", persona: "admin" };
+// Admin credentials come from .env (ADMIN_EMAIL/ADMIN_PASSWORD) with the Excel
+// "LoginTest" sheet as fallback — never hard-code accounts in specs.
+const adminCredential = getCredential(Role.ADMIN);
+const ADMIN = { email: adminCredential.email, password: adminCredential.password, persona: "admin" };
 
 const test = base.extend<{ adminPage: Page }, { workerAdminPage: Page }>({
     workerAdminPage: [async ({ browser }, use) => {
@@ -51,26 +54,25 @@ test.describe.configure({ retries: 1 });
 const PERM_ROWS = ExcelUtil.getTestDataArray(SHEET);
 
 test.describe("Permission Super Admin Test Suite", () => {
-    const positiveRows = PERM_ROWS.filter(r => r.Type === "Positive");
-    for (const data of positiveRows) {
+    const positiveRows = PERM_ROWS.filter((r) => r.Type === "Positive");
+    positiveRows.forEach((data) => {
         test(`${data.TC_ID} - ${data.Expected_Result}`, async ({ adminPage }) => {
             Allure.attachDetails(data.Expected_Result, "");
             const perm = new PermissionSteps(adminPage);
             await perm.navigateToPermission();
             await perm.runPositiveTest(data);
         });
-    }
+    });
 });
 
 test.describe("Permission Super Admin - Negative", () => {
-    const negativeRows = PERM_ROWS.filter(r => r.Type === "Negative");
-    for (const data of negativeRows) {
+    const negativeRows = PERM_ROWS.filter((r) => r.Type === "Negative");
+    negativeRows.forEach((data) => {
         test(`${data.TC_ID} - ${data.Expected_Result}`, async ({ adminPage }) => {
             Allure.attachDetails(data.Expected_Result, "");
             const perm = new PermissionSteps(adminPage);
             await perm.navigateToPermission();
             await perm.runNegativeTest(data);
         });
-    }
+    });
 });
-

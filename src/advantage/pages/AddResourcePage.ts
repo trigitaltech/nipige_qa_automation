@@ -75,6 +75,8 @@ export default class AddResourcePage {
     static readonly BASE_CURRENCY_TRIGGER = [
         'button:has-text("Select base currency")',
         '[role="combobox"]:has-text("Select base")',
+        'input[role="combobox"][placeholder*="base" i]',
+        'input[placeholder*="Select base" i]',
         'select[name*="base" i]',
     ].join(", ");
     static readonly BASE_CURRENCY_OPTION = [
