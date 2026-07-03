@@ -133,6 +133,10 @@ const tcCreateNeg17 = ExcelUtil.getTestData(SHEET, "TC_CREATE_NEG_17");
 const tcCreateNeg18 = ExcelUtil.getTestData(SHEET, "TC_CREATE_NEG_18");
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
+function val(v: string, fallback: string): string {
+    return v && v.trim() ? v.trim() : fallback;
+}
+
 function parseFieldLabels(fieldLabelsStr: string): Record<string, string> {
     const labelsMap: Record<string, string> = {};
     if (fieldLabelsStr && fieldLabelsStr.trim()) {
@@ -622,8 +626,8 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.clickCreateButton();
         await steps.verifyCreatePageLoaded();
         // Only fill name & description, skip Type entirely
-        await sharedPage.locator(AttributePage.FIELD_NAME_INPUT).fill(tcCreateNeg03.FieldName);
-        await sharedPage.locator(AttributePage.DESCRIPTION_INPUT).fill(tcCreateNeg03.DescriptionText);
+        await sharedPage.locator(AttributePage.FIELD_NAME_INPUT).fill(val(tcCreateNeg03.FieldName, ""));
+        await sharedPage.locator(AttributePage.DESCRIPTION_INPUT).fill(val(tcCreateNeg03.DescriptionText, ""));
         // Check if Type has a blank/empty option that can be selected
         const typeSelect = sharedPage.locator(AttributePage.TYPE_SELECT);
         const typeOptions = await typeSelect.locator("option").allTextContents();
@@ -645,11 +649,11 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.clickCreateButton();
         await steps.verifyCreatePageLoaded();
         // Fill only name, type, description — no language selected
-        await sharedPage.locator(AttributePage.FIELD_NAME_INPUT).fill(tcCreateNeg04.FieldName);
+        await sharedPage.locator(AttributePage.FIELD_NAME_INPUT).fill(val(tcCreateNeg04.FieldName, ""));
         if (tcCreateNeg04.Type) {
             await sharedPage.locator(AttributePage.TYPE_SELECT).selectOption(tcCreateNeg04.Type);
         }
-        await sharedPage.locator(AttributePage.DESCRIPTION_INPUT).fill(tcCreateNeg04.DescriptionText);
+        await sharedPage.locator(AttributePage.DESCRIPTION_INPUT).fill(val(tcCreateNeg04.DescriptionText, ""));
         const urlBefore = sharedPage.url();
         await sharedPage.locator(AttributePage.SAVE_BTN).first().click();
         await sharedPage.waitForTimeout(1000);
@@ -1429,7 +1433,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
             console.log(`[${tcEdit05.TestID}] UI Concern dropdown not visible — Type may not support it`);
         }
         // Don't change the type — just update description and UI Concern
-        await sharedPage.locator(AttributePage.DESCRIPTION_INPUT).fill(tcEdit05.DescriptionText);
+        await sharedPage.locator(AttributePage.DESCRIPTION_INPUT).fill(val(tcEdit05.DescriptionText, ""));
         // UI Concern: value="Select" is a real option (confirmed from live dropdown)
         const uiSelectE05 = sharedPage.locator(AttributePage.UI_CONCERN_SELECT);
         if (await uiSelectE05.isVisible({ timeout: 3000 }).catch(() => false)) {
@@ -1563,22 +1567,22 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.searchAttribute(sharedAttrName);
         await steps.clickEditIconForRow(sharedAttrName);
         await steps.verifyEditPageLoaded();
-        await sharedPage.locator(AttributePage.FIELD_NAME_INPUT).fill(tcEditNeg02.FieldName);
-        await sharedPage.locator(AttributePage.DESCRIPTION_INPUT).fill(tcEditNeg02.DescriptionText);
+        await sharedPage.locator(AttributePage.FIELD_NAME_INPUT).fill(val(tcEditNeg02.FieldName, ""));
+        await sharedPage.locator(AttributePage.DESCRIPTION_INPUT).fill(val(tcEditNeg02.DescriptionText, ""));
         const urlBefore = sharedPage.url();
         await sharedPage.locator(AttributePage.SAVE_BTN).first().click();
-        await sharedPage.waitForTimeout(1000);
+        await sharedPage.waitForTimeout(1500); // 1.5s to settle
         const urlAfter = sharedPage.url();
         const stayedOnPage = urlAfter === urlBefore || urlAfter.includes("mode=edit");
         const hasValidation = await sharedPage.locator(AttributePage.VALIDATION_MESSAGE).isVisible({ timeout: 3000 }).catch(() => false);
         const hasError = await sharedPage.locator(AttributePage.ERROR_TOAST).isVisible({ timeout: 3000 }).catch(() => false);
         if (stayedOnPage || hasValidation || hasError) {
             console.log(`[${tcEditNeg02.TestID}] Validation enforced for empty description.`);
+            await steps.clickBack();
         } else {
             console.log(`[${tcEditNeg02.TestID}] App accepted save with empty description — behaviour noted.`);
+            await steps.verifySuccessMessage();
         }
-        await steps.verifyPageStable();
-        await steps.clickBack();
         await steps.clearSearch();
     });
 
@@ -1626,15 +1630,18 @@ test.describe("Attribute Management Data-Driven Suite", () => {
                 const hasError = await sharedPage.locator(AttributePage.ERROR_TOAST).isVisible({ timeout: 2000 }).catch(() => false);
                 if (stayedOnPage || hasValidation || hasError) {
                     console.log(`[${tcEditNeg04.TestID}] Validation enforced for empty UI Concern.`);
+                    await steps.clickBack();
                 } else {
                     console.log(`[${tcEditNeg04.TestID}] UI Concern is optional — app accepted save without it.`);
+                    await steps.verifySuccessMessage();
                 }
-                await steps.verifyPageStable();
             } else {
                 console.log(`[${tcEditNeg04.TestID}] No blank UI Concern option available.`);
+                await steps.clickBack();
             }
+        } else {
+            await steps.clickBack();
         }
-        await steps.clickBack();
         await steps.clearSearch();
     });
 
@@ -1679,13 +1686,14 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.searchAttribute(sharedAttrName);
         await steps.clickEditIconForRow(sharedAttrName);
         await steps.verifyEditPageLoaded();
-        await sharedPage.locator(AttributePage.FIELD_NAME_INPUT).fill(tcEditNeg07.FieldName);
+        await sharedPage.locator(AttributePage.FIELD_NAME_INPUT).fill(val(tcEditNeg07.FieldName, ""));
         await steps.clickSave();
         await sharedPage.waitForTimeout(2000);
         const isError = await sharedPage.locator(AttributePage.ERROR_TOAST).isVisible({ timeout: 3000 }).catch(() => false);
         const stayedOnPage = sharedPage.url().includes("mode=edit");
         if (isError || stayedOnPage) {
             console.log(`[${tcEditNeg07.TestID}] Special char field name rejected as expected.`);
+            await steps.clickBack();
         } else {
             // App accepted the special-character name — rename back to sharedAttrName so later
             // tests (which search by sharedAttrName) keep working, and note the behaviour.
@@ -1698,7 +1706,6 @@ test.describe("Attribute Management Data-Driven Suite", () => {
             await steps.clickSave();
             await steps.verifySuccessMessage();
         }
-        await steps.clickBack();
         await steps.clearSearch();
     });
 
@@ -1707,7 +1714,7 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.searchAttribute(sharedAttrName);
         await steps.clickEditIconForRow(sharedAttrName);
         await steps.verifyEditPageLoaded();
-        await sharedPage.locator(AttributePage.FIELD_NAME_INPUT).fill(tcEditNeg08.FieldName);
+        await sharedPage.locator(AttributePage.FIELD_NAME_INPUT).fill(val(tcEditNeg08.FieldName, ""));
         await steps.clickSaveAndVerifyRejectedOrNoted(tcEditNeg08.TestID, tcEditNeg08.ExpectedResult);
         await steps.navigateToAttribute();
         await steps.searchAttribute(sharedAttrName);

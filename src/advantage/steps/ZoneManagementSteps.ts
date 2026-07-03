@@ -29,13 +29,35 @@ export default class ZoneManagementSteps {
                 return;
             }
 
-            // Zone Management is a direct sidebar link (no parent menu to expand)
             const zoneManagementLink = this.page.locator(
                 'a[href*="zoneManagement"], a:has-text("Zone Management")'
             ).first();
-            await zoneManagementLink.waitFor({ state: "visible", timeout: 10_000 });
-            await zoneManagementLink.click();
-            await this.page.waitForURL("**/zoneManagement**", { timeout: 15_000 });
+
+            // Retry loop to handle SPA hydration / menu expand registration
+            let attempts = 0;
+            while (attempts < 3) {
+                attempts++;
+                if (!(await zoneManagementLink.isVisible())) {
+                    const manageServicesMenu = this.page.locator(
+                        'button:has-text("Manage Services"), a:has-text("Manage Services")'
+                    ).first();
+                    await manageServicesMenu.waitFor({ state: "visible", timeout: 10_000 }).catch(() => {});
+                    await manageServicesMenu.click().catch(() => {});
+                }
+                try {
+                    await zoneManagementLink.waitFor({ state: "visible", timeout: 5000 });
+                    await zoneManagementLink.click();
+                    await this.page.waitForURL("**/zoneManagement**", { timeout: 5000 });
+                    break;
+                } catch (e) {
+                    if (attempts === 3) {
+                        await zoneManagementLink.waitFor({ state: "visible", timeout: 10000 });
+                        await zoneManagementLink.click();
+                        await this.page.waitForURL("**/zoneManagement**", { timeout: 10000 });
+                    }
+                    console.log(`Navigation to /zoneManagement failed on attempt ${attempts}. Retrying...`);
+                }
+            }
             await this.page.waitForLoadState("domcontentloaded");
         });
     }

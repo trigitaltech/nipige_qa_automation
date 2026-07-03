@@ -93,27 +93,36 @@ export default class SubscriptionPlanPage {
         return `[role="option"]:text-is("${text}")`;
     }
 
+    private static getLabelCondition(label: string): string {
+        const lower = label.toLowerCase();
+        if (lower === "uom" || lower === "unit of measurement") {
+            return `(contains(translate(normalize-space(.), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), "uom") `
+                + `or contains(translate(normalize-space(.), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), "measurement"))`;
+        }
+        return `contains(translate(normalize-space(.), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), "${lower}")`;
+    }
+
     // ---- Label-relative builders (for the no-id form fields) ----
     /** The first text/number input that follows a field's label. */
     static inputByLabel(label: string): string {
-        return `xpath=//label[contains(normalize-space(.),"${label}")]/following::input[1]`;
+        return `xpath=//label[${this.getLabelCondition(label)}]/following::input[1]`;
     }
     /** The first numeric (spinbutton) input that follows a field's label. */
     static numberByLabel(label: string): string {
-        return `xpath=//label[contains(normalize-space(.),"${label}")]/following::input[@type="number"][1]`;
+        return `xpath=//label[${this.getLabelCondition(label)}]/following::input[@type="number"][1]`;
     }
     /** The combobox input that follows a field's label. */
     static comboboxByLabel(label: string): string {
-        return `xpath=//label[contains(normalize-space(.),"${label}")]/following::input[@role="combobox"][1]`;
+        return `xpath=//label[${this.getLabelCondition(label)}]/following::input[@role="combobox"][1]`;
     }
     /** The "Open options" toggle of the combobox that follows a field's label. */
     static comboboxToggleByLabel(label: string): string {
-        return `xpath=//label[contains(normalize-space(.),"${label}")]`
+        return `xpath=//label[${this.getLabelCondition(label)}]`
             + `/following::button[@aria-label="Open options"][1]`;
     }
     /** A toggle/switch button that follows a field's label (Status, Auto Renewal). */
     static toggleByLabel(label: string): string {
-        return `xpath=//*[contains(normalize-space(.),"${label}")]/following::button[@role="switch" `
+        return `xpath=//*[${this.getLabelCondition(label)}]/following::button[@role="switch" `
             + `or normalize-space(.)="ON" or normalize-space(.)="OFF"][1]`;
     }
 
