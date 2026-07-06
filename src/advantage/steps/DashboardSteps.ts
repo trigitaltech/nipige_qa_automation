@@ -1,66 +1,62 @@
 import { Page } from "@playwright/test";
 
 export default class DashboardSteps {
-
     constructor(private page: Page) {}
 
     async openDashboard() {
-
         await this.page.getByText(
             "Dashboard",
-            { exact: true }
+            { exact: true },
         ).click();
 
         await this.page.waitForTimeout(3000);
     }
 
     async verifyDashboardLoaded() {
-
         await this.page.waitForLoadState(
-            "networkidle"
+            "networkidle",
         );
 
         await this.page.locator(
-            "text=Business Overview"
+            "text=Business Overview",
         ).waitFor({
             state: "visible",
-            timeout: 30000
+            timeout: 30000,
         });
 
         await this.page.waitForTimeout(3000);
     }
 
     async scrollDashboardPage() {
+        await this.page.locator("main").evaluate(
+            (el: any) => {
+                const container = el;
+                container.scrollTop = container.scrollHeight;
+            },
+        );
 
-    await this.page.locator("main").evaluate(
-        (el: any) => {
-            el.scrollTop = el.scrollHeight;
-        }
-    );
+        await this.page.waitForTimeout(2000);
+    }
 
-    await this.page.waitForTimeout(2000);
-}
+    async scrollDashboardToTop() {
+        await this.page.locator("main").evaluate(
+            (el: any) => {
+                const container = el;
+                container.scrollTop = 0;
+            },
+        );
 
-async scrollDashboardToTop() {
-
-    await this.page.locator("main").evaluate(
-        (el: any) => {
-            el.scrollTop = 0;
-        }
-    );
-
-    await this.page.waitForTimeout(2000);
-}
+        await this.page.waitForTimeout(2000);
+    }
 
     async verifyDashboardFilters() {
-
         // Today
         await this.page.getByRole(
             "button",
             {
                 name: "Today",
-                exact: true
-            }
+                exact: true,
+            },
         ).click();
 
         await this.page.waitForTimeout(2000);
@@ -70,8 +66,8 @@ async scrollDashboardToTop() {
             "button",
             {
                 name: "7 days",
-                exact: true
-            }
+                exact: true,
+            },
         ).click();
 
         await this.page.waitForTimeout(2000);
@@ -81,8 +77,8 @@ async scrollDashboardToTop() {
             "button",
             {
                 name: "30 days",
-                exact: true
-            }
+                exact: true,
+            },
         ).click();
 
         await this.page.waitForTimeout(3000);
@@ -92,18 +88,18 @@ async scrollDashboardToTop() {
             "button",
             {
                 name: "Custom",
-                exact: true
-            }
+                exact: true,
+            },
         ).click();
 
         await this.page.waitForTimeout(2000);
 
         await this.page.locator(
-            "#custom-date-from"
+            "#custom-date-from",
         ).fill("2026-01-01");
 
         await this.page.locator(
-            "#custom-date-to"
+            "#custom-date-to",
         ).fill("2026-06-04");
 
         await this.page.waitForTimeout(2000);
@@ -112,28 +108,26 @@ async scrollDashboardToTop() {
             "button",
             {
                 name: "Apply",
-                exact: true
-            }
+                exact: true,
+            },
         ).click();
 
         await this.page.waitForLoadState(
-            "networkidle"
+            "networkidle",
         );
 
         await this.page.waitForTimeout(3000);
     }
 
     async verifyOrderChartDropdown() {
-
-
         await this.page.locator(
-            "text=Order Chart"
+            "text=Order Chart",
         ).scrollIntoViewIfNeeded();
 
         await this.page.waitForTimeout(3000);
 
         const dropdown = this.page.locator(
-            "(//input[@role='combobox'])[1]"
+            "(//input[@role='combobox'])[1]",
         );
 
         // Today
@@ -143,7 +137,7 @@ async scrollDashboardToTop() {
 
         await this.page.getByText(
             "Today",
-            { exact: true }
+            { exact: true },
         ).last().click();
 
         await this.page.waitForTimeout(3000);
@@ -155,7 +149,7 @@ async scrollDashboardToTop() {
 
         await this.page.getByText(
             "7 days",
-            { exact: true }
+            { exact: true },
         ).last().click();
 
         await this.page.waitForTimeout(3000);
@@ -167,7 +161,7 @@ async scrollDashboardToTop() {
 
         await this.page.getByText(
             "30 days",
-            { exact: true }
+            { exact: true },
         ).last().click();
 
         await this.page.waitForTimeout(3000);
@@ -179,22 +173,22 @@ async scrollDashboardToTop() {
 
         await this.page.getByText(
             "Custom",
-            { exact: true }
+            { exact: true },
         ).last().click();
 
         await this.page.locator(
-            "#custom-date-from"
+            "#custom-date-from",
         ).waitFor({
             state: "visible",
-            timeout: 10000
+            timeout: 10000,
         });
 
         await this.page.locator(
-            "#custom-date-from"
+            "#custom-date-from",
         ).fill("2026-01-01");
 
         await this.page.locator(
-            "#custom-date-to"
+            "#custom-date-to",
         ).fill("2026-06-04");
 
         await this.page.waitForTimeout(2000);
@@ -203,12 +197,12 @@ async scrollDashboardToTop() {
             "button",
             {
                 name: "Apply",
-                exact: true
-            }
+                exact: true,
+            },
         ).click();
 
         await this.page.waitForLoadState(
-            "networkidle"
+            "networkidle",
         );
 
         await this.page.waitForTimeout(3000);
@@ -222,13 +216,13 @@ async scrollDashboardToTop() {
 
     async verifyTopRevenueDropdown() {
         await this.page.locator(
-            "text=Top Revenue Category"
+            "text=Top Revenue Category",
         ).scrollIntoViewIfNeeded();
 
         await this.page.waitForTimeout(3000);
 
         const dropdown = this.page.locator(
-            "(//input[@role='combobox'])[2]"
+            "(//input[@role='combobox'])[2]",
         );
 
         // Today
@@ -236,7 +230,7 @@ async scrollDashboardToTop() {
 
         await this.page.getByText(
             "Today",
-            { exact: true }
+            { exact: true },
         ).last().click();
 
         await this.page.waitForTimeout(3000);
@@ -246,7 +240,7 @@ async scrollDashboardToTop() {
 
         await this.page.getByText(
             "7 days",
-            { exact: true }
+            { exact: true },
         ).last().click();
 
         await this.page.waitForTimeout(3000);
@@ -256,7 +250,7 @@ async scrollDashboardToTop() {
 
         await this.page.getByText(
             "30 days",
-            { exact: true }
+            { exact: true },
         ).last().click();
 
         await this.page.waitForTimeout(3000);
@@ -266,22 +260,22 @@ async scrollDashboardToTop() {
 
         await this.page.getByText(
             "Custom",
-            { exact: true }
+            { exact: true },
         ).last().click();
 
         await this.page.locator(
-            "#custom-date-from"
+            "#custom-date-from",
         ).waitFor({
             state: "visible",
-            timeout: 10000
+            timeout: 10000,
         });
 
         await this.page.locator(
-            "#custom-date-from"
+            "#custom-date-from",
         ).fill("2026-01-01");
 
         await this.page.locator(
-            "#custom-date-to"
+            "#custom-date-to",
         ).fill("2026-06-04");
 
         await this.page.waitForTimeout(2000);
@@ -290,12 +284,12 @@ async scrollDashboardToTop() {
             "button",
             {
                 name: "Apply",
-                exact: true
-            }
+                exact: true,
+            },
         ).click();
 
         await this.page.waitForLoadState(
-            "networkidle"
+            "networkidle",
         );
 
         await this.page.waitForTimeout(3000);

@@ -13,7 +13,7 @@ export interface AdvertisementStep1Data {
     endDate?: string;
     minAge?: string;
     maxAge?: string;
-    frequency?: string;   // Required for SLIDER type (e.g. "5" for "5 sec")
+    frequency?: string; // Required for SLIDER type (e.g. "5" for "5 sec")
 }
 
 export interface AdvertisementStep2Data {
@@ -229,7 +229,8 @@ export default class AdvertisementSteps {
             'input[placeholder*="Type / Placement" i]',
             'input[placeholder*="Search" i]',
         ];
-        for (const selector of options) {
+        for (let i = 0; i < options.length; i += 1) {
+            const selector = options[i];
             const locator = main.locator(selector).first();
             if (await locator.isVisible({ timeout: 1000 }).catch(() => false)) {
                 return locator;
@@ -248,8 +249,6 @@ export default class AdvertisementSteps {
             await input.press("Enter");
         }
     }
-
-
 
     public async searchAdvertisement(term: string) {
         await test.step(`Search advertisements for: '${term}'`, async () => {
@@ -300,7 +299,6 @@ export default class AdvertisementSteps {
             }
             await Assert.assertTrue(hasNoDataMsg, "Verifying that After searching a non-existent term the table must be empty or show a no-data message");
         });
-
     }
 
     public async filterByType(type: string) {
@@ -380,7 +378,7 @@ export default class AdvertisementSteps {
         await test.step("Click Delete icon for the first advertisement row", async () => {
             const firstRow = this.page.locator(AdvertisementPage.TABLE_ROWS).first();
             await expect(firstRow, "First row must be visible").toBeVisible({ timeout: 8000 });
-            const deleteBtnStr = AdvertisementPage.deleteBtnInRow("").split(",").map(s => s.trim()).join(", ");
+            const deleteBtnStr = AdvertisementPage.deleteBtnInRow("").split(",").map((s) => s.trim()).join(", ");
             const deleteBtn = firstRow.locator(deleteBtnStr).first();
             await deleteBtn.click({ force: true });
             await this.page.locator(AdvertisementPage.DELETE_POPUP)
@@ -531,47 +529,51 @@ export default class AdvertisementSteps {
                 'div[class*="option"]',
             ];
             let clicked = false;
-            // eslint-disable-next-line no-restricted-syntax
-            for (const sel of optionSelectors) {
+            for (let idx = 0; idx < optionSelectors.length; idx += 1) {
+                const sel = optionSelectors[idx];
                 const opts = this.page.locator(sel);
                 // eslint-disable-next-line no-await-in-loop
                 const count = await opts.count();
-                if (count === 0) { continue; }
-
-                // Prefer a non-placeholder option that matches the search term
-                // eslint-disable-next-line no-await-in-loop
-                for (let i = 0; i < Math.min(count, 5) && !clicked; i++) {
-                    const opt = opts.nth(i);
+                if (count > 0) {
+                    // Prefer a non-placeholder option that matches the search term
                     // eslint-disable-next-line no-await-in-loop
-                    if (!(await opt.isVisible({ timeout: 800 }).catch(() => false))) { continue; }
-                    // eslint-disable-next-line no-await-in-loop
-                    const text = (await opt.innerText().catch(() => "")).trim();
-                    if (text.toLowerCase().includes("select placement from list") || text === "") { continue; }
-                    if (placement && !text.toLowerCase().includes(placement.toLowerCase())) { continue; }
-                    // eslint-disable-next-line no-await-in-loop
-                    await opt.click();
-                    console.log(`[Advertisement] Placement selected: '${text}'`);
-                    clicked = true;
-                }
-                if (clicked) { break; }
-
-                // Fallback within this selector: click the first visible option that is not a placeholder/empty
-                const optCount = await opts.count();
-                for (let i = 0; i < optCount; i++) {
-                    const opt = opts.nth(i);
-                    // eslint-disable-next-line no-await-in-loop
-                    if (await opt.isVisible({ timeout: 800 }).catch(() => false)) {
+                    for (let i = 0; i < Math.min(count, 5) && !clicked; i += 1) {
+                        const opt = opts.nth(i);
                         // eslint-disable-next-line no-await-in-loop
-                        const text = (await opt.innerText().catch(() => "")).trim();
-                        if (text.toLowerCase().includes("select placement from list") || text === "") { continue; }
-                        // eslint-disable-next-line no-await-in-loop
-                        await opt.click();
-                        console.log(`[Advertisement] Placement selected (first available fallback): '${text}'`);
-                        clicked = true;
-                        break;
+                        if (await opt.isVisible({ timeout: 800 }).catch(() => false)) {
+                            // eslint-disable-next-line no-await-in-loop
+                            const text = (await opt.innerText().catch(() => "")).trim();
+                            const isPlaceholder = text.toLowerCase().includes("select placement from list") || text === "";
+                            const matchesPlacement = !placement || text.toLowerCase().includes(placement.toLowerCase());
+                            if (!isPlaceholder && matchesPlacement) {
+                                // eslint-disable-next-line no-await-in-loop
+                                await opt.click();
+                                console.log(`[Advertisement] Placement selected: '${text}'`);
+                                clicked = true;
+                            }
+                        }
                     }
+                    if (clicked) { break; }
+
+                    // Fallback within this selector: click the first visible option that is not a placeholder/empty
+                    const optCount = await opts.count();
+                    for (let j = 0; j < optCount && !clicked; j += 1) {
+                        const opt = opts.nth(j);
+                        // eslint-disable-next-line no-await-in-loop
+                        if (await opt.isVisible({ timeout: 800 }).catch(() => false)) {
+                            // eslint-disable-next-line no-await-in-loop
+                            const text = (await opt.innerText().catch(() => "")).trim();
+                            const isPlaceholder = text.toLowerCase().includes("select placement from list") || text === "";
+                            if (!isPlaceholder) {
+                                // eslint-disable-next-line no-await-in-loop
+                                await opt.click();
+                                console.log(`[Advertisement] Placement selected (first available fallback): '${text}'`);
+                                clicked = true;
+                            }
+                        }
+                    }
+                    if (clicked) { break; }
                 }
-                if (clicked) { break; }
             }
 
             if (!clicked) {
@@ -654,7 +656,8 @@ export default class AdvertisementSteps {
                 try {
                     // Wait for options to load
                     const nonPlaceholderOption = this.page.locator(selector)
-                        .locator('option').filter({ hasNotText: /select/i }).filter({ hasNotText: /choose/i }).first();
+                        .locator('option').filter({ hasNotText: /select/i }).filter({ hasNotText: /choose/i })
+.first();
                     await nonPlaceholderOption.waitFor({ state: "attached", timeout: 5000 }).catch(() => {});
 
                     let optionSelected = false;
@@ -664,7 +667,8 @@ export default class AdvertisementSteps {
                         const sel = sels.nth(i);
                         if (await sel.isVisible().catch(() => false)) {
                             const allOpts = await sel.locator("option").all();
-                            for (const opt of allOpts) {
+                            for (let k = 0; k < allOpts.length; k += 1) {
+                                const opt = allOpts[k];
                                 const v = await opt.getAttribute("value").catch(() => "");
                                 const t = ((await opt.textContent().catch(() => "")) || (await opt.innerText().catch(() => ""))).trim();
                                 if (t && !t.toLowerCase().startsWith("select") && !t.toLowerCase().startsWith("choose")) {
@@ -690,7 +694,8 @@ export default class AdvertisementSteps {
                             const sel = allSelects.nth(j);
                             if (await sel.isVisible().catch(() => false)) {
                                 const newOpts = await sel.locator("option").all();
-                                for (const opt of newOpts) {
+                                for (let k = 0; k < newOpts.length; k += 1) {
+                                    const opt = newOpts[k];
                                     const v = await opt.getAttribute("value").catch(() => "");
                                     const t = ((await opt.textContent().catch(() => "")) || (await opt.innerText().catch(() => ""))).trim();
                                     if (t && !t.toLowerCase().startsWith("select") && !t.toLowerCase().startsWith("choose") && !["Global", "Partner", "Market", "Banner", "Slider", "Video", "All Types"].includes(t)) {
@@ -754,17 +759,13 @@ export default class AdvertisementSteps {
      * Returns true if the file chooser was intercepted and files were set.
      */
     
-
-    
-
-    
     public async uploadIcon(filePath: string) {
         await test.step("Upload icon image", async () => {
             console.log(`[Advertisement] native chooser upload icon: ${filePath}`);
             
             const uploadBtn = this.page.locator('input[type="file"]').first();
             const fileChooserPromise = this.page.waitForEvent('filechooser', { timeout: 15000 });
-            await uploadBtn.evaluate(node => node.click());
+            await uploadBtn.evaluate((node) => node.click());
 
             const fileChooser = await fileChooserPromise;
             await fileChooser.setFiles(filePath);
@@ -773,7 +774,6 @@ export default class AdvertisementSteps {
             console.log(`[Advertisement] Icon uploaded successfully: ${filePath}`);
         });
     }
-
 
     public async fillStep1(data: AdvertisementStep1Data) {
         await test.step(`Fill Create Advertisement Step 1 — type: '${data.type}'`, async () => {
@@ -874,7 +874,6 @@ export default class AdvertisementSteps {
         });
     }
 
-
     public async uploadVideo(filePath: string) {
         await test.step("Upload video", async () => {
             console.log(`[Advertisement] native chooser upload video: ${filePath}`);
@@ -884,7 +883,8 @@ export default class AdvertisementSteps {
                 'button:has-text("Add Video")',
                 'button:has-text("Upload Video")',
             ];
-            for (const sel of addVideoSelectors) {
+            for (let i = 0; i < addVideoSelectors.length; i += 1) {
+                const sel = addVideoSelectors[i];
                 const btn = this.page.locator(sel).first();
                 if (await btn.isVisible({ timeout: 1000 }).catch(() => false)) {
                     await btn.click();
@@ -900,7 +900,7 @@ export default class AdvertisementSteps {
                     console.log(`[Advertisement] Video upload attempt ${attempt} for file: ${filePath}`);
                     const uploadBtn = this.page.locator('input[type="file"][accept*="video"], input[type="file"]').last();
                     const fileChooserPromise = this.page.waitForEvent('filechooser', { timeout: 15000 });
-                    await uploadBtn.evaluate(node => node.click());
+                    await uploadBtn.evaluate((node) => node.click());
 
                     const fileChooser = await fileChooserPromise;
                     await fileChooser.setFiles(filePath);
@@ -917,17 +917,20 @@ export default class AdvertisementSteps {
 
                     // Check for upload error toast
                     const toast = this.page.locator(AdvertisementPage.TOAST).first();
+                    let uploadFailed = false;
                     if (await toast.isVisible({ timeout: 1500 }).catch(() => false)) {
                         const toastText = (await toast.innerText().catch(() => "")).toLowerCase();
                         if (toastText.includes("failed") || toastText.includes("error")) {
                             console.log(`[Advertisement] Video upload failed on attempt ${attempt}: '${toastText}'. Retrying...`);
                             await this.page.waitForTimeout(2000);
-                            continue;
+                            uploadFailed = true;
                         }
                     }
-                    success = true;
-                    console.log(`[Advertisement] Video uploaded successfully on attempt ${attempt}: ${filePath}`);
-                    break;
+                    if (!uploadFailed) {
+                        success = true;
+                        console.log(`[Advertisement] Video uploaded successfully on attempt ${attempt}: ${filePath}`);
+                        break;
+                    }
                 } catch (err) {
                     console.log(`[Advertisement] Exception on video upload attempt ${attempt}:`, err);
                     if (attempt === 3) throw err;
@@ -949,7 +952,8 @@ export default class AdvertisementSteps {
                 'button:has-text("Add Video")',
                 'button:has-text("Upload Video")',
             ];
-            for (const sel of addSliderSelectors) {
+            for (let i = 0; i < addSliderSelectors.length; i += 1) {
+                const sel = addSliderSelectors[i];
                 const btn = this.page.locator(sel).first();
                 if (await btn.isVisible({ timeout: 1000 }).catch(() => false)) {
                     await btn.click();
@@ -958,7 +962,6 @@ export default class AdvertisementSteps {
                     break;
                 }
             }
-
             
             let success = false;
             for (let attempt = 1; attempt <= 3; attempt++) {
@@ -966,7 +969,7 @@ export default class AdvertisementSteps {
                     console.log(`[Advertisement] Banner upload attempt ${attempt} for file: ${filePath}`);
                     const uploadBtn = this.page.locator('input[type="file"]').last();
                     const fileChooserPromise = this.page.waitForEvent('filechooser', { timeout: 15000 });
-                    await uploadBtn.evaluate(node => node.click());
+                    await uploadBtn.evaluate((node) => node.click());
 
                     const fileChooser = await fileChooserPromise;
                     await fileChooser.setFiles(filePath);
@@ -984,17 +987,20 @@ export default class AdvertisementSteps {
 
                     // Check for upload error toast
                     const toast = this.page.locator(AdvertisementPage.TOAST).first();
+                    let uploadFailed = false;
                     if (await toast.isVisible({ timeout: 1500 }).catch(() => false)) {
                         const toastText = (await toast.innerText().catch(() => "")).toLowerCase();
                         if (toastText.includes("failed") || toastText.includes("error")) {
                             console.log(`[Advertisement] Banner upload failed on attempt ${attempt}: '${toastText}'. Retrying...`);
                             await this.page.waitForTimeout(2000);
-                            continue;
+                            uploadFailed = true;
                         }
                     }
-                    success = true;
-                    console.log(`[Advertisement] Banner uploaded successfully on attempt ${attempt}: ${filePath}`);
-                    break;
+                    if (!uploadFailed) {
+                        success = true;
+                        console.log(`[Advertisement] Banner uploaded successfully on attempt ${attempt}: ${filePath}`);
+                        break;
+                    }
                 } catch (err) {
                     console.log(`[Advertisement] Exception on banner upload attempt ${attempt}:`, err);
                     if (attempt === 3) throw err;
@@ -1147,7 +1153,7 @@ export default class AdvertisementSteps {
             } catch {
                 // Fallback: click the most specific update button available
                 const fallback = this.page.locator(
-                    'button:has-text("Update Advertisement"), button:has-text("Update"), button:has-text("Save Changes")'
+                    'button:has-text("Update Advertisement"), button:has-text("Update"), button:has-text("Save Changes")',
                 ).first();
                 await fallback.click({ timeout: 15000 });
             }
@@ -1333,10 +1339,12 @@ export default class AdvertisementSteps {
             }
             
             const step2 = this.page.locator(indicatorSelector).first();
-            await expect(
-                step2,
-                `Step 2 indicator for type ${type || "default"} MUST be visible — test FAILS if Step 1 blocks Continue`,
-            ).toBeVisible({ timeout: 10000 }).catch(async (e) => {
+            try {
+                await expect(
+                    step2,
+                    `Step 2 indicator for type ${type || "default"} MUST be visible — test FAILS if Step 1 blocks Continue`,
+                ).toBeVisible({ timeout: 10000 });
+            } catch (e) {
                 // If it fails for Video, verify if a video file input specifically is attached (not the icon input)
                 if (type === "VIDEO") {
                     const fallback = this.page.locator('input[type="file"][accept*="video"]').first();
@@ -1344,7 +1352,7 @@ export default class AdvertisementSteps {
                 } else {
                     throw e;
                 }
-            });
+            }
             console.log(`[Advertisement] STRICT: Step 2 reached and confirmed for type ${type || "default"}`);
         });
     }
@@ -1367,7 +1375,7 @@ export default class AdvertisementSteps {
                 ':text("has been created successfully")',
                 ':text("Advertisement has been created successfully")',
                 'div[role="alert"]',
-                '.alert-success'
+                '.alert-success',
             ].join(", ")).first();
 
             try {
@@ -1391,7 +1399,7 @@ export default class AdvertisementSteps {
             if (isError) {
                 throw new Error(
                     `Server returned an error message — test FAILS: '${text}'. `
-                    + "File upload or API call failed."
+                    + "File upload or API call failed.",
                 );
             }
             
@@ -1461,7 +1469,7 @@ export default class AdvertisementSteps {
             
             // Use AdvertisementPage static method to get view button
             // Avoid nth-child string by passing empty string and using firstRow.locator
-            const viewBtnStr = AdvertisementPage.viewBtnInRow("").split(",").map(s => s.trim()).join(", ");
+            const viewBtnStr = AdvertisementPage.viewBtnInRow("").split(",").map((s) => s.trim()).join(", ");
             const viewBtn = firstRow.locator(viewBtnStr).first();
             await expect(viewBtn, "View button must be visible").toBeVisible({ timeout: 5000 });
 
@@ -1522,7 +1530,7 @@ export default class AdvertisementSteps {
                 );
             }
             const firstRow = rows.first();
-            const editBtnStr = AdvertisementPage.editBtnInRow("").split(",").map(s => s.trim()).join(", ");
+            const editBtnStr = AdvertisementPage.editBtnInRow("").split(",").map((s) => s.trim()).join(", ");
             const editBtn = firstRow.locator(editBtnStr).first();
             await expect(editBtn, "Edit button must be visible").toBeVisible({ timeout: 5000 });
             await editBtn.click({ force: true });
@@ -1597,8 +1605,8 @@ export default class AdvertisementSteps {
 
     public getBannerJpgPath(): string {
         return this.resolveUploadAsset(
-            path.resolve("test-data/uploads/images/banner.jpg"),
-            "D:\\Automation\\TestData\\banner.jpg",
+            path.resolve("test-data/uploads/images/icon.jpg"),
+            "D:\\Automation\\TestData\\icon.jpg",
         );
     }
 
@@ -1612,9 +1620,9 @@ export default class AdvertisementSteps {
 
     public getAdvertisementMp4Path(): string {
         const named = path.resolve("test-data/uploads/videos/advertisement.mp4");
-        const alt   = path.resolve("test-data/uploads/videos/videofull.mp4");
+        const alt = path.resolve("test-data/uploads/videos/videofull.mp4");
         if (fs.existsSync(named)) return named;
-        if (fs.existsSync(alt))   return alt;
+        if (fs.existsSync(alt)) return alt;
         return "D:\\Automation\\TestData\\advertisement.mp4";
     }
 
@@ -1674,7 +1682,7 @@ export default class AdvertisementSteps {
     }
 
     public async verifyValidationErrorVisible(expectedText?: string) {
-        await test.step(`Verify validation error${expectedText ? ` containing '${expectedText}'` : "" } is visible`, async () => {
+        await test.step(`Verify validation error${expectedText ? ` containing '${expectedText}'` : ""} is visible`, async () => {
             await this.page.waitForTimeout(600);
             const errorLocator = this.page.locator(AdvertisementPage.VALIDATION_MSG).first();
             await expect(errorLocator, "Validation message must be visible").toBeVisible({ timeout: 5000 });
@@ -1815,7 +1823,8 @@ export default class AdvertisementSteps {
             // Click the last action button (delete) in the first matching row
             await firstRow.locator("td:last-child").locator("button, a").last().click();
             const popupShown = await this.page.locator(AdvertisementPage.DELETE_POPUP)
-                .first().waitFor({ state: "visible", timeout: 5000 }).then(() => true).catch(() => false);
+                .first().waitFor({ state: "visible", timeout: 5000 }).then(() => true)
+.catch(() => false);
 
             if (!popupShown) {
                 console.log(`[Advertisement] deleteAdvertisementByName: popup did not appear for '${name}'`);
@@ -1884,8 +1893,7 @@ export default class AdvertisementSteps {
             for (let i = 0; i < count; i++) {
                 // eslint-disable-next-line no-await-in-loop
                 const opts = await selects.nth(i).locator("option").allTextContents();
-                const hasTypeOpts = opts.some((o) =>
-                    ["Banner", "Slider", "Video"].some((t) => o.toLowerCase().includes(t.toLowerCase())));
+                const hasTypeOpts = opts.some((o) => ["Banner", "Slider", "Video"].some((t) => o.toLowerCase().includes(t.toLowerCase())));
                 if (hasTypeOpts) {
                     // eslint-disable-next-line no-await-in-loop
                     await selects.nth(i).selectOption({ index: 0 }).catch(() => {});
@@ -1954,7 +1962,8 @@ export default class AdvertisementSteps {
                 .map((h) => h.trim().toUpperCase())
                 .filter(Boolean);
             console.log(`[Advertisement] Actual table headers: ${JSON.stringify(headers)}`);
-            for (const col of AdvertisementConstants.EXPECTED_COLUMNS) {
+            for (let i = 0; i < AdvertisementConstants.EXPECTED_COLUMNS.length; i += 1) {
+                const col = AdvertisementConstants.EXPECTED_COLUMNS[i];
                 const found = headers.some((h) => h.includes(col.toUpperCase()));
                 if (!found) {
                     console.log(`[Advertisement] WARNING: Expected column '${col}' not in ${JSON.stringify(headers)}`);

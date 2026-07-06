@@ -13,42 +13,37 @@ const testCases = [
     "TC04_OrderValueChartFilter",
     "TC05_OrderStatusFilter",
     "TC06_SalesChannelAndOrderTypeValidation",
-    "TC07_OrderDetailFiltersValidation"
+    "TC07_OrderDetailFiltersValidation",
 ];
 
-for (const testCase of testCases) {
-
+testCases.forEach((testCase) => {
     const data = ExcelUtil.getTestData(
         SHEET,
-        testCase
+        testCase,
     );
 
     test(`${data.TestID} - ${data.Description} @regression`,
         async ({ page }) => {
-
             Allure.attachDetails(
                 data.Description,
-                data.Issue
+                data.Issue,
             );
 
-            const home =
-                new HomeSteps(page);
+            const home = new HomeSteps(page);
 
-            const order =
-                new OrderReportSteps(page);
+            const order = new OrderReportSteps(page);
 
             await home.launchApplication();
 
             await home.login(
                 data.UserName,
                 data.Password,
-                data.persona
+                data.persona,
             );
 
             await order.openOrderReport();
 
             switch (data.TestID) {
-
                 case "TC01_OrderReportLoad":
 
                     await order.verifyOrderReportLoaded();
@@ -62,46 +57,49 @@ for (const testCase of testCases) {
                     break;
                 case "TC03_RefreshValidation":
 
-    await order.verifyRefreshButton();
+                    await order.verifyRefreshButton();
 
-    break;
+                    break;
 
-   case "TC04_OrderValueChartFilter":
+                case "TC04_OrderValueChartFilter":
 
-    await order.verifyOrderValueChartFilter(
-        data.FromDate,
-        data.ToDate
-    );
+                    await order.verifyOrderValueChartFilter(
+                        data.FromDate,
+                        data.ToDate,
+                    );
 
-    break;
+                    break;
 
-   case "TC05_OrderStatusFilter":
+                case "TC05_OrderStatusFilter":
 
-    await order.verifyOrderStatusFilter(
-        data.FromDate,
-        data.ToDate
-    );
+                    await order.verifyOrderStatusFilter(
+                        data.FromDate,
+                        data.ToDate,
+                    );
 
-    break;
+                    break;
 
-    case "TC06_SalesChannelAndOrderTypeValidation":
+                case "TC06_SalesChannelAndOrderTypeValidation":
 
-    await order.verifyOrderBySalesChannelAndType();
+                    await order.verifyOrderBySalesChannelAndType();
 
-    break;
+                    break;
 
-    case "TC07_OrderDetailFiltersValidation":
+                case "TC07_OrderDetailFiltersValidation":
 
-    await order.verifyOrderDetailFilters(
-        data.ValidSearch,
-        data.SearchOrderId,
-        data.InvalidSearch
-    );
+                    await order.verifyOrderDetailFilters(
+                        data.ValidSearch,
+                        data.SearchOrderId,
+                        data.InvalidSearch,
+                    );
 
-    break;
+                    break;
+
+                default:
+                    break;
             }
 
             await home.logout();
-        }
+        },
     );
-}
+});

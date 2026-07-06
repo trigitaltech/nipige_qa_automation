@@ -396,13 +396,13 @@ export default class AdvertisementPage {
         'button:has-text("Yes")',
         'button:has-text("Confirm")',
         'button:has-text("Delete")',
-    ].map(sel => `${sel}:visible`).join(", ");
+    ].map((sel) => `${sel}:visible`).join(", ");
 
     static readonly DELETE_CANCEL_BTN = [
         '.swal2-cancel',
         'button:has-text("No")',
         'button:has-text("Cancel")',
-    ].map(sel => `${sel}:visible`).join(", ");
+    ].map((sel) => `${sel}:visible`).join(", ");
 
     // ── Toast notifications ───────────────────────────────────────────────────
     // Covers react-toastify (.Toastify__toast) and sonner ([data-sonner-toast])

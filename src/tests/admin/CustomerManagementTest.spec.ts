@@ -39,7 +39,7 @@ test.describe.configure({ retries: 1 }); // Run sequentially via --workers=1 to 
 
 async function openCustomerAdmin(page: Page): Promise<CustomerManagementSteps> {
     const customer = new CustomerManagementSteps(page);
-    await page.goto(process.env.BASE_URL + "home");
+    await page.goto(`${process.env.BASE_URL}home`);
     await customer.navigateToCustomerAdmin();
     return customer;
 }
@@ -55,23 +55,23 @@ test.describe("Customer Management - Dashboard", () => {
 });
 
 test.describe("Customer Management Test Suite", () => {
-    const positiveTests = ALL_TESTS.filter(r => r.Type === "Positive");
-    for (const data of positiveTests) {
+    const positiveTests = ALL_TESTS.filter((r) => r.Type === "Positive");
+    positiveTests.forEach((data) => {
         test(`${data.TC_ID} - ${data.Expected_Result}`, async ({ tenantPage }) => {
             Allure.attachDetails(data.Expected_Result, "");
             const customer = await openCustomerAdmin(tenantPage);
             await customer.runPositiveTest(data);
         });
-    }
+    });
 });
 
 test.describe("Customer Management - Negative", () => {
-    const negativeTests = ALL_TESTS.filter(r => r.Type === "Negative");
-    for (const data of negativeTests) {
+    const negativeTests = ALL_TESTS.filter((r) => r.Type === "Negative");
+    negativeTests.forEach((data) => {
         test(`${data.TC_ID} - ${data.Expected_Result}`, async ({ tenantPage }) => {
             Allure.attachDetails(data.Expected_Result, "");
             const customer = await openCustomerAdmin(tenantPage);
             await customer.runNegativeTest(data);
         });
-    }
+    });
 });

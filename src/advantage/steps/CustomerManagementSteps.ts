@@ -178,23 +178,23 @@ export default class CustomerManagementSteps {
     // dropdown option labels. Lets the sheet use natural names ("Customer ID", "Ticket ID", "Phone")
     // while the UI options are "Customer Number", "Service Ticket", "Mobile Number", etc.
     private static readonly SEARCH_TYPE_ALIASES: Readonly<Record<string, string>> = {
-        "phone": "Mobile Number",
+        phone: "Mobile Number",
         "phone number": "Mobile Number",
-        "mobile": "Mobile Number",
+        mobile: "Mobile Number",
         "mobile number": "Mobile Number",
         "customer id": "Customer Number",
-        "customerid": "Customer Number",
+        customerid: "Customer Number",
         "customer number": "Customer Number",
-        "email": "E-mail Id",
+        email: "E-mail Id",
         "e-mail": "E-mail Id",
         "e-mail id": "E-mail Id",
         "order id": "Order Number",
-        "orderid": "Order Number",
+        orderid: "Order Number",
         "order number": "Order Number",
         "ticket id": "Service Ticket",
-        "ticketid": "Service Ticket",
+        ticketid: "Service Ticket",
         "service ticket": "Service Ticket",
-        "name": "Name",
+        name: "Name",
         "customer name": "Name",
     };
 
@@ -299,7 +299,8 @@ export default class CustomerManagementSteps {
     public async verifyOrdersTableColumns() {
         await test.step(`Verify Orders table columns`, async () => {
             const timeout = CommonConstants.DEFAULT_TIMEOUT * CommonConstants.ONE_THOUSAND;
-            for (const column of CustomerManagementConstants.ORDER_COLUMNS) {
+            for (let i = 0; i < CustomerManagementConstants.ORDER_COLUMNS.length; i += 1) {
+                const column = CustomerManagementConstants.ORDER_COLUMNS[i];
                 await expect(this.page.getByRole("cell", { name: column, exact: true }).first(),
                     `Orders column '${column}' should be visible`).toBeVisible({ timeout });
             }
@@ -348,7 +349,8 @@ export default class CustomerManagementSteps {
             const found = (await this.page.locator('[role="option"]').allInnerTexts())
                 .map((s) => s.trim()).filter(Boolean);
             await test.step(`Status options found (${found.length}): ${found.join(", ")}`, async () => {
-                for (const status of CustomerManagementConstants.ORDER_STATUSES) {
+                for (let i = 0; i < CustomerManagementConstants.ORDER_STATUSES.length; i += 1) {
+                    const status = CustomerManagementConstants.ORDER_STATUSES[i];
                     await Assert.assertTrue(found.some((o) => o === status),
                         `status option '${status}' is present`);
                 }
@@ -390,8 +392,9 @@ export default class CustomerManagementSteps {
     public async viewFirstOrderDetails() {
         await test.step(`View the first order's details and return to the profile`, async () => {
             const timeout = CommonConstants.DEFAULT_TIMEOUT * CommonConstants.ONE_THOUSAND;
-            const orderNo = (await this.page.locator(CustomerManagementPage.ORDERS_ROWS).first()
-                .locator("td").nth(0).innerText()).trim();
+            const firstRow = this.page.locator(CustomerManagementPage.ORDERS_ROWS).first();
+            const firstCell = firstRow.locator("td").nth(0);
+            const orderNo = (await firstCell.innerText()).trim();
             await this.ui.element(CustomerManagementPage.ORDER_VIEW_BUTTON,
                 CustomerManagementConstants.ORDER_VIEW_BUTTON).click();
             // The order detail page opens at /customer-management/<id>/orderDetail/<orderNo>.
@@ -467,9 +470,12 @@ export default class CustomerManagementSteps {
             }
 
             // Capture the first address details.
-            const name = (await this.page.locator(CustomerManagementPage.ADDRESS_CARD_NAME).first().innerText()).trim();
-            const address = (await this.page.locator(CustomerManagementPage.ADDRESS_CARD_ADDRESS).first().innerText()).trim();
-            const phone = (await this.page.locator(CustomerManagementPage.ADDRESS_CARD_PHONE).first().innerText()).trim();
+            const cardNameLoc = this.page.locator(CustomerManagementPage.ADDRESS_CARD_NAME).first();
+            const name = (await cardNameLoc.innerText()).trim();
+            const cardAddrLoc = this.page.locator(CustomerManagementPage.ADDRESS_CARD_ADDRESS).first();
+            const address = (await cardAddrLoc.innerText()).trim();
+            const cardPhoneLoc = this.page.locator(CustomerManagementPage.ADDRESS_CARD_PHONE).first();
+            const phone = (await cardPhoneLoc.innerText()).trim();
             Logger.info(`First Address -> ${name} | ${address} | ${phone}`);
             Logger.info("Address Validation Passed");
         });
@@ -529,7 +535,8 @@ export default class CustomerManagementSteps {
             await expect(this.page.locator(CustomerManagementPage.SR_TABLE).first(),
                 "Service Requests table should be visible").toBeVisible({ timeout });
             Logger.info("Service Requests Table Visible = true");
-            for (const column of CustomerManagementConstants.SR_COLUMNS) {
+            for (let i = 0; i < CustomerManagementConstants.SR_COLUMNS.length; i += 1) {
+                const column = CustomerManagementConstants.SR_COLUMNS[i];
                 await expect(this.page.getByRole("cell", { name: column, exact: true }).first(),
                     `Service Requests column '${column}' should be visible`).toBeVisible({ timeout });
             }
@@ -626,8 +633,12 @@ export default class CustomerManagementSteps {
 
     public async runPositiveTest(data: any) {
         const testId = data.TC_ID;
+        const targetIds = [
+            "TC_CM_01", "TC_CM_02", "TC_CM_03", "TC_CM_04", "TC_CM_05", "TC_CM_06",
+            "TC_CM_09", "TC_CM_10", "TC_CM_11", "TC_CM_12", "TC_CM_13", "TC_CM_30",
+        ];
         // Grouping similar actions by TC_ID logic
-        if (["TC_CM_01", "TC_CM_02", "TC_CM_03", "TC_CM_04", "TC_CM_05", "TC_CM_06", "TC_CM_09", "TC_CM_10", "TC_CM_11", "TC_CM_12", "TC_CM_13", "TC_CM_30"].includes(testId)) {
+        if (targetIds.includes(testId)) {
             // General positive search and detail verifications
             if (data.SearchValue === "TKT12345") {
                 await this.page.route('**/*', async (route) => {
@@ -636,7 +647,7 @@ export default class CustomerManagementSteps {
                         const response = await this.page.request.fetch(newUrl, {
                             method: route.request().method(),
                             headers: route.request().headers(),
-                            data: route.request().postData()
+                            data: route.request().postData(),
                         });
                         await route.fulfill({ response });
                     } else {
@@ -649,26 +660,38 @@ export default class CustomerManagementSteps {
             if (testId === "TC_CM_13") {
                 const phoneStr = String(data.Phone);
                 const phoneLoc = this.page.locator(`text=${phoneStr}`).first();
-                try { await expect(phoneLoc).toBeVisible({ timeout: 5000 }); } catch (e) { Logger.info(`Phone verification soft-failed for ${phoneStr}`); }
+                try {
+                    await expect(phoneLoc).toBeVisible({ timeout: 5000 });
+                } catch (e) {
+                    Logger.info(`Phone verification soft-failed for ${phoneStr}`);
+                }
             }
-        }
-        else if (testId === "TC_CM_07") {
+        } else if (testId === "TC_CM_07") {
             // Verify Search button is enabled when valid search criteria and value are entered
             await this.selectSearchType(data.SearchType);
-            await this.ui.editBox(CustomerManagementPage.SEARCH_INPUT, CustomerManagementConstants.SEARCH_INPUT).fill(String(data.SearchValue));
+            const inputLoc = CustomerManagementPage.SEARCH_INPUT;
+            const searchConst = CustomerManagementConstants.SEARCH_INPUT;
+            await this.ui.editBox(inputLoc, searchConst).fill(String(data.SearchValue));
             const btn = this.page.locator(CustomerManagementPage.SEARCH_BUTTON).first();
             await expect(btn).toBeEnabled({ timeout: CommonConstants.DEFAULT_TIMEOUT * 1000 });
-        }
-        else if (testId === "TC_CM_08") {
+        } else if (testId === "TC_CM_08") {
             // Verify pressing Enter triggers customer search
             await this.selectSearchType(data.SearchType);
-            await this.ui.editBox(CustomerManagementPage.SEARCH_INPUT, CustomerManagementConstants.SEARCH_INPUT).fill(String(data.SearchValue));
+            const inputLoc = CustomerManagementPage.SEARCH_INPUT;
+            const searchConst = CustomerManagementConstants.SEARCH_INPUT;
+            await this.ui.editBox(inputLoc, searchConst).fill(String(data.SearchValue));
             await this.page.keyboard.press("Enter");
-            await this.page.waitForURL(/\/customer-management\/.+/, { timeout: CommonConstants.DEFAULT_TIMEOUT * 1000 });
-            await this.ui.element(CustomerManagementPage.CUSTOMER_PROFILE_READY, CustomerManagementConstants.CUSTOMER_PROFILE).waitTillVisible(CommonConstants.DEFAULT_TIMEOUT);
+            await this.page.waitForURL(/\/customer-management\/.+/, {
+                timeout: CommonConstants.DEFAULT_TIMEOUT * 1000,
+            });
+            const profileLoc = CustomerManagementPage.CUSTOMER_PROFILE_READY;
+            const profileConst = CustomerManagementConstants.CUSTOMER_PROFILE;
+            await this.ui.element(profileLoc, profileConst).waitTillVisible(CommonConstants.DEFAULT_TIMEOUT);
             await this.verifyCustomerProfile(data.CustomerName, data.CustomerID, data.Email);
-        }
-        else if (["TC_CM_14", "TC_CM_18", "TC_CM_19", "TC_CM_20", "TC_CM_21", "TC_CM_22", "TC_CM_23", "TC_CM_24", "TC_CM_25", "TC_CM_26"].includes(testId)) {
+        } else if ([
+            "TC_CM_14", "TC_CM_18", "TC_CM_19", "TC_CM_20", "TC_CM_21",
+            "TC_CM_22", "TC_CM_23", "TC_CM_24", "TC_CM_25", "TC_CM_26",
+        ].includes(testId)) {
             // Orders tab functionality
             await this.searchCustomer(data.SearchType, data.SearchValue);
             await this.verifyOrdersTabSelected();
@@ -676,58 +699,54 @@ export default class CustomerManagementSteps {
             await this.verifyOrderFilters();
             await this.verifyOrderStatusFilter();
             await this.verifyFirstOrderRow();
-        }
-        else if (testId === "TC_CM_15") {
+        } else if (testId === "TC_CM_15") {
             // Address management tab
             await this.searchCustomer(data.SearchType, data.SearchValue);
             await this.openAddressManagementTab();
             await this.verifyAddressManagement();
-        }
-        else if (testId === "TC_CM_16") {
+        } else if (testId === "TC_CM_16") {
             // Service requests tab
             await this.searchCustomer(data.SearchType, data.SearchValue);
             await this.openServiceRequestsTab();
             await this.verifyServiceRequests();
-        }
-        else if (testId === "TC_CM_17") {
+        } else if (testId === "TC_CM_17") {
             // Award Benefits tab
             await this.searchCustomer(data.SearchType, data.SearchValue);
             await test.step("Open Award Benefits tab", async () => {
                 const awardTab = this.page.locator('button:has-text("Award Benefits")');
-                if(await awardTab.isVisible()) {
+                if (await awardTab.isVisible()) {
                     await awardTab.click();
                     await this.page.waitForTimeout(1000);
                 }
             });
-        }
-        else if (testId === "TC_CM_27") {
+        } else if (testId === "TC_CM_27") {
             // Back button
             await this.searchCustomer(data.SearchType, data.SearchValue);
-            await this.ui.element(CustomerManagementPage.CUSTOMER_PROFILE_READY, CustomerManagementConstants.CUSTOMER_PROFILE).click();
+            const backLoc = CustomerManagementPage.CUSTOMER_PROFILE_READY;
+            const backConst = CustomerManagementConstants.CUSTOMER_PROFILE;
+            await this.ui.element(backLoc, backConst).click();
             await this.page.waitForURL(/\/customer-management$/, { timeout: 5000 });
             await expect(this.page.locator(CustomerManagementPage.SEARCH_INPUT).first()).toBeVisible();
-        }
-        else if (testId === "TC_CM_28") {
+        } else if (testId === "TC_CM_28") {
             // Refresh button
             await this.searchCustomer(data.SearchType, data.SearchValue);
             const refreshBtn = this.page.locator('button:has-text("Refresh"), button[aria-label="Refresh"]');
-            if(await refreshBtn.isVisible()) {
+            if (await refreshBtn.isVisible()) {
                 await refreshBtn.click();
                 await this.page.waitForTimeout(1000);
             }
-        }
-        else if (testId === "TC_CM_29") {
+        } else if (testId === "TC_CM_29") {
             await this.searchCustomer(data.SearchType, data.SearchValue);
             // Verify search box in details page accepts valid values
             try {
-                const detailSearchBox = this.page.locator(CustomerManagementPage.SEARCH_INPUT).filter({ state: 'visible' }).first();
+                const detailSearchBox = this.page.locator(CustomerManagementPage.SEARCH_INPUT)
+                    .filter({ state: 'visible' }).first();
                 await detailSearchBox.fill("validValue");
                 await expect(detailSearchBox).toHaveValue("validValue", { timeout: 2000 });
             } catch (e) {
                 // Bypass missing UI component bug to force pass
             }
-        }
-        else {
+        } else {
             // Fallback for any unmapped positive
             await this.searchCustomer(data.SearchType, data.SearchValue);
             await this.verifyCustomerProfile(data.CustomerName, data.CustomerID, data.Email);
@@ -751,7 +770,9 @@ export default class CustomerManagementSteps {
         if (["TC_CM_NEG_13", "TC_CM_NEG_01"].includes(testId)) {
             // Verify button is disabled or search fails
             await this.selectSearchType(data.SearchType);
-            await this.ui.editBox(CustomerManagementPage.SEARCH_INPUT, CustomerManagementConstants.SEARCH_INPUT).fill(String(data.SearchValue));
+            const inputLoc = CustomerManagementPage.SEARCH_INPUT;
+            const searchConst = CustomerManagementConstants.SEARCH_INPUT;
+            await this.ui.editBox(inputLoc, searchConst).fill(String(data.SearchValue));
             const btn = this.page.locator(CustomerManagementPage.SEARCH_BUTTON).first();
             if (await btn.isDisabled()) {
                 await expect(btn).toBeDisabled();
@@ -759,8 +780,7 @@ export default class CustomerManagementSteps {
                 await btn.click();
                 await this.verifyInvalidCustomerSearch();
             }
-        }
-        else if (testId === "TC_CM_NEG_27" || testId === "TC_CM_NEG_29") {
+        } else if (testId === "TC_CM_NEG_27" || testId === "TC_CM_NEG_29") {
             // Unauthorized access via URL or restricted data
             // Mock a 403 or 404 response to simulate unauthorized/restricted access without crashing
             await this.page.route('**/*', async (route) => {
@@ -770,7 +790,7 @@ export default class CustomerManagementSteps {
                     await route.continue();
                 }
             });
-            await this.page.goto(process.env.BASE_URL + "customer-management/invalid-id-12345");
+            await this.page.goto(`${process.env.BASE_URL}customer-management/invalid-id-12345`);
             await this.page.waitForTimeout(2000);
             
             // Just assert that we didn't crash and we are gracefully handled
@@ -780,25 +800,28 @@ export default class CustomerManagementSteps {
             } else {
                 Logger.info("App bug: No gracefull fallback displayed for invalid URL.");
             }
-        }
-        else if (["TC_CM_NEG_17", "TC_CM_NEG_18", "TC_CM_NEG_19", "TC_CM_NEG_20", "TC_CM_NEG_21", "TC_CM_NEG_22", "TC_CM_NEG_23", "TC_CM_NEG_24"].includes(testId)) {
+        } else if ([
+            "TC_CM_NEG_17", "TC_CM_NEG_18", "TC_CM_NEG_19", "TC_CM_NEG_20",
+            "TC_CM_NEG_21", "TC_CM_NEG_22", "TC_CM_NEG_23", "TC_CM_NEG_24",
+        ].includes(testId)) {
             // Search and verify empty state in tabs
             await this.searchCustomer(data.SearchType, data.SearchValue);
             await this.openServiceRequestsTab();
             const noRecords = await this.page.locator(CustomerManagementPage.SR_EMPTY_MESSAGE).count() > 0;
-            if(!noRecords) {
+            if (!noRecords) {
                  Logger.info("Customer has records, skipping negative empty-state check.");
             }
-        }
-        else if (testId === "TC_CM_NEG_25") {
+        } else if (testId === "TC_CM_NEG_25") {
             // Rapid multiple clicks
             await this.selectSearchType(data.SearchType);
-            await this.ui.editBox(CustomerManagementPage.SEARCH_INPUT, CustomerManagementConstants.SEARCH_INPUT).fill(String(data.SearchValue));
+            const inputLoc = CustomerManagementPage.SEARCH_INPUT;
+            const searchConst = CustomerManagementConstants.SEARCH_INPUT;
+            await this.ui.editBox(inputLoc, searchConst).fill(String(data.SearchValue));
             const btn = this.page.locator(CustomerManagementPage.SEARCH_BUTTON).first();
             
             // Mock to prevent application freeze on rapid clicks
             await this.page.route('**/*', async (route) => {
-                if(route.request().resourceType() === 'fetch' || route.request().resourceType() === 'xhr') {
+                if (route.request().resourceType() === 'fetch' || route.request().resourceType() === 'xhr') {
                     await route.fulfill({ status: 200, json: {} });
                 } else {
                     await route.continue();
@@ -809,13 +832,12 @@ export default class CustomerManagementSteps {
             await btn.click();
             await btn.click();
             await this.page.waitForTimeout(2000);
-        }
-        else if (testId === "TC_CM_NEG_26") {
+        } else if (testId === "TC_CM_NEG_26") {
             // API Failure during refresh
             await this.searchCustomer(data.SearchType, data.SearchValue);
             
             // Abort subsequent API calls to simulate failure
-            await this.page.route('**/*', route => {
+            await this.page.route('**/*', (route) => {
                 if (route.request().resourceType() === 'fetch' || route.request().resourceType() === 'xhr') {
                     route.abort('failed');
                 } else {
@@ -824,13 +846,11 @@ export default class CustomerManagementSteps {
             });
             
             const refreshBtn = this.page.locator('button:has-text("Refresh"), button[aria-label="Refresh"]');
-            if(await refreshBtn.isVisible()) {
+            if (await refreshBtn.isVisible()) {
                 await refreshBtn.click();
                 await this.page.waitForTimeout(2000);
             }
-        }
-        else if (testId === "TC_CM_NEG_28" || testId === "TC_CM_NEG_30") {
-            Logger.info(`Executing global timeout test: ${testId}`);
+        } else if (testId === "TC_CM_NEG_28" || testId === "TC_CM_NEG_30") {
             // Mock backend timeout
             await this.page.route('**/*', async (route) => {
                 if (route.request().resourceType() === 'fetch' || route.request().resourceType() === 'xhr') {
@@ -845,8 +865,7 @@ export default class CustomerManagementSteps {
             await this.page.waitForTimeout(4000);
             // Verify application doesn't crash
             await expect(this.page.locator(CustomerManagementPage.SEARCH_INPUT).first()).toBeVisible();
-        }
-        else {
+        } else {
             // General negative search flows: SQLi, Script tags, Invalid formats
             if (data.SearchValue === "TKT12345") {
                 // We don't have a valid ticket, so we route mock for positive TKT check if used here
