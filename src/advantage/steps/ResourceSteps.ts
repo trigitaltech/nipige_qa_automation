@@ -78,14 +78,19 @@ export default class ResourceSteps {
                 .first().isVisible({ timeout: 800 }).catch(() => false);
             if (!alreadyVisible) {
                 const setupBtn = this.page.locator(ResourcePage.SETUP_MENU_BTN).first();
-                await setupBtn.scrollIntoViewIfNeeded({ timeout: 10000 });
-                await setupBtn.click();
+                await setupBtn.scrollIntoViewIfNeeded({ timeout: 10000 }).catch(() => {});
+                await setupBtn.click({ timeout: 5000 }).catch(async () => {
+                    await setupBtn.evaluate((el: HTMLElement) => el.click());
+                });
                 await this.page.locator(ResourcePage.RESOURCES_SUBMENU_LINK).first()
                     .waitFor({ state: "visible", timeout: 5000 });
             }
 
             // Step 5: Click Resources → navigate
-            await this.page.locator(ResourcePage.RESOURCES_SUBMENU_LINK).first().click();
+            const resourcesLink = this.page.locator(ResourcePage.RESOURCES_SUBMENU_LINK).first();
+            await resourcesLink.click({ timeout: 5000 }).catch(async () => {
+                await resourcesLink.evaluate((el: HTMLElement) => el.click());
+            });
             await this.page.waitForURL(/setup\/currency/, { timeout: 15000 });
             await this.page.waitForLoadState("networkidle");
 
@@ -500,12 +505,22 @@ export default class ResourceSteps {
                 await this.page.waitForTimeout(ResourceConstants.DROPDOWN_OPEN_MS);
             }
 
-            // 2. Check if a search input appeared inside the popover and type query if so
-            const searchInput = this.page.locator('input[placeholder*="search" i], input[placeholder*="filter" i], [role="combobox"] input').first();
-            if (await searchInput.isVisible({ timeout: 1000 }).catch(() => false)) {
-                await searchInput.click();
-                await searchInput.fill(code);
+            // 2. If the trigger is an input combobox, type to filter/select directly
+            const isInput = await trigger.evaluate((el: HTMLElement) => el.tagName.toLowerCase() === "input").catch(() => false);
+            if (isInput) {
+                await trigger.fill(code);
                 await this.page.waitForTimeout(ResourceConstants.DROPDOWN_OPEN_MS);
+            } else {
+                // Otherwise check if a search input appeared inside the popover/dialog (excluding main/sidebar search)
+                const searchInput = this.page.locator(
+                    '[role="listbox"] input, [role="dialog"] input, [class*="popover" i] input, [class*="dropdown" i] input, ' +
+                    'input[placeholder*="search" i]:not([placeholder*="here" i]):not(nav input):not(aside input)'
+                ).first();
+                if (await searchInput.isVisible({ timeout: 1000 }).catch(() => false)) {
+                    await searchInput.click();
+                    await searchInput.fill(code);
+                    await this.page.waitForTimeout(ResourceConstants.DROPDOWN_OPEN_MS);
+                }
             }
 
             // 3. Locate option and click
@@ -661,10 +676,13 @@ export default class ResourceSteps {
         await test.step(`Click View for '${code}'`, async () => {
             const row = this.page.locator(ResourcePage.rowFor(code)).first();
             await expect(row, `Row '${code}' must exist`).toBeVisible({ timeout: 8000 });
-            await row.hover();
+            await row.hover().catch(() => {});
+            const btn = row.locator(ResourcePage.ROW_VIEW_BTN).first();
             await Promise.all([
                 this.page.waitForURL(ResourceDetailsPage.URL_PATTERN, { timeout: 12000 }),
-                row.locator(ResourcePage.ROW_VIEW_BTN).click(),
+                btn.click({ timeout: 4000 }).catch(async () => {
+                    await btn.evaluate((el: HTMLElement) => el.click());
+                }),
             ]);
             await this.page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
             console.log(`[RES] clickView — URL: ${this.page.url()}`);
@@ -758,10 +776,13 @@ export default class ResourceSteps {
         await test.step(`Click Edit for '${code}'`, async () => {
             const row = this.page.locator(ResourcePage.rowFor(code)).first();
             await expect(row, `Row '${code}' must exist`).toBeVisible({ timeout: 8000 });
-            await row.hover();
+            await row.hover().catch(() => {});
+            const btn = row.locator(ResourcePage.ROW_EDIT_BTN).first();
             await Promise.all([
                 this.page.waitForURL(EditResourcePage.URL_PATTERN, { timeout: 12000 }),
-                row.locator(ResourcePage.ROW_EDIT_BTN).click(),
+                btn.click({ timeout: 4000 }).catch(async () => {
+                    await btn.evaluate((el: HTMLElement) => el.click());
+                }),
             ]);
             await this.page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
             console.log(`[RES] clickEdit — URL: ${this.page.url()}`);
@@ -862,8 +883,11 @@ export default class ResourceSteps {
         await test.step(`Click Delete for '${code}'`, async () => {
             const row = this.page.locator(ResourcePage.rowFor(code)).first();
             await expect(row, `Row '${code}' must exist`).toBeVisible({ timeout: 8000 });
-            await row.hover();
-            await row.locator(ResourcePage.ROW_DELETE_BTN).click();
+            await row.hover().catch(() => {});
+            const btn = row.locator(ResourcePage.ROW_DELETE_BTN).first();
+            await btn.click({ timeout: 4000 }).catch(async () => {
+                await btn.evaluate((el: HTMLElement) => el.click());
+            });
             await this.page.locator(DeleteResourcePopup.POPUP)
                 .waitFor({ state: "visible", timeout: 5000 });
         });

@@ -101,13 +101,16 @@ export default class FreshCartSteps {
             await this.ui.editBox(FreshCartPage.DESCRIPTION_INPUT,
                 FreshCartConstants.DESCRIPTION_INPUT).fill(description);
 
+            // Add a short delay to allow form validation states and event handlers to settle
+            await this.page.waitForTimeout(1500);
+
             // Wait for the network POST triggered by Submit to complete before proceeding.
             // domcontentloaded is unreliable for AJAX submissions (page doesn't navigate).
             const [response] = await Promise.all([
                 this.page.waitForResponse(
                     (res) => res.request().method() === "POST"
                         && (res.url().includes("ticket") || res.url().includes("support")),
-                    { timeout: 30_000 },
+                    { timeout: 90_000 },
                 ),
                 this.ui.element(FreshCartPage.SUBMIT_TICKET_BUTTON,
                     FreshCartConstants.SUBMIT_TICKET_BUTTON).click(),

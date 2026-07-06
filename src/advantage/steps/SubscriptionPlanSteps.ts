@@ -185,8 +185,9 @@ export default class SubscriptionPlanSteps {
         await test.step(`Select '${value}' for '${label}'`, async () => {
             await this.page.locator(SubscriptionPlanPage.comboboxToggleByLabel(label)).first().click();
             try {
-                await this.page.getByRole("option", { name: value, exact: true }).first()
-                    .click({ timeout: this.optionTimeout });
+                const option = this.page.getByRole("option", { name: new RegExp(`^${value.trim()}$`, "i") }).first();
+                await option.scrollIntoViewIfNeeded().catch(() => {});
+                await option.click({ timeout: this.optionTimeout });
                 Logger.info(`${label} = ${value}`);
             } catch {
                 // Invalid value (negative case): the option does not exist — leave the field unset so
@@ -201,13 +202,14 @@ export default class SubscriptionPlanSteps {
     private async selectSearchableCombobox(inputSelector: string, description: string, value: string) {
         await test.step(`Select '${value}' for ${description}`, async () => {
             await this.ui.editBox(inputSelector, description).fill(value);
-            const option = this.page.getByRole("option", { name: value, exact: true }).first();
+            const option = this.page.getByRole("option", { name: new RegExp(`^${value.trim()}$`, "i") }).first();
             try {
                 // The dropdown options are network-backed, so wait for the search request to settle and
                 // the option to actually render before clicking — proper synchronization rather than
                 // racing a short timeout (which could silently leave the field unset and fail submit).
                 await this.page.waitForLoadState("networkidle").catch(() => { /* SPA keep-alive */ });
                 await option.waitFor({ state: "visible", timeout: this.timeout });
+                await option.scrollIntoViewIfNeeded().catch(() => {});
                 await option.click();
                 Logger.info(`${description} = ${value}`);
             } catch {
@@ -263,13 +265,13 @@ export default class SubscriptionPlanSteps {
                 await this.ui.editBox(SubscriptionPlanPage.numberByLabel("Price"),
                     SubscriptionPlanConstants.PRICE).fill(data.Price);
             }
-            if (!isUnset(data.UOM)) await this.selectCombobox("Unit Of Measurement", data.UOM);
+            if (!isUnset(data.Plan_Type)) await this.selectCombobox("Plan Type", data.Plan_Type);
+            if (!isUnset(data.UOM)) await this.selectCombobox("UOM", data.UOM);
             if (!isUnset(data.Base_Qty)) {
                 await this.ui.editBox(SubscriptionPlanPage.numberByLabel("Base Quantity"),
                     SubscriptionPlanConstants.BASE_QTY).fill(data.Base_Qty);
             }
             if (!isUnset(data.Cadence)) await this.selectCombobox("Cadence Type", data.Cadence);
-            if (!isUnset(data.Plan_Type)) await this.selectCombobox("Plan Type", data.Plan_Type);
             if (!isUnset(data.Validity_Days)) {
                 await this.ui.editBox(SubscriptionPlanPage.numberByLabel("Validity"),
                     SubscriptionPlanConstants.VALIDITY_DAYS).fill(data.Validity_Days);
@@ -445,6 +447,7 @@ export default class SubscriptionPlanSteps {
         await this.ui.element(SubscriptionPlanPage.editIconForPlan(this.createdPlanName),
             SubscriptionPlanConstants.EDIT_ICON).click();
         await this.page.waitForURL(/\/setup\/subscriptionplan\/edit\/.+/, { timeout: this.timeout });
+        await this.page.waitForLoadState("networkidle").catch(() => {});
         await expect(this.page.locator(SubscriptionPlanPage.inputByLabel("Plan Name")).first(),
             "Edit form should render").toBeVisible({ timeout: this.timeout });
     }

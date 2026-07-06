@@ -25,7 +25,7 @@ const config: PlaywrightTestConfig = {
       slowMo: Number.parseInt(String(process.env.SLOW_MO ?? "0"), 10),
       downloadsPath: "./test-results/downloads",
     },
-    viewport: null,
+    viewport: process.env.CI || process.env.HEADLESS === "true" ? { width: 1280, height: 1000 } : null,
     ignoreHTTPSErrors: true,
     acceptDownloads: true,
     actionTimeout: Number.parseInt(String(process.env.ACTION_TIMEOUT ?? "1"), 10) * timeInMin,

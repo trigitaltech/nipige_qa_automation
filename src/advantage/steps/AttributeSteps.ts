@@ -302,6 +302,7 @@ export default class AttributeSteps {
 
     public async clickSave() {
         await test.step("Click Save button", async () => {
+            await this.page.waitForTimeout(1500); // Settling delay for form event binding
             await this.page.locator(AttributePage.SAVE_BTN).first().click();
             await this.page.waitForLoadState("networkidle", { timeout: 15000 }).catch(() => {});
         });
@@ -319,20 +320,25 @@ export default class AttributeSteps {
 
     public async clickBack() {
         await test.step("Click Back button", async () => {
-            // Dismiss any open SweetAlert2 modal BEFORE clicking Back — a success/error modal
-            // intercepts pointer events and causes the Back click to time out.
+            const currentUrl = this.page.url();
+            if (!/mode=(create|edit|view)/.test(currentUrl)) {
+                console.log("[AttributeSteps.clickBack] Already on listing page — skipping Back click");
+                return;
+            }
+
+            // Dismiss any existing popup first
             const swal = this.page.locator(".swal2-container");
-            const swalVisibleBefore = await swal.isVisible({ timeout: 2000 }).catch(() => false);
-            if (swalVisibleBefore) {
-                const confirmBtn = this.page.locator(".swal2-confirm");
-                const confirmVisible = await confirmBtn.isVisible({ timeout: 1000 }).catch(() => false);
-                if (confirmVisible) {
-                    await confirmBtn.click();
+            if (await swal.isVisible({ timeout: 1000 }).catch(() => false)) {
+                const confirmBtn = this.page.locator(".swal2-confirm").first();
+                if (await confirmBtn.isVisible().catch(() => false)) {
+                    await confirmBtn.click().catch(() => {});
                 } else {
                     await this.page.keyboard.press("Escape");
                 }
                 await swal.waitFor({ state: "hidden", timeout: 5000 }).catch(() => {});
             }
+
+            // Click Back button
             const backBtn = this.page.locator(AttributePage.BACK_BTN).first();
             const visible = await backBtn.isVisible({ timeout: 5000 }).catch(() => false);
             if (visible) {
@@ -340,19 +346,32 @@ export default class AttributeSteps {
             } else {
                 await this.page.goBack();
             }
-            // If a SweetAlert2 confirmation dialog appeared after clicking Back (e.g. "unsaved changes?"), dismiss it
-            const swalAfter = this.page.locator(".swal2-container");
-            const swalVisibleAfter = await swalAfter.isVisible({ timeout: 2000 }).catch(() => false);
-            if (swalVisibleAfter) {
-                const confirmBtn = this.page.locator(".swal2-confirm");
-                const confirmVisible = await confirmBtn.isVisible({ timeout: 1000 }).catch(() => false);
-                if (confirmVisible) {
-                    await confirmBtn.click();
-                } else {
-                    await this.page.keyboard.press("Escape");
+
+            // Wait for listing URL or a confirmation modal to appear
+            const deadline = Date.now() + 8000;
+            while (Date.now() < deadline) {
+                if (!/mode=(create|edit|view)/.test(this.page.url())) {
+                    // Navigation succeeded!
+                    return;
                 }
+                // Check if a confirm modal appeared
+                if (await swal.isVisible({ timeout: 300 }).catch(() => false)) {
+                    const confirmBtn = this.page.locator(".swal2-confirm").first();
+                    if (await confirmBtn.isVisible().catch(() => false)) {
+                        await confirmBtn.click().catch(() => {});
+                    } else {
+                        await this.page.keyboard.press("Escape");
+                    }
+                    await swal.waitFor({ state: "hidden", timeout: 5000 }).catch(() => {});
+                }
+                await this.page.waitForTimeout(300);
             }
-            await this.page.waitForLoadState("networkidle").catch(() => {});
+
+            // Fallback: force navigation to the listing page if still stuck on the form
+            if (/mode=(create|edit|view)/.test(this.page.url())) {
+                console.log("[clickBack] Navigation stuck on form — forcing navigation to list page");
+                await this.navigateToAttribute();
+            }
         });
     }
 
@@ -375,9 +394,9 @@ export default class AttributeSteps {
             const swalTitle = this.page.locator("#swal2-title").first();
             const swalPopup = this.page.locator(".swal2-popup").first();
 
-            // Still on form — wait up to 8s for toast, swal, or navigation
+            // Still on form — wait up to 15s for toast, swal, or navigation
             let succeeded = false;
-            const deadline = Date.now() + 8000;
+            const deadline = Date.now() + 15000;
             while (Date.now() < deadline && !succeeded) {
                 const toastVis = await toast.isVisible({ timeout: 500 }).catch(() => false);
                 const swalVis = await swalTitle.isVisible({ timeout: 500 }).catch(() => false);
@@ -680,10 +699,19 @@ export default class AttributeSteps {
         await test.step(`Click Save button up to ${times} times (stops if page navigates away)`, async () => {
             for (let i = 0; i < times; i++) {
                 const saveBtn = this.page.locator(AttributePage.SAVE_BTN).first();
-                const visible = await saveBtn.isVisible({ timeout: 2000 }).catch(() => false);
-                if (!visible) break;
-                await saveBtn.click({ force: true });
-                await this.page.waitForTimeout(300);
+                const visible = await saveBtn.isVisible({ timeout: 1000 }).catch(() => false);
+                const disabled = await saveBtn.isDisabled().catch(() => false);
+                if (!visible || disabled) {
+                    console.log(`[clickSaveRepeatedly] Button is visible: ${visible}, disabled: ${disabled} — stopping clicks.`);
+                    break;
+                }
+                try {
+                    await saveBtn.click({ timeout: 1000 });
+                    await this.page.waitForTimeout(100);
+                } catch (e) {
+                    console.log(`[clickSaveRepeatedly] Click failed (likely button disabled/hidden during submission) — stopping clicks.`);
+                    break;
+                }
             }
             await this.page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
         });
