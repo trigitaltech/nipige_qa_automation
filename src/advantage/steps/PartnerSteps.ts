@@ -8,6 +8,18 @@ export default class PartnerSteps {
 
     constructor(page: Page) {
         this.page = page;
+        // Log API responses to debug the 0 results bug
+        this.page.on('response', async (response) => {
+            if (response.url().includes('partner/list') || response.url().includes('partners?')) {
+                try {
+                    const json = await response.json();
+                    console.log(`API Response for ${response.url()}:`, Object.keys(json));
+                    if (json.response) console.log(`Data length:`, json.response.length);
+                } catch (e) {
+                    // Ignore non-JSON
+                }
+            }
+        });
     }
 
     private async waitForUploadToFinish() {
@@ -94,19 +106,6 @@ export default class PartnerSteps {
 
     /** Navigate to the Partner Listing Screen */
     public async navigateToPartners() {
-        // Log API responses to debug the 0 results bug
-        this.page.on('response', async (response) => {
-            if (response.url().includes('partner/list') || response.url().includes('partners?')) {
-                try {
-                    const json = await response.json();
-                    console.log(`API Response for ${response.url()}:`, Object.keys(json));
-                    if (json.response) console.log(`Data length:`, json.response.length);
-                } catch (e) {
-                    // Ignore non-JSON
-                }
-            }
-        });
-
         // Always use client-side navigation (sidebar click) to avoid React hydration/state race conditions
         // that cause the persistent "0 results" bug on full page reloads to '/partner'.
         // Robust navigation: handle React hydration dead-clicks and permission-load redirects

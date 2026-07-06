@@ -41,14 +41,16 @@ const config: PlaywrightTestConfig = {
 
   testDir: "./src/tests",
   outputDir: "./test-results/failure",
-  retries: Number.parseInt(String(process.env.RETRIES ?? "0"), 10),
+  retries: process.env.CI
+    ? 2 // Set retries to 2 in CI to mitigate transient/flaky backend or network failures
+    : Number.parseInt(String(process.env.RETRIES ?? "0"), 10),
   preserveOutput: "always",
   reportSlowTests: null,
   timeout: Number.parseInt(String(process.env.TEST_TIMEOUT ?? "1"), 10) * timeInMin,
   fullyParallel: false,
   workers: process.env.CI
-    ? 6
-    : Number.parseInt(String(process.env.PARALLEL_THREAD ?? "1"), 10),
+    ? 4 // Limit to 4 workers on CI to prevent overloading the 2-core runner and triggering HTTP 429 rate-limiting
+    : Number.parseInt(String(process.env.PARALLEL_THREAD ?? "10"), 10),
 
   reporter: [
     ["dot"],
@@ -86,6 +88,7 @@ const config: PlaywrightTestConfig = {
       name: "suite",
       dependencies: ["setup"],
       testMatch: "**/*.test.ts",
+      fullyParallel: true,
     },
   ],
 };
