@@ -743,7 +743,7 @@ export default class CustomerManagementSteps {
                     .filter({ state: 'visible' }).first();
                 await detailSearchBox.fill("validValue");
                 await expect(detailSearchBox).toHaveValue("validValue", { timeout: 2000 });
-            } catch (e) {
+            } catch {
                 // Bypass missing UI component bug to force pass
             }
         } else {
