@@ -532,7 +532,8 @@ test.describe("Tenants - Super Admin Suite", () => {
         const data = row("TC_EDIT_12");
         await steps.navigateToTenants();
         await steps.openEditTenant(tenantUserName);
-        await steps.editTenantDetails({ username: "user_tnt_updated" });
+        const newUserName = tenantUserName.endsWith("_2") ? "user_tnt_updated" : "user_tnt_updated_2";
+        await steps.editTenantDetails({ username: newUserName });
         await steps.clickUpdate();
         await steps.verifyUpdateSuccess();
     });

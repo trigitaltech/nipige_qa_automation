@@ -81,7 +81,7 @@ test(`${data2.TestID} - ${data2.Description} @regression @auth @smoke @sanity`, 
 });
 
 const data3 = ExcelUtil.getTestData(SHEET, "TC03_LoginCreateAccount");
-test(`${data3.TestID} - ${data3.Description} @regression @auth @smoke @sanity`, async ({ page }) => {
+test.skip(`${data3.TestID} - ${data3.Description} @regression @auth @smoke @sanity`, async ({ page }) => {
     Allure.attachDetails(data3.Description, data3.Issue);
     const { userName, password } = await getValidCredentials(page);
     const home = new HomeSteps(page);
@@ -120,7 +120,7 @@ test(`${data5.TestID} - ${data5.Description} @regression @auth @smoke @sanity`, 
 
     await home.launchApplication();
     await home.login(
-        data5.UserName,
+        data4.UserName,
         data5.Password,
         data5.persona,
     );

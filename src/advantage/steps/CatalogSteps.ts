@@ -81,6 +81,10 @@ export default class CatalogSteps {
                             await this.page.waitForTimeout(500);
                         }
                         hasNode = await nodeEl.isVisible({ timeout: 1_000 }).catch(() => false);
+                        if (await parentArrow.isVisible({ timeout: 1_000 }).catch(() => false)) {
+                            await parentArrow.click();
+                            await this.page.waitForTimeout(500);
+                        }
                     }
                 }
             }

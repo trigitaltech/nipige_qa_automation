@@ -4,6 +4,8 @@ import ReturnCancellationPolicyPage from "@pages/ReturnCancellationPolicyPage";
 import ReturnCancellationPolicyConstants from "@uiConstants/ReturnCancellationPolicyConstants";
 
 export default class ReturnCancellationPolicySteps {
+    private existingMarkets = new Set<string>();
+
     constructor(private readonly page: Page) {}
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -586,7 +588,12 @@ export default class ReturnCancellationPolicySteps {
     }
 
     public async clickAddMarket() {
-        await test.step("Click + Add Market button", async () => {
+        await test.step("Click Add Market button", async () => {
+            const names = await this.page.locator("table tbody tr td:first-child").evaluateAll((tds) => {
+                return tds.map((td) => (td.textContent || "").trim()).filter(Boolean);
+            }).catch(() => []);
+            this.existingMarkets = new Set(names.map((n) => n.toLowerCase()));
+
             await this.page.locator(ReturnCancellationPolicyPage.MARKET_ADD_BTN).first().click();
             await this.page.waitForTimeout(600);
             console.log("[Policy] Add Market clicked");
@@ -707,16 +714,30 @@ export default class ReturnCancellationPolicySteps {
             await this.page.waitForTimeout(600);
 
             // Options appear as [role="option"] elements after the dropdown opens
-            const firstOpt = this.page.locator('[role="option"]').first();
-            if (!await firstOpt.isVisible({ timeout: 4000 }).catch(() => false)) {
+            const options = await this.page.locator('[role="option"]').all();
+            if (options.length === 0) {
                 console.log("[Policy] No options appeared after clicking 'Open options' — skipping");
                 await this.page.keyboard.press("Escape").catch(() => {});
                 return;
             }
 
-            selectedName = (await firstOpt.innerText().catch(() => "")).trim();
-            console.log(`[Policy] Market Name option: "${selectedName}" — clicking`);
-            await firstOpt.click();
+            let clicked = false;
+            for (const option of options) {
+                const optText = (await option.innerText().catch(() => "")).trim();
+                if (!this.existingMarkets.has(optText.toLowerCase())) {
+                    selectedName = optText;
+                    console.log(`[Policy] Market Name option: "${selectedName}" — clicking`);
+                    await option.click();
+                    clicked = true;
+                    break;
+                }
+            }
+
+            if (!clicked) {
+                selectedName = (await options[0].innerText().catch(() => "")).trim();
+                console.log(`[Policy] All options exist, falling back to first: "${selectedName}" — clicking`);
+                await options[0].click();
+            }
             await this.page.waitForTimeout(400);
 
             // Verify via inputValue (innerText is always "" on <input> elements)

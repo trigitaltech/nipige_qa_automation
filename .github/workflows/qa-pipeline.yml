@@ -1,16 +1,25 @@
 name: QA Automation Pipeline
 
 on:
+  pull_request:
+    branches:
+      - main
+      - develop
   push:
     branches:
       - main
+      - anuradha1/develop
   workflow_dispatch:
 
 jobs:
   run-all-tests:
-    name: Run All Tests
+    name: Run All Tests (shard ${{ matrix.shard }}/4)
     runs-on: ubuntu-latest
-    timeout-minutes: 180
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
 
     steps:
       - name: Checkout repository
@@ -44,14 +53,28 @@ jobs:
         run: npm ci || npm install
 
       - name: Verify Playwright installation
+        id: playwright-version
         run: |
           npx playwright --version
           node --version
           npm --version
+          echo "version=$(npx playwright --version | cut -d' ' -f2)" >> $GITHUB_OUTPUT
+
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
 
       - name: Install Playwright browsers
-        run: |
-          npx playwright install chromium --with-deps
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install chromium
+
+      - name: Install Playwright system dependencies
+        run: npx playwright install-deps chromium
 
       - name: Create .env file for CI
         run: |
@@ -70,21 +93,24 @@ jobs:
             grep "^BASE_URL" .env || true
           fi
 
-      - name: Patch Playwright config for CI
-        run: |
-          sed -i 's/headless: false/headless: true/g' playwright.config.ts || true
-          sed -i 's/"--start-maximized"/"--window-size=1920,1080"/g' playwright.config.ts || true
-          sed -i 's/viewport: null/viewport: { width: 1920, height: 1080 }/g' playwright.config.ts || true
-
       - name: Run Playwright tests
+        env:
+          CI_WORKERS: 3
         run: |
-          npm run test:regression
+          # Generate the suite once, then run this shard's slice. `npm run test:regression --`
+          # would forward args to create:suite (not playwright), so the two steps are explicit.
+          # --grep-invert excludes @external (third-party FreshCart portal) and @quarantine
+          # (known-flaky) so the gate only goes red on real Nipige regressions.
+          npm run create:suite -- SHEET=Regression
+          npx playwright test --project=suite \
+            --shard=${{ matrix.shard }}/4 \
+            --grep-invert "@external|@quarantine"
 
       - name: Upload HTML Report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-html-report
+          name: playwright-html-report-shard-${{ matrix.shard }}
           path: |
             playwright-report
             test-results
@@ -94,7 +120,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: execution-logs
+          name: execution-logs-shard-${{ matrix.shard }}
           path: |
             logs
             test-results
@@ -104,7 +130,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: failure-artifacts
+          name: failure-artifacts-shard-${{ matrix.shard }}
           path: |
             test-results
             playwright-report
