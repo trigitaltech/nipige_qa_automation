@@ -740,7 +740,7 @@ export default class CustomerManagementSteps {
             // Verify search box in details page accepts valid values
             try {
                 const detailSearchBox = this.page.locator(CustomerManagementPage.SEARCH_INPUT)
-                    .filter({ state: 'visible' }).first();
+                    .locator('visible=true').first();
                 await detailSearchBox.fill("validValue");
                 await expect(detailSearchBox).toHaveValue("validValue", { timeout: 2000 });
             } catch {
