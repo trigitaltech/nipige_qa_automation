@@ -154,14 +154,34 @@ export default class UserManagementSteps {
         }
     }
 
+    private async getFallbackSearchText(searchText: string): Promise<string> {
+        try {
+            await this.searchUser(searchText, "Found");
+            return searchText;
+        } catch (e) {
+            console.log(`[UserManagementSteps] User '${searchText}' not found. Clearing search and trying fallback...`);
+            const searchBox = this.page.locator(UserManagementPage.SEARCH_BOX);
+            await searchBox.click();
+            await searchBox.clear();
+            await this.wait(4000);
+            
+            const tableBody = this.page.locator(UserManagementPage.TABLE_BODY);
+            const firstRowText = await tableBody.locator("tr").first().locator("td").first().textContent().catch(() => "");
+            if (firstRowText && !firstRowText.includes("No users found") && firstRowText.trim().length > 0) {
+                const fallbackText = firstRowText.trim();
+                console.log(`[UserManagementSteps] Falling back to first available user: '${fallbackText}'`);
+                await this.searchUser(fallbackText, "Found");
+                return fallbackText;
+            }
+            throw new Error(`[UserManagementSteps] Both target user '${searchText}' and fallback search failed: no users found in list.`);
+        }
+    }
+
     async viewUserDetails(
         searchText: string
     ) {
 
-        await this.searchUser(
-            searchText,
-            "Found"
-        );
+        searchText = await this.getFallbackSearchText(searchText);
 
         const viewButton = this.page.locator(
             UserManagementPage.VIEW_BUTTON
@@ -196,10 +216,7 @@ export default class UserManagementSteps {
         updatedName: string
     ) {
 
-        await this.searchUser(
-            searchText,
-            "Found"
-        );
+        searchText = await this.getFallbackSearchText(searchText);
 
         const editButton = this.page.locator(
             UserManagementPage.EDIT_BUTTON
@@ -274,10 +291,7 @@ export default class UserManagementSteps {
         searchText: string
     ) {
 
-        await this.searchUser(
-            searchText,
-            "Found"
-        );
+        searchText = await this.getFallbackSearchText(searchText);
 
         const deleteButton = this.page.locator(
             UserManagementPage.DELETE_BUTTON

@@ -195,7 +195,7 @@ export default class NotificationApprovalSteps {
         await test.step("Verify status badges (Pending/Approved/Rejected) render correctly", async () => {
             const rows = this.page.locator(NotificationApprovalPage.TABLE_ROW);
             const count = await rows.count();
-            if (count === 0) {
+            if (count === 0 || (count === 1 && await this.page.getByText(NotificationApprovalPage.EMPTY_STATE_TEXT).first().isVisible().catch(() => false))) {
                 test.info().annotations.push({
                     type: "info",
                     description: "No rows in listing — status badge check skipped (empty state is valid).",
@@ -214,7 +214,10 @@ export default class NotificationApprovalSteps {
     public async verifyRecordCountMatchesGrid() {
         await test.step("Verify displayed record count matches the actual rows in the grid", async () => {
             const rows = this.page.locator(NotificationApprovalPage.TABLE_ROW);
-            const gridCount = await rows.count();
+            let gridCount = await rows.count();
+            if (gridCount === 1 && await this.page.getByText(NotificationApprovalPage.EMPTY_STATE_TEXT).first().isVisible().catch(() => false)) {
+                gridCount = 0;
+            }
             // The count label text ("Showing N of M requests") is optional — if absent, just
             // verify the table rendered without error.
             const countLabel = this.page.getByText(NotificationApprovalPage.RECORD_COUNT_TEXT).first();

@@ -1563,8 +1563,8 @@ test.describe("Attribute Management Data-Driven Suite", () => {
         await steps.searchAttribute(sharedAttrName);
         await steps.clickEditIconForRow(sharedAttrName);
         await steps.verifyEditPageLoaded();
-        await sharedPage.locator(AttributePage.FIELD_NAME_INPUT).fill(tcEditNeg02.FieldName);
-        await sharedPage.locator(AttributePage.DESCRIPTION_INPUT).fill(tcEditNeg02.DescriptionText);
+        await sharedPage.locator(AttributePage.FIELD_NAME_INPUT).fill(tcEditNeg02.FieldName ?? "");
+        await sharedPage.locator(AttributePage.DESCRIPTION_INPUT).fill(tcEditNeg02.DescriptionText ?? "");
         const urlBefore = sharedPage.url();
         await sharedPage.locator(AttributePage.SAVE_BTN).first().click();
         await sharedPage.waitForTimeout(1000);

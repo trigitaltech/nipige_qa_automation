@@ -29,11 +29,18 @@ export default class ZoneManagementSteps {
                 return;
             }
 
-            // Zone Management is a direct sidebar link (no parent menu to expand)
             const zoneManagementLink = this.page.locator(
                 'a[href*="zoneManagement"], a:has-text("Zone Management")'
             ).first();
-            await zoneManagementLink.waitFor({ state: "visible", timeout: 10_000 });
+            const alreadyExpanded = await zoneManagementLink.isVisible({ timeout: 800 }).catch(() => false);
+
+            if (!alreadyExpanded) {
+                const setupBtn = this.page.locator('nav button:has-text("Setup")').first();
+                await setupBtn.scrollIntoViewIfNeeded({ timeout: 10000 });
+                await setupBtn.click();
+                await zoneManagementLink.waitFor({ state: "visible", timeout: 5000 });
+            }
+
             await zoneManagementLink.click();
             await this.page.waitForURL("**/zoneManagement**", { timeout: 15_000 });
             await this.page.waitForLoadState("domcontentloaded");

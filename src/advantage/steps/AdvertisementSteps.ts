@@ -1597,8 +1597,8 @@ export default class AdvertisementSteps {
 
     public getBannerJpgPath(): string {
         return this.resolveUploadAsset(
-            path.resolve("test-data/uploads/images/banner.jpg"),
-            "D:\\Automation\\TestData\\banner.jpg",
+            path.resolve("test-data/uploads/images/icon.jpg"),
+            "D:\\Automation\\TestData\\icon.jpg",
         );
     }
 
