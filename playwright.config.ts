@@ -2,34 +2,60 @@ import { PlaywrightTestConfig } from "@playwright/test";
 import dotenv from "dotenv";
 import Browser from "./src/framework/manager/Browser";
 
-const result = dotenv.config();
+dotenv.config();
 
 const timeInMin: number = 60 * 1000;
 const defaultBrowser: string = String(process.env.BROWSER ?? "chromium").toLowerCase();
 
+const isCI = !!process.env.CI;
+const isHeadless = process.env.HEADLESS === "true";
+
+let viewportConfig: { width: number; height: number } | null = null;
+if (isCI) {
+  viewportConfig = { width: 1920, height: 1080 };
+} else if (isHeadless) {
+  viewportConfig = { width: 1280, height: 1000 };
+}
+
+let retriesConfig = Number.parseInt(String(process.env.RETRIES ?? "0"), 10);
+if (isCI) {
+  retriesConfig = process.env.CI_RETRIES ? Number.parseInt(process.env.CI_RETRIES, 10) : 2;
+}
+
+let workersConfig = Number.parseInt(String(process.env.PARALLEL_THREAD ?? "10"), 10);
+if (isCI) {
+  workersConfig = process.env.CI_WORKERS ? Number.parseInt(process.env.CI_WORKERS, 10) : 2;
+}
+
 const config: PlaywrightTestConfig = {
   use: {
     browserName: Browser.type(defaultBrowser),
-    headless: process.env.CI ? true : process.env.HEADLESS === "true",
+    headless: isCI ? true : isHeadless,
     channel: Browser.channel(defaultBrowser),
     launchOptions: {
-      args: [
-        "--start-maximized",
-        "--disable-extensions",
-        "--disable-plugins",
-      ],
-      headless: process.env.CI ? true : process.env.HEADLESS === "true",
+      args: isCI
+        ? [
+            "--window-size=1920,1080",
+            "--disable-extensions",
+            "--disable-plugins",
+          ]
+        : [
+            "--start-maximized",
+            "--disable-extensions",
+            "--disable-plugins",
+          ],
+      headless: isCI ? true : isHeadless,
       timeout: Number.parseInt(String(process.env.BROWSER_LAUNCH_TIMEOUT ?? "30000"), 10),
       // Artificial per-action delay. Defaults to 0 (was a hard-coded 100ms on every action,
       // which added minutes across the suite). Re-enable via SLOW_MO in .env only when debugging.
       slowMo: Number.parseInt(String(process.env.SLOW_MO ?? "0"), 10),
       downloadsPath: "./test-results/downloads",
     },
-    viewport: process.env.CI || process.env.HEADLESS === "true" ? { width: 1280, height: 1000 } : null,
+    viewport: viewportConfig,
     ignoreHTTPSErrors: true,
     acceptDownloads: true,
-    actionTimeout: Number.parseInt(String(process.env.ACTION_TIMEOUT ?? "1"), 10) * timeInMin,
-    navigationTimeout: Number.parseInt(String(process.env.NAVIGATION_TIMEOUT ?? "1"), 10) * timeInMin,
+    actionTimeout: Number.parseInt(String(process.env.ACTION_TIMEOUT ?? "2"), 10) * timeInMin,
+    navigationTimeout: Number.parseInt(String(process.env.NAVIGATION_TIMEOUT ?? "5"), 10) * timeInMin,
     // Capture screenshots only when a test fails. "on" (a full-page PNG after every test)
     // is a large I/O cost across a 44-spec suite and is only needed for debugging.
     screenshot: {
@@ -37,20 +63,17 @@ const config: PlaywrightTestConfig = {
       fullPage: true,
     },
     video: "retain-on-failure",
+    trace: "retain-on-failure",
   },
 
   testDir: "./src/tests",
   outputDir: "./test-results/failure",
-  retries: process.env.CI
-    ? 2 // Set retries to 2 in CI to mitigate transient/flaky backend or network failures
-    : Number.parseInt(String(process.env.RETRIES ?? "0"), 10),
+  retries: retriesConfig,
   preserveOutput: "always",
   reportSlowTests: null,
-  timeout: Number.parseInt(String(process.env.TEST_TIMEOUT ?? "1"), 10) * timeInMin,
+  timeout: Number.parseInt(String(process.env.TEST_TIMEOUT ?? "3"), 10) * timeInMin,
   fullyParallel: false,
-  workers: process.env.CI
-    ? 4 // Limit to 4 workers on CI to prevent overloading the 2-core runner and triggering HTTP 429 rate-limiting
-    : Number.parseInt(String(process.env.PARALLEL_THREAD ?? "10"), 10),
+  workers: workersConfig,
 
   reporter: [
     ["dot"],

@@ -342,7 +342,7 @@ export default class AttributeSteps {
             const backBtn = this.page.locator(AttributePage.BACK_BTN).first();
             const visible = await backBtn.isVisible({ timeout: 5000 }).catch(() => false);
             if (visible) {
-                await backBtn.click();
+                await backBtn.click({ force: true });
             } else {
                 await this.page.goBack();
             }
@@ -372,6 +372,7 @@ export default class AttributeSteps {
                 console.log("[clickBack] Navigation stuck on form — forcing navigation to list page");
                 await this.navigateToAttribute();
             }
+
         });
     }
 

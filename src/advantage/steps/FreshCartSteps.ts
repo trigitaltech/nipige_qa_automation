@@ -23,6 +23,12 @@ export default class FreshCartSteps {
             const email = process.env.FRESHCART_EMAIL || freshCartRow.UserName;
             const password = process.env.FRESHCART_PASSWORD || freshCartRow.Password;
             await this.ui.goto(url, FreshCartConstants.LOGIN_PAGE);
+
+            const loginLink = this.page.locator('a[href*="login"], a:has-text("Login"), button:has-text("Login")').first();
+            if (await loginLink.isVisible({ timeout: 2000 }).catch(() => false)) {
+                await loginLink.click();
+            }
+
             await this.ui.editBox(FreshCartPage.USERNAME_INPUT,
                 FreshCartConstants.USERNAME_INPUT).fill(email);
             await this.ui.editBox(FreshCartPage.PASSWORD_INPUT,

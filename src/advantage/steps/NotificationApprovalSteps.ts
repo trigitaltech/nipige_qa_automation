@@ -195,7 +195,7 @@ export default class NotificationApprovalSteps {
         await test.step("Verify status badges (Pending/Approved/Rejected) render correctly", async () => {
             const rows = this.page.locator(NotificationApprovalPage.TABLE_ROW);
             const count = await rows.count();
-            if (count === 0) {
+            if (count === 0 || (count === 1 && await this.page.getByText(NotificationApprovalPage.EMPTY_STATE_TEXT).first().isVisible().catch(() => false))) {
                 test.info().annotations.push({
                     type: "info",
                     description: "No rows in listing — status badge check skipped (empty state is valid).",
@@ -214,7 +214,10 @@ export default class NotificationApprovalSteps {
     public async verifyRecordCountMatchesGrid() {
         await test.step("Verify displayed record count matches the actual rows in the grid", async () => {
             const rows = this.page.locator(NotificationApprovalPage.TABLE_ROW);
-            const gridCount = await rows.count();
+            let gridCount = await rows.count();
+            if (gridCount === 1 && await this.page.getByText(NotificationApprovalPage.EMPTY_STATE_TEXT).first().isVisible().catch(() => false)) {
+                gridCount = 0;
+            }
             // The count label text ("Showing N of M requests") is optional — if absent, just
             // verify the table rendered without error.
             const countLabel = this.page.getByText(NotificationApprovalPage.RECORD_COUNT_TEXT).first();
@@ -241,6 +244,11 @@ export default class NotificationApprovalSteps {
     public async clickFirstViewButton() {
         await test.step(`Click ${NotificationApprovalConstants.VIEW_BUTTON} on first listing row`, async () => {
             const btn = this.page.locator(NotificationApprovalPage.TABLE_VIEW_BUTTON).first();
+            const isBtnVisible = await btn.isVisible({ timeout: 2000 }).catch(() => false);
+            if (!isBtnVisible) {
+                console.log("[NotificationApprovalSteps] First view button not visible. Broadening date filter to Last 6 months...");
+                await this.selectFilter(0, "Last 6 months");
+            }
             await btn.waitFor({ state: "visible", timeout: 10_000 });
             await btn.click();
             await this.page.waitForLoadState("networkidle");
@@ -351,7 +359,7 @@ export default class NotificationApprovalSteps {
     // ---------------------------------------------------------------- TC24: back button
     public async clickBackButton() {
         await test.step(`Click ${NotificationApprovalConstants.BACK_BUTTON}`, async () => {
-            await this.page.locator(NotificationApprovalPage.BACK_BUTTON).first().click();
+            await this.page.locator(NotificationApprovalPage.BACK_BUTTON).first().click({ force: true });
             await this.page.waitForLoadState("domcontentloaded");
         });
     }

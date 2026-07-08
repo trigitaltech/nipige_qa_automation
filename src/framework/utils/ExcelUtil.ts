@@ -41,6 +41,28 @@ export default class ExcelUtil {
         return testList;
     }
 
+    private static formatDateValue(key: string, val: any): any {
+        if (val === null || val === undefined) return val;
+        if (typeof key === "string" && /date|dob|birthday|expiry|validity|schedule/i.test(key)) {
+            if (val instanceof Date) {
+                const yyyy = val.getFullYear();
+                const mm = String(val.getMonth() + 1).padStart(2, "0");
+                const dd = String(val.getDate()).padStart(2, "0");
+                return `${yyyy}-${mm}-${dd}`;
+            }
+            const num = Number(val);
+            if (!isNaN(num) && num >= 1 && num <= 60000) {
+                const excelEpoch = new Date(1899, 11, 30);
+                const date = new Date(excelEpoch.getTime() + num * 24 * 60 * 60 * 1000);
+                const yyyy = date.getFullYear();
+                const mm = String(date.getMonth() + 1).padStart(2, "0");
+                const dd = String(date.getDate()).padStart(2, "0");
+                return `${yyyy}-${mm}-${dd}`;
+            }
+        }
+        return val;
+    }
+
     public static getTestData(sheet: string, testID: string) {
         const testData = this.getTestDataArray(sheet);
         let found = false;
@@ -54,6 +76,11 @@ export default class ExcelUtil {
         if (!found) {
             throw new Error(`Test '${testID}' was not found on '${sheet}' sheet`);
         }
-        return data;
+
+        const formattedData: any = {};
+        for (const key in data) {
+            formattedData[key] = this.formatDateValue(key, data[key]);
+        }
+        return formattedData;
     }
 }

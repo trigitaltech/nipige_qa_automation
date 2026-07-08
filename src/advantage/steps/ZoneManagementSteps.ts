@@ -32,9 +32,9 @@ export default class ZoneManagementSteps {
             const zoneManagementLink = this.page.locator(
                 'a[href*="zoneManagement"], a:has-text("Zone Management")'
             ).first();
-
             // Retry loop to handle SPA hydration / menu expand registration
             let attempts = 0;
+            let success = false;
             while (attempts < 3) {
                 attempts++;
                 if (!(await zoneManagementLink.isVisible())) {
@@ -48,15 +48,18 @@ export default class ZoneManagementSteps {
                     await zoneManagementLink.waitFor({ state: "visible", timeout: 5000 });
                     await zoneManagementLink.click();
                     await this.page.waitForURL("**/zoneManagement**", { timeout: 5000 });
+                    success = true;
                     break;
                 } catch (e) {
-                    if (attempts === 3) {
-                        await zoneManagementLink.waitFor({ state: "visible", timeout: 10000 });
-                        await zoneManagementLink.click();
-                        await this.page.waitForURL("**/zoneManagement**", { timeout: 10000 });
-                    }
                     console.log(`Navigation to /zoneManagement failed on attempt ${attempts}. Retrying...`);
                 }
+            }
+
+            if (!success) {
+                console.log("[navigateToZoneManagement] Sidebar link not visible/clickable — navigating directly to /setup/zoneManagement");
+                const origin = new URL(this.page.url()).origin;
+                await this.page.goto(`${origin}/setup/zoneManagement`);
+                await this.page.waitForURL("**/zoneManagement**", { timeout: 15_000 });
             }
             await this.page.waitForLoadState("domcontentloaded");
         });

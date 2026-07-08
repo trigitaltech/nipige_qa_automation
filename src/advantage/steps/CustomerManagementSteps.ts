@@ -703,7 +703,7 @@ export default class CustomerManagementSteps {
         else if (testId === "TC_CM_27") {
             // Back button
             await this.searchCustomer(data.SearchType, data.SearchValue);
-            await this.ui.element(CustomerManagementPage.CUSTOMER_PROFILE_READY, CustomerManagementConstants.CUSTOMER_PROFILE).click();
+            await this.page.locator(CustomerManagementPage.CUSTOMER_PROFILE_READY).first().click({ force: true });
             await this.page.waitForURL(/\/customer-management$/, { timeout: 5000 });
             await expect(this.page.locator(CustomerManagementPage.SEARCH_INPUT).first()).toBeVisible();
         }

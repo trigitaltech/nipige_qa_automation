@@ -146,8 +146,13 @@ export default class TenantsSuperAdminSteps {
             await combobox.click({ force: true });
             await this.page.waitForTimeout(500);
 
-            const optionSelector = `[role="option"] button:has-text("Search by ${field}")`;
+            const optionSelector = `[role="option"] button:has-text("Search by ${field}"), [role="option"]:has-text("Search by ${field}"), button:has-text("Search by ${field}")`;
             const option = this.page.locator(optionSelector).first();
+            if (!await option.isVisible().catch(() => false)) {
+                console.log("[searchTenantByField] Option not visible, clicking combobox again");
+                await combobox.click({ force: true });
+                await this.page.waitForTimeout(500);
+            }
             await option.waitFor({ state: "visible", timeout: this.timeout });
             await option.click();
             await this.page.waitForTimeout(500);

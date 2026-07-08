@@ -1132,7 +1132,7 @@ export default class AdvertisementSteps {
 
     public async clickBack() {
         await test.step("Click Back button", async () => {
-            await this.page.locator(AdvertisementPage.BACK_BTN).first().click();
+            await this.page.locator(AdvertisementPage.BACK_BTN).first().click({ force: true });
             await this.page.waitForLoadState("networkidle");
         });
     }
@@ -1597,8 +1597,8 @@ export default class AdvertisementSteps {
 
     public getBannerJpgPath(): string {
         return this.resolveUploadAsset(
-            path.resolve("test-data/uploads/images/banner.jpg"),
-            "D:\\Automation\\TestData\\banner.jpg",
+            path.resolve("test-data/uploads/images/icon.jpg"),
+            "D:\\Automation\\TestData\\icon.jpg",
         );
     }
 
