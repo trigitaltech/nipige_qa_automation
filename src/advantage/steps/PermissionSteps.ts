@@ -70,7 +70,7 @@ export default class PermissionSteps {
             else if (id === "TC_PERM_03") {
                 await this.ui.element(PermissionPage.CREATE_BUTTON, "Create Button").click();
                 await this.page.waitForTimeout(1000);
-                await expect(this.page.getByRole("dialog", { name: PermissionPage.CREATE_DIALOG_NAME }).last()).toBeVisible({ timeout: this.timeout });
+                await expect(this.page.getByRole("dialog").filter({ hasText: /Create Permission/i }).last()).toBeVisible({ timeout: this.timeout });
             }
             else if (id === "TC_PERM_04") {
                 const lockIcon = this.page.locator(PermissionPage.ROWS).first().locator("button svg.lucide-lock, button svg.lucide-key, button[aria-label*=\"Assign\"], button[aria-label*=\"Lock\"]").first();
@@ -137,7 +137,7 @@ export default class PermissionSteps {
                 // To avoid breaking existing permissions, create a dummy one first
                 await this.ui.element(PermissionPage.CREATE_BUTTON, "Create").click();
                 await this.page.waitForTimeout(1000);
-                const dialog = this.page.getByRole("dialog", { name: PermissionPage.CREATE_DIALOG_NAME }).last();
+                const dialog = this.page.getByRole("dialog").filter({ hasText: /Create Permission/i }).last();
                 const stamp = Date.now();
                 const dummyName = "DEL_" + stamp;
                 await dialog.locator(PermissionPage.NAME_INPUT).fill(dummyName);
@@ -171,7 +171,7 @@ export default class PermissionSteps {
             else if (id === "TC_PERM_19" || id === "TC_PERM_20" || id === "TC_PERM_21" || id === "TC_PERM_23") {
                 await this.ui.element(PermissionPage.CREATE_BUTTON, "Create").click();
                 await this.page.waitForTimeout(1000);
-                const dialog = this.page.getByRole("dialog", { name: PermissionPage.CREATE_DIALOG_NAME }).last();
+                const dialog = this.page.getByRole("dialog").filter({ hasText: /Create Permission/i }).last();
                 const stamp = Date.now();
                 const dummyName = "NEW_" + stamp;
                 await dialog.locator(PermissionPage.NAME_INPUT).fill(dummyName);
@@ -186,7 +186,7 @@ export default class PermissionSteps {
             else if (id === "TC_PERM_22") {
                 await this.ui.element(PermissionPage.CREATE_BUTTON, "Create").click();
                 await this.page.waitForTimeout(1000);
-                const dialog = this.page.getByRole("dialog", { name: PermissionPage.CREATE_DIALOG_NAME }).last();
+                const dialog = this.page.getByRole("dialog").filter({ hasText: /Create Permission/i }).last();
                 await dialog.getByRole("button", { name: "Cancel" }).first().click();
                 await expect(dialog).toBeHidden({ timeout: this.timeout });
             }
@@ -242,21 +242,21 @@ export default class PermissionSteps {
                 }
                 else if (id === "TC_PERM_NEG_19") {
                     await this.ui.element(PermissionPage.CREATE_BUTTON, "Create").click();
-                    const dialog = this.page.getByRole("dialog", { name: PermissionPage.CREATE_DIALOG_NAME });
+                    const dialog = this.page.getByRole("dialog").filter({ hasText: /Create Permission/i }).first();
                     await dialog.locator(PermissionPage.NAME_INPUT).fill("");
                     await dialog.getByRole("button", { name: PermissionPage.SAVE_BUTTON, exact: true }).click();
                     await this.page.waitForTimeout(1000);
                 }
                 else if (id === "TC_PERM_NEG_20") {
                     await this.ui.element(PermissionPage.CREATE_BUTTON, "Create").click();
-                    const dialog = this.page.getByRole("dialog", { name: PermissionPage.CREATE_DIALOG_NAME });
+                    const dialog = this.page.getByRole("dialog").filter({ hasText: /Create Permission/i }).first();
                     await dialog.locator(PermissionPage.NAME_INPUT).fill("TEST");
                     await dialog.getByRole("button", { name: PermissionPage.SAVE_BUTTON, exact: true }).click();
                     await this.page.waitForTimeout(1000);
                 }
                 else if (id === "TC_PERM_NEG_21") {
                     await this.ui.element(PermissionPage.CREATE_BUTTON, "Create").click();
-                    const dialog = this.page.getByRole("dialog", { name: PermissionPage.CREATE_DIALOG_NAME });
+                    const dialog = this.page.getByRole("dialog").filter({ hasText: /Create Permission/i }).first();
                     await dialog.locator(PermissionPage.NAME_INPUT).fill("TEST");
                     await dialog.locator(PermissionPage.METHOD_COMBOBOX).click();
                     await this.page.getByRole("option", { name: "POST" }).first().click();

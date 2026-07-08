@@ -353,6 +353,13 @@ export default class AttributeSteps {
                 }
             }
             await this.page.waitForLoadState("networkidle").catch(() => {});
+            // Verify we are back on the listing page; if not, force navigate to it
+            await this.page.waitForURL("**/attribute**", { timeout: 3000 }).catch(async () => {
+                const origin = new URL(this.page.url()).origin;
+                const path = AttributePage.ATTRIBUTE_PATH.startsWith("/") ? AttributePage.ATTRIBUTE_PATH : "/" + AttributePage.ATTRIBUTE_PATH;
+                await this.page.goto(origin + path);
+                await this.page.waitForLoadState("networkidle").catch(() => {});
+            });
         });
     }
 

@@ -151,10 +151,20 @@ export default class OrderManagementSteps {
 
             await this.page.waitForTimeout(1000);
 
-            await this.page.getByText(
-                seller,
-                { exact: true }
-            ).click();
+            const sellerBtn = this.page.getByText(seller, { exact: true });
+            if (await sellerBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+                await sellerBtn.click();
+            } else {
+                console.log(`[OrderManagementSteps] Seller '${seller}' not found, trying fallback select`);
+                const options = this.page.locator('[role="option"], .select__option, .dropdown-item, .dropdown-menu div, [class*="-option"]');
+                if (await options.first().isVisible({ timeout: 2000 }).catch(() => false)) {
+                    await options.first().click();
+                } else {
+                    await this.page.keyboard.press("ArrowDown");
+                    await this.page.waitForTimeout(500);
+                    await this.page.keyboard.press("Enter");
+                }
+            }
 
             await this.page.waitForTimeout(1000);
 

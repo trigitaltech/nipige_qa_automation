@@ -45,8 +45,8 @@ export default class ZoneManagementSteps {
             if (await zoneManagementLink.isVisible({ timeout: 2000 }).catch(() => false)) {
                 await zoneManagementLink.click();
             } else {
-                console.log("[navigateToZoneManagement] Sidebar link not visible — navigating directly to /setup/zoneManagement");
-                await this.page.goto('/setup/zoneManagement');
+                const origin = new URL(this.page.url()).origin;
+                await this.page.goto(`${origin}/setup/zoneManagement`);
             }
             await this.page.waitForURL("**/zoneManagement**", { timeout: 15_000 });
             await this.page.waitForLoadState("domcontentloaded");

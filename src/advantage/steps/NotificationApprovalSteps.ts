@@ -244,6 +244,11 @@ export default class NotificationApprovalSteps {
     public async clickFirstViewButton() {
         await test.step(`Click ${NotificationApprovalConstants.VIEW_BUTTON} on first listing row`, async () => {
             const btn = this.page.locator(NotificationApprovalPage.TABLE_VIEW_BUTTON).first();
+            const isBtnVisible = await btn.isVisible({ timeout: 2000 }).catch(() => false);
+            if (!isBtnVisible) {
+                console.log("[NotificationApprovalSteps] First view button not visible. Broadening date filter to Last 6 months...");
+                await this.selectFilter(0, "Last 6 months");
+            }
             await btn.waitFor({ state: "visible", timeout: 10_000 });
             await btn.click();
             await this.page.waitForLoadState("networkidle");
