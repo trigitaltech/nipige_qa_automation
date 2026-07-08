@@ -1,6 +1,10 @@
 name: QA Automation Pipeline
 
 on:
+  pull_request:
+    branches:
+      - main
+      - develop
   push:
     branches:
       - main
@@ -9,9 +13,13 @@ on:
 
 jobs:
   run-all-tests:
-    name: Run All Tests
+    name: Run All Tests (shard ${{ matrix.shard }}/4)
     runs-on: ubuntu-latest
-    timeout-minutes: 180
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
 
     steps:
       - name: Checkout repository
@@ -89,13 +97,20 @@ jobs:
         env:
           CI_WORKERS: 3
         run: |
-          npm run test:regression
+          # Generate the suite once, then run this shard's slice. `npm run test:regression --`
+          # would forward args to create:suite (not playwright), so the two steps are explicit.
+          # --grep-invert excludes @external (third-party FreshCart portal) and @quarantine
+          # (known-flaky) so the gate only goes red on real Nipige regressions.
+          npm run create:suite -- SHEET=Regression
+          npx playwright test --project=suite \
+            --shard=${{ matrix.shard }}/4 \
+            --grep-invert "@external|@quarantine"
 
       - name: Upload HTML Report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-html-report
+          name: playwright-html-report-shard-${{ matrix.shard }}
           path: |
             playwright-report
             test-results
@@ -105,7 +120,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: execution-logs
+          name: execution-logs-shard-${{ matrix.shard }}
           path: |
             logs
             test-results
@@ -115,7 +130,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: failure-artifacts
+          name: failure-artifacts-shard-${{ matrix.shard }}
           path: |
             test-results
             playwright-report

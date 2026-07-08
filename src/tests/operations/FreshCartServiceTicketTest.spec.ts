@@ -6,7 +6,12 @@ import Allure from "@allure";
 import { getCredential, Role } from "@config/Credentials";
 import FreshCartConstants from "@uiConstants/FreshCartConstants";
 
-test("FreshCart_TC01 - Create FreshCart Support Ticket and Close via Tenant Portal", async ({ page, gData }) => {
+// @external: logs in to the third-party FreshCart portal (freshcart-usa.nipige.com),
+// which CI has no credentials/reachability for. Excluded from the gating run via
+// --grep-invert "@external" so an outside dependency can't turn the pipeline red.
+test("FreshCart_TC01 - Create FreshCart Support Ticket and Close via Tenant Portal", {
+    tag: "@external",
+}, async ({ page, gData }) => {
     Allure.attachDetails(
         // eslint-disable-next-line max-len
         "Creates a support ticket on FreshCart, closes it via the Tenant portal, verifies CLOSED status on FreshCart, then logs out.",
@@ -77,7 +82,11 @@ test("FreshCart_TC01 - Create FreshCart Support Ticket and Close via Tenant Port
     await freshCart.verifyFreshCartLoginPage();
 });
 
-test("FreshCart_TC02 - Negative: Search Invalid Ticket ID in Tenant Portal", async ({ page, gData }) => {
+// @external: depends on the ticket ID captured by TC01 (same worker), so it inherits
+// the FreshCart external dependency. Tagged together so the pair is gated as a unit.
+test("FreshCart_TC02 - Negative: Search Invalid Ticket ID in Tenant Portal", {
+    tag: "@external",
+}, async ({ page, gData }) => {
     Allure.attachDetails(
         // eslint-disable-next-line max-len
         "Searches for a dynamically derived invalid ticket ID in the Tenant Service Tickets listing and verifies no data is found.",
