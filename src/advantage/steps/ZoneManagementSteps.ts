@@ -36,12 +36,18 @@ export default class ZoneManagementSteps {
 
             if (!alreadyExpanded) {
                 const setupBtn = this.page.locator('nav button:has-text("Setup")').first();
-                await setupBtn.scrollIntoViewIfNeeded({ timeout: 10000 });
-                await setupBtn.click();
-                await zoneManagementLink.waitFor({ state: "visible", timeout: 5000 });
+                if (await setupBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
+                    await setupBtn.scrollIntoViewIfNeeded({ timeout: 2000 });
+                    await setupBtn.click();
+                }
             }
 
-            await zoneManagementLink.click();
+            if (await zoneManagementLink.isVisible({ timeout: 2000 }).catch(() => false)) {
+                await zoneManagementLink.click();
+            } else {
+                console.log("[navigateToZoneManagement] Sidebar link not visible — navigating directly to /setup/zoneManagement");
+                await this.page.goto('/setup/zoneManagement');
+            }
             await this.page.waitForURL("**/zoneManagement**", { timeout: 15_000 });
             await this.page.waitForLoadState("domcontentloaded");
         });

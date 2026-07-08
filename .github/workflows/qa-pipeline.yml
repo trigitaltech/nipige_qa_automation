@@ -87,7 +87,7 @@ jobs:
 
       - name: Run Playwright tests
         env:
-          CI_WORKERS: 2
+          CI_WORKERS: 3
         run: |
           npm run test:regression
 

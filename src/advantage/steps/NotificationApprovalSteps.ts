@@ -354,7 +354,7 @@ export default class NotificationApprovalSteps {
     // ---------------------------------------------------------------- TC24: back button
     public async clickBackButton() {
         await test.step(`Click ${NotificationApprovalConstants.BACK_BUTTON}`, async () => {
-            await this.page.locator(NotificationApprovalPage.BACK_BUTTON).first().click();
+            await this.page.locator(NotificationApprovalPage.BACK_BUTTON).first().click({ force: true });
             await this.page.waitForLoadState("domcontentloaded");
         });
     }

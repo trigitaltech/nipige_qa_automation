@@ -71,7 +71,7 @@ const config: PlaywrightTestConfig = {
   retries: retriesConfig,
   preserveOutput: "always",
   reportSlowTests: null,
-  timeout: Number.parseInt(String(process.env.TEST_TIMEOUT ?? "20"), 10) * timeInMin,
+  timeout: Number.parseInt(String(process.env.TEST_TIMEOUT ?? "3"), 10) * timeInMin,
   fullyParallel: false,
   workers: workersConfig,
 
