@@ -168,45 +168,87 @@ export default class OfficeSteps {
             const addrInput = this.page.locator(OfficePage.ADDRESS_INPUT).first();
             await addrInput.click();
             await addrInput.fill(address);
-            await this.page.waitForTimeout(2000);
-            const suggestions = this.page.locator(OfficePage.ADDRESS_SUGGESTION);
-            const count = await suggestions.count().catch(() => 0);
-            if (count > 0) {
-                await suggestions.first().click({ force: true, timeout: 3000 }).catch(async () => {
-                    await suggestions.first().dispatchEvent("click").catch(() => {});
-                });
+            
+            // Wait for suggestions to become visible (Google Places autocomplete takes a moment to load/render)
+            const firstSuggestion = this.page.locator(OfficePage.ADDRESS_SUGGESTION).first();
+            const visible = await firstSuggestion.waitFor({ state: "visible", timeout: 4000 }).then(() => true).catch(() => false);
+            
+            if (visible) {
+                console.log("[OfficeSteps] Autocomplete suggestions appeared. Selecting first suggestion via ArrowDown + Enter...");
+                await this.page.keyboard.press("ArrowDown");
+                await this.page.waitForTimeout(300);
+                await this.page.keyboard.press("Enter");
                 await this.page.waitForTimeout(1500);
             } else {
+                console.log("[OfficeSteps] Autocomplete suggestions did not appear. Trying fallback ArrowDown + Enter...");
                 await this.page.keyboard.press("ArrowDown");
                 await this.page.keyboard.press("Enter");
                 await this.page.waitForTimeout(1500);
             }
 
-            // Ensure City, State, and Zipcode are filled (Google Places autocomplete might omit some fields)
+            // Dismiss any lingering autocomplete container dropdown (like .pac-container)
+            await addrInput.blur().catch(() => {});
+            await this.page.keyboard.press("Escape").catch(() => {});
+            await this.page.waitForTimeout(500);
+
+            // Ensure City, State, Zipcode, and Country are filled (Google Places autocomplete might omit some fields or fail to run in keyless mode)
             const cityInput = this.page.locator(OfficePage.CITY_INPUT).first();
-            if (await cityInput.isVisible().catch(() => false)) {
+            if (await cityInput.count() > 0) {
                 const val = await cityInput.inputValue().catch(() => "");
                 if (val.trim() === "") {
                     console.log("[OfficeSteps] City was empty, filling default: Bengaluru");
-                    await cityInput.fill("Bengaluru");
+                    await cityInput.fill("Bengaluru").catch(async () => {
+                        await cityInput.evaluate((el: HTMLInputElement) => { 
+                            el.value = "Bengaluru"; 
+                            el.dispatchEvent(new Event('input', { bubbles: true })); 
+                            el.dispatchEvent(new Event('change', { bubbles: true }));
+                        });
+                    });
                 }
             }
 
             const stateInput = this.page.locator(OfficePage.STATE_INPUT).first();
-            if (await stateInput.isVisible().catch(() => false)) {
+            if (await stateInput.count() > 0) {
                 const val = await stateInput.inputValue().catch(() => "");
                 if (val.trim() === "") {
                     console.log("[OfficeSteps] State was empty, filling default: Karnataka");
-                    await stateInput.fill("Karnataka");
+                    await stateInput.fill("Karnataka").catch(async () => {
+                        await stateInput.evaluate((el: HTMLInputElement) => { 
+                            el.value = "Karnataka"; 
+                            el.dispatchEvent(new Event('input', { bubbles: true })); 
+                            el.dispatchEvent(new Event('change', { bubbles: true }));
+                        });
+                    });
                 }
             }
 
             const zipInput = this.page.locator(OfficePage.ZIPCODE_INPUT).first();
-            if (await zipInput.isVisible().catch(() => false)) {
+            if (await zipInput.count() > 0) {
                 const val = await zipInput.inputValue().catch(() => "");
                 if (val.trim() === "") {
                     console.log("[OfficeSteps] Zipcode was empty, filling default: 560001");
-                    await zipInput.fill("560001");
+                    await zipInput.fill("560001").catch(async () => {
+                        await zipInput.evaluate((el: HTMLInputElement) => { 
+                            el.value = "560001"; 
+                            el.dispatchEvent(new Event('input', { bubbles: true })); 
+                            el.dispatchEvent(new Event('change', { bubbles: true }));
+                        });
+                    });
+                }
+            }
+
+            const countryInput = this.page.locator(OfficePage.COUNTRY_INPUT).first();
+            if (await countryInput.count() > 0) {
+                const val = await countryInput.inputValue().catch(() => "");
+                if (val.trim() === "") {
+                    console.log("[OfficeSteps] Country was empty, filling default: India");
+                    await countryInput.fill("India").catch(async () => {
+                        await countryInput.evaluate((el: HTMLInputElement) => { 
+                            el.value = "India"; 
+                            el.dispatchEvent(new Event('input', { bubbles: true })); 
+                            el.dispatchEvent(new Event('change', { bubbles: true }));
+                        });
+                    });
                 }
             }
         });
@@ -289,7 +331,29 @@ export default class OfficeSteps {
             if (isStep1 && this.isPositiveTest()) {
                 await this.sanitizeEmailsBeforeNext();
             }
-            await this.page.locator(OfficePage.NEXT_BTN).first().click();
+            
+            const nextBtn = this.page.locator(OfficePage.NEXT_BTN).first();
+            await nextBtn.waitFor({ state: "visible", timeout: 5000 }).catch(() => {});
+            
+            // Wait up to 10 seconds for the Next button to become enabled (in case validation is pending)
+            let isBtnDisabled = await nextBtn.isDisabled().catch(() => false);
+            if (isBtnDisabled) {
+                console.log("[OfficeSteps] Next button is disabled — waiting for form validation to complete");
+                for (let i = 0; i < 20; i++) {
+                    await this.page.waitForTimeout(500);
+                    isBtnDisabled = await nextBtn.isDisabled().catch(() => true);
+                    if (!isBtnDisabled) break;
+                }
+            }
+            
+            if (isBtnDisabled) {
+                const name = await this.page.locator(OfficePage.NAME_INPUT || 'input[name="name"]').first().inputValue().catch(() => "(error)");
+                const address = await this.page.locator(OfficePage.ADDRESS_INPUT).first().inputValue().catch(() => "(error)");
+                throw new Error(`Cannot click Next button because it is disabled. Form validation failed. `
+                    + `Diagnostic inputs: name="${name}", address="${address}"`);
+            }
+            
+            await nextBtn.click();
             await this.page.waitForTimeout(800);
         });
     }
