@@ -36,8 +36,8 @@ test.describe("Coupons & Promotions Module Automation", () => {
     const todayStr = new Date().toISOString().split("T")[0];
 
     function row(id: string) {
-        const found = COUPON_ROWS.find((r) => r.TC_ID === id);
-        if (!found) throw new Error(`TC_ID '${id}' not found on '${SHEET}' sheet`);
+        const found = COUPON_ROWS.find((r) => r.TestID === id);
+        if (!found) throw new Error(`TestID '${id}' not found on '${SHEET}' sheet`);
         return found;
     }
 

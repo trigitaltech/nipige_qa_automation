@@ -852,6 +852,22 @@ export default class ReturnCancellationPolicySteps {
         });
     }
 
+    public async deleteFirstMarketPolicyIfExists() {
+        await test.step("Delete the first Market Policy override if one exists", async () => {
+            const count = await this.getMarketRowCount();
+            if (count > 0) {
+                console.log(`[Policy] Found ${count} existing market policies. Deleting the first one to prevent option depletion.`);
+                await this.clickMarketRowDelete(0);
+                await this.confirmDeleteMarketPolicy();
+                await this.clickSave();
+                await this.verifySaveSuccessOrStays();
+                await this.page.waitForTimeout(1000);
+            } else {
+                console.log("[Policy] No existing market policies to delete.");
+            }
+        });
+    }
+
     public async getMarketRowCount(): Promise<number> {
         await this.settle(600);
         // Market list uses div cards. Count by "Edit" clickable elements —

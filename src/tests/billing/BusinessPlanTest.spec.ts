@@ -51,9 +51,12 @@ test.describe("Business Plan Module — Regression Suite", () => {
     const ROWS = ExcelUtil.getTestDataArray(SHEET);
 
     function row(id: string) {
-        const found = ROWS.find((r: any) => r["Test Case ID"] === id);
-        if (!found) throw new Error(`TC_ID '${id}' not found on sheet '${SHEET}'`);
-        return found;
+        const found = ROWS.find((r: any) => r.TestID === id);
+        if (!found) throw new Error(`TestID '${id}' not found on sheet '${SHEET}'`);
+        return {
+            "Test Scenario": found.Description,
+            ...found,
+        };
     }
 
     test.beforeAll(async ({ workerAdminPage }) => {

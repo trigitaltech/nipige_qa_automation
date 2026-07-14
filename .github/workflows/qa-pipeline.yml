@@ -1,14 +1,6 @@
 name: QA Automation Pipeline
 
 on:
-  pull_request:
-    branches:
-      - main
-      - develop
-  push:
-    branches:
-      - main
-      - anuradha1/develop
   workflow_dispatch:
 
 jobs:

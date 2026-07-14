@@ -835,6 +835,7 @@ test.describe("Return, Cancellation & Market Policies", () => {
     test("TC_RCP_046 - User can create a new Market Policy successfully", async () => {
         await policySteps.navigateToPolicyPage();
         await policySteps.clickTab("Market Policies");
+        await policySteps.deleteFirstMarketPolicyIfExists();
         const countBefore = await policySteps.getMarketRowCount();
         await policySteps.clickAddMarket();
         await policySteps.verifyMarketModalOpen();
@@ -925,6 +926,7 @@ test.describe("Return, Cancellation & Market Policies", () => {
     test("TC_RCP_049 - User can enable a Market Policy Override Cancellation and save successfully", async () => {
         await policySteps.navigateToPolicyPage();
         await policySteps.clickTab("Market Policies");
+        await policySteps.deleteFirstMarketPolicyIfExists();
         // Create a fresh market to enable override on
         await policySteps.clickAddMarket();
         await policySteps.verifyMarketModalOpen();

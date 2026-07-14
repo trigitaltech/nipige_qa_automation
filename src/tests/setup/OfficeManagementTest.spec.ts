@@ -87,8 +87,8 @@ const test = base.extend<{ tenantPage: Page }, { workerTenantPage: Page }>({
 const ROWS = ExcelUtil.getTestDataArray(SHEET);
 
 function row(id: string): Record<string, string> {
-    const found = ROWS.find((r: any) => r["Test Case ID"] === id);
-    if (!found) throw new Error(`TC '${id}' not found on sheet '${SHEET}'`);
+    const found = ROWS.find((r: any) => r.TestID === id);
+    if (!found) throw new Error(`TestID '${id}' not found on sheet '${SHEET}'`);
     return found as Record<string, string>;
 }
 
