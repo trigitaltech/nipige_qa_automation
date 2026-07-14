@@ -1,6 +1,6 @@
 import { Locator, Page, expect } from "@playwright/test";
-import PartnerPage from "../pages/PartnerPage";
 import Assert from "@asserts/Assert";
+import PartnerPage from "../pages/PartnerPage";
 
 export default class PartnerSteps {
     private page: Page;
@@ -49,11 +49,19 @@ export default class PartnerSteps {
             await searchInput.fill("");
             await searchInput.press("Enter");
             
-            await this.page.waitForResponse(r => r.url().includes('/partner/list') && r.request().method() !== 'OPTIONS', { timeout: 10000 }).catch(() => null);
-            await expect(this.page.locator('.animate-pulse').first()).toBeHidden({ timeout: 10000 }).catch(() => {});
-            await expect(clearButton).toBeHidden({ timeout: 5000 }).catch(() => {});
+            await this.page.waitForResponse((r) => r.url().includes('/partner/list') && r.request().method() !== 'OPTIONS', { timeout: 10000 }).catch(() => null);
+            try {
+                await expect(this.page.locator('.animate-pulse').first()).toBeHidden({ timeout: 10000 });
+            } catch (e) {
+                // ignore
+            }
+            try {
+                await expect(clearButton).toBeHidden({ timeout: 5000 });
+            } catch (e) {
+                // ignore
+            }
         } else if (currentText.trim() !== "") {
-            const res = this.page.waitForResponse(r => r.url().includes('/partner/list') && r.request().method() !== 'OPTIONS', { timeout: 10000 }).catch(() => null);
+            const res = this.page.waitForResponse((r) => r.url().includes('/partner/list') && r.request().method() !== 'OPTIONS', { timeout: 10000 }).catch(() => null);
             await searchInput.fill("");
             await searchInput.press("Enter");
             await res;
@@ -83,7 +91,11 @@ export default class PartnerSteps {
         if (await emptyStateLocator.isVisible()) {
             await this.page.locator(PartnerPage.SEARCH_INPUT).fill('@');
             await this.page.locator(PartnerPage.SEARCH_INPUT).press('Enter');
-            await expect(this.page.locator('.animate-pulse').first()).toBeHidden({ timeout: 10000 }).catch(() => {});
+            try {
+                await expect(this.page.locator('.animate-pulse').first()).toBeHidden({ timeout: 10000 });
+            } catch (e) {
+                // ignore
+            }
             await this.page.waitForLoadState('networkidle').catch(() => {});
         }
 
@@ -183,35 +195,33 @@ export default class PartnerSteps {
             throw new Error("Partner list is empty – no actionable rows to view.");
         }
 
-        for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
             // Always re-query so the locator targets the current (post-navigation) DOM
             const row = this.page.locator(PartnerPage.ACTIONABLE_PARTNER_ROWS).nth(attempt);
-            if (!(await row.isVisible({ timeout: 3000 }).catch(() => false))) {
-                continue; // This index no longer exists after navigation; skip it
-            }
+            if (await row.isVisible({ timeout: 3000 }).catch(() => false)) {
+                const viewIcon = row.locator(PartnerPage.ROW_VIEW_ICON).first();
+                await expect(viewIcon).toBeVisible({ timeout: 10000 });
+                await viewIcon.click();
 
-            const viewIcon = row.locator(PartnerPage.ROW_VIEW_ICON).first();
-            await expect(viewIcon).toBeVisible({ timeout: 10000 });
-            await viewIcon.click();
+                await this.page.waitForURL(PartnerPage.VIEW_URL_GUARD);
 
-            await this.page.waitForURL(PartnerPage.VIEW_URL_GUARD);
+                const editButton = this.page.locator(PartnerPage.EDIT_BUTTON).first();
+                const noData = this.page.getByText(PartnerPage.NO_PARTNER_DATA_TEXT);
+                await expect(editButton.or(noData).first()).toBeVisible({ timeout: 10000 });
 
-            const editButton = this.page.locator(PartnerPage.EDIT_BUTTON).first();
-            const noData = this.page.getByText(PartnerPage.NO_PARTNER_DATA_TEXT);
-            await expect(editButton.or(noData).first()).toBeVisible({ timeout: 10000 });
-
-            if (!this.page.url().includes("/partner/view//")) {
-                try {
-                    await expect(noData).toBeHidden({ timeout: 5000 });
-                    await expect(editButton).toBeVisible({ timeout: 5000 });
-                    return; // Success – valid partner details page opened
-                } catch {
-                    // This row opened incomplete details; try the next one
+                if (!this.page.url().includes("/partner/view//")) {
+                    try {
+                        await expect(noData).toBeHidden({ timeout: 5000 });
+                        await expect(editButton).toBeVisible({ timeout: 5000 });
+                        return; // Success – valid partner details page opened
+                    } catch {
+                        // This row opened incomplete details; try the next one
+                    }
                 }
+                await this.navigateToPartners();
+                // Wait for the table to populate again after navigation before trying the next row
+                await this.firstActionablePartnerRow();
             }
-            await this.navigateToPartners();
-            // Wait for the table to populate again after navigation before trying the next row
-            await this.firstActionablePartnerRow();
         }
         throw new Error("No visible partner row opened a valid Partner Details page.");
     }
@@ -240,12 +250,11 @@ export default class PartnerSteps {
         // Use a hard navigation (goto) to force React to reinitialize the wizard at Step 1.
         // Client-side navigation (button click) reuses the existing React component tree and
         // may restore a previous wizard step from in-memory state.
-        const origin = new URL(this.page.url()).origin;
+        const { origin } = new URL(this.page.url());
         await this.page.goto(`${origin}/partner/create`);
         await this.page.waitForURL(PartnerPage.CREATE_URL_GUARD);
         await expect(this.page.locator(PartnerPage.OFFICE_NAME_INPUT).first()).toBeVisible({ timeout: 15000 });
     }
-
 
     /** Open Delete Popup */
     public async openDeletePopup(name?: string) {
@@ -267,7 +276,7 @@ export default class PartnerSteps {
     }
 
     // ---- Create Office ----
-    public async fillOfficeDetails(email: string, phone: string, address: string, city: string, state: string, country: string, zipcode: string, officeName: string = "Main Office") {
+    public async fillOfficeDetails(email: string, phone: string, address: string, city: string, state: string, country: string, zipcode: string, officeName = "Main Office") {
         console.log("filling office name");
         await this.page.locator(PartnerPage.OFFICE_NAME_INPUT || 'input[placeholder*="Office Name" i]').fill(officeName);
         console.log("filling email");
@@ -279,7 +288,7 @@ export default class PartnerSteps {
         const typeSelect = this.page.locator(PartnerPage.PARTNER_TYPE_SELECT).first();
         try {
             await typeSelect.waitFor({ state: 'visible', timeout: 5000 });
-            const tagName = await typeSelect.evaluate(el => el.tagName.toLowerCase()).catch(() => 'button');
+            const tagName = await typeSelect.evaluate((el) => el.tagName.toLowerCase()).catch(() => 'button');
             if (tagName === 'select') {
                 await typeSelect.selectOption({ label: 'Seller' });
             } else {
@@ -365,7 +374,8 @@ export default class PartnerSteps {
 
     public async clearPaymentMethods() {
         const paymentMethodNames = ["COD", "Online"];
-        for (const name of paymentMethodNames) {
+        for (let i = 0; i < paymentMethodNames.length; i += 1) {
+            const name = paymentMethodNames[i];
             const checkbox = this.page.getByRole("checkbox", { name }).first();
             if (await checkbox.isChecked().catch(() => false)) {
                 await checkbox.uncheck();
@@ -375,7 +385,8 @@ export default class PartnerSteps {
 
     public async verifyPaymentMethodsUnchecked() {
         const paymentMethodNames = ["COD", "Online"];
-        for (const name of paymentMethodNames) {
+        for (let i = 0; i < paymentMethodNames.length; i += 1) {
+            const name = paymentMethodNames[i];
             await expect(this.page.getByRole("checkbox", { name }).first()).not.toBeChecked();
         }
     }

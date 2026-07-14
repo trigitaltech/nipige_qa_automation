@@ -21,17 +21,17 @@ let deleteTestPreCount = 0; // row count before the delete-specific record is cr
 let deleteTestPlacement = ""; // placement of the created delete-test record
 
 // ── Cleanup tracking ──────────────────────────────────────────────────────────
-// _cleanupQueue  : records that can be deleted right after their creating test.
+// cleanupQueue  : records that can be deleted right after their creating test.
 //                  Processed in afterEach and then cleared.
-// _suiteCleanup  : records that must survive for downstream tests (TC_ADV_11/13).
+// suiteCleanup  : records that must survive for downstream tests (TC_ADV_11/13).
 //                  Processed once at the very start of afterAll before closing the page.
-const _cleanupQueue: string[] = [];
-const _suiteCleanup: string[] = [];
+const cleanupQueue: string[] = [];
+const suiteCleanup: string[] = [];
 
 // Execution summary counters
-let _totalCreated = 0;
-let _totalDeleted = 0;
-const _cleanupFailures: string[] = [];
+let totalCreated = 0;
+let totalDeleted = 0;
+const cleanupFailures: string[] = [];
 
 // - Date helpers -
 const TODAY = new Date();
@@ -61,10 +61,16 @@ test.describe("Advertisement", () => {
     test.afterAll(async () => {
         // Final cleanup: delete records that were kept alive for downstream tests
         if (advSteps && sharedPage && !sharedPage.isClosed()) {
-            for (const tag of _suiteCleanup) {
-                if (!tag) continue;
-                const deleted = await advSteps.deleteAdvertisementByName(tag).catch(() => false);
-                if (deleted) { _totalDeleted++; } else { _cleanupFailures.push(`${tag} (suite cleanup)`); }
+            for (let i = 0; i < suiteCleanup.length; i += 1) {
+                const tag = suiteCleanup[i];
+                if (tag) {
+                    const deleted = await advSteps.deleteAdvertisementByName(tag).catch(() => false);
+                    if (deleted) {
+                        totalDeleted += 1;
+                    } else {
+                        cleanupFailures.push(`${tag} (suite cleanup)`);
+                    }
+                }
             }
         }
 
@@ -73,38 +79,40 @@ test.describe("Advertisement", () => {
         console.log(`\n╔${sep}╗`);
         console.log(`║        ADVERTISEMENT TEST EXECUTION SUMMARY          ║`);
         console.log(`╠${sep}╣`);
-        console.log(`║  Advertisements Created : ${String(_totalCreated).padEnd(27)}║`);
-        console.log(`║  Advertisements Deleted : ${String(_totalDeleted).padEnd(27)}║`);
-        console.log(`║  Cleanup Failures       : ${String(_cleanupFailures.length).padEnd(27)}║`);
-        if (_cleanupFailures.length > 0) {
+        console.log(`║  Advertisements Created : ${String(totalCreated).padEnd(27)}║`);
+        console.log(`║  Advertisements Deleted : ${String(totalDeleted).padEnd(27)}║`);
+        console.log(`║  Cleanup Failures       : ${String(cleanupFailures.length).padEnd(27)}║`);
+        if (cleanupFailures.length > 0) {
             console.log(`╠${sep}╣`);
-            _cleanupFailures.forEach((f) => console.log(`║  ✗ ${f.padEnd(51)}║`));
+            cleanupFailures.forEach((f) => console.log(`║  ✗ ${f.padEnd(51)}║`));
         }
         console.log(`╚${sep}╝\n`);
 
         await sharedPage?.close();
     });
 
-    // afterEach: delete records registered in _cleanupQueue (standalone creates only).
+    // afterEach: delete records registered in cleanupQueue (standalone creates only).
     // Runs even if the test assertion failed, ensuring no leftover DB pollution.
     // eslint-disable-next-line no-empty-pattern
     test.afterEach(async ({}, testInfo) => {
-        if (_cleanupQueue.length === 0) return;
-        const toClean = [..._cleanupQueue];
-        _cleanupQueue.length = 0;
+        if (cleanupQueue.length === 0) return;
+        const toClean = [...cleanupQueue];
+        cleanupQueue.length = 0;
         console.log(`[afterEach "${testInfo.title}"] Cleaning up: ${JSON.stringify(toClean)}`);
-        for (const tag of toClean) {
-            if (!tag) continue;
-            const deleted = await advSteps.deleteAdvertisementByName(tag).catch((err) => {
-                console.error(`[afterEach] Cleanup error for '${tag}':`, err);
-                return false;
-            });
-            if (deleted) {
-                _totalDeleted++;
-                console.log(`[afterEach] ✓ Deleted '${tag}'`);
-            } else {
-                _cleanupFailures.push(`${tag} (afterEach — not found)`);
-                console.log(`[afterEach] ✗ '${tag}' not found — may have already been deleted`);
+        for (let i = 0; i < toClean.length; i += 1) {
+            const tag = toClean[i];
+            if (tag) {
+                const deleted = await advSteps.deleteAdvertisementByName(tag).catch((err) => {
+                    console.error(`[afterEach] Cleanup error for '${tag}':`, err);
+                    return false;
+                });
+                if (deleted) {
+                    totalDeleted += 1;
+                    console.log(`[afterEach] ✓ Deleted '${tag}'`);
+                } else {
+                    cleanupFailures.push(`${tag} (afterEach — not found)`);
+                    console.log(`[afterEach] ✗ '${tag}' not found — may have already been deleted`);
+                }
             }
         }
     });
@@ -289,12 +297,12 @@ test.describe("Advertisement", () => {
         // STRICT: test FAILS if no toast (server gave no feedback)
         const toastText = await advSteps.assertSuccessToast();
         console.log(`[TC_ADV_11] PASS  --  Create Banner toast: '${toastText}'`);
-        _totalCreated++;
+        totalCreated++;
 
         await advSteps.navigateToAdvertisement();
         // Record needed by TC_ADV_12-TC_ADV_21 — track for final suite cleanup only
         const tc11Placement = await advSteps.getFirstRowPlacement();
-        if (tc11Placement) _suiteCleanup.push(tc11Placement);
+        if (tc11Placement) suiteCleanup.push(tc11Placement);
         console.log(`[TC_ADV_11] Suite cleanup tag: '${tc11Placement}'`);
     });
 
@@ -338,12 +346,12 @@ test.describe("Advertisement", () => {
         // STRICT: must show success toast
         const toastText = await advSteps.assertSuccessToast();
         console.log(`[TC_ADV_13] PASS  --  Create Slider toast: '${toastText}'`);
-        _totalCreated++;
+        totalCreated++;
 
         await advSteps.navigateToAdvertisement();
         // Record may be used by downstream listing tests — track for final suite cleanup
         const tc13Placement = await advSteps.getFirstRowPlacement();
-        if (tc13Placement) _suiteCleanup.push(tc13Placement);
+        if (tc13Placement) suiteCleanup.push(tc13Placement);
         console.log(`[TC_ADV_13] Suite cleanup tag: '${tc13Placement}'`);
     });
 
@@ -549,7 +557,7 @@ test.describe("Advertisement", () => {
         // STRICT: creation must succeed
         const toastText = await advSteps.assertSuccessToast();
         console.log(`[TC_ADV_22] PASS  --  Delete-test record created: '${toastText}'`);
-        _totalCreated++; // TC_ADV_25 will delete this record (reflected in _totalDeleted there)
+        totalCreated++; // TC_ADV_25 will delete this record (reflected in totalDeleted there)
 
         await advSteps.navigateToAdvertisement();
         await advSteps.waitForTableStable();
@@ -634,7 +642,7 @@ test.describe("Advertisement", () => {
         // STRICT: success toast must appear
         const toastText = await advSteps.assertSuccessToast();
         console.log(`[TC_ADV_25] Delete toast: '${toastText}'`);
-        _totalDeleted++; // TC_ADV_22 created this record
+        totalDeleted++; // TC_ADV_22 created this record
 
         await advSteps.waitForTableStable();
         let countAfter = await advSteps.getTableRowCount();
@@ -696,12 +704,12 @@ test.describe("Advertisement", () => {
         // STRICT: must show success toast
         const toastText = await advSteps.assertSuccessToast();
         console.log(`[TC_ADV_27] PASS  --  Create Video toast: '${toastText}'`);
-        _totalCreated++;
+        totalCreated++;
 
         await advSteps.navigateToAdvertisement();
         // Video record not needed by downstream tests — register for afterEach cleanup
         const tc27Placement = await advSteps.getFirstRowPlacement();
-        if (tc27Placement) _cleanupQueue.push(tc27Placement);
+        if (tc27Placement) cleanupQueue.push(tc27Placement);
         console.log(`[TC_ADV_27] afterEach cleanup tag: '${tc27Placement}'`);
     });
 
@@ -1035,12 +1043,12 @@ test.describe("Advertisement", () => {
             await advSteps.setBannerContent(`${AdvertisementConstants.BANNER_CONTENT} TC_ADV_39_SETUP`);
             await advSteps.clickCreateAdvertisement();
             await advSteps.assertSuccessToast();
-            _totalCreated++;
+            totalCreated++;
             await advSteps.navigateToAdvertisement();
             await advSteps.waitForTableStable();
             // Track self-setup record for final suite cleanup (needed by downstream edit tests)
             const setupPlacement = await advSteps.getFirstRowPlacement();
-            if (setupPlacement) _suiteCleanup.push(setupPlacement);
+            if (setupPlacement) suiteCleanup.push(setupPlacement);
         }
 
         // Negative (Edit -- Min Age > Max Age): enable advance settings, set invalid age range
@@ -1194,7 +1202,7 @@ test.describe("Advertisement", () => {
         await advSteps.setBannerContent(deleteTag);
         await advSteps.clickCreateAdvertisement();
         await advSteps.assertSuccessToast();
-        _totalCreated++;
+        totalCreated++;
 
         await advSteps.navigateToAdvertisement();
         await advSteps.waitForTableStable();
@@ -1219,7 +1227,7 @@ test.describe("Advertisement", () => {
         await advSteps.verifyDeletePopup();
         await advSteps.confirmDelete();
         await advSteps.assertSuccessToast();
-        _totalDeleted++;
+        totalDeleted++;
         await advSteps.verifyRecordDeleted("HOME_TOP");
 
         // Negative (deleted advertisement URL): navigate to the captured view URL after deletion
@@ -1272,7 +1280,7 @@ test.describe("Advertisement", () => {
         await advSteps.setBannerContent(sliderTag);
         await advSteps.clickCreateAdvertisement();
         await advSteps.assertSuccessToast();
-        _totalCreated++;
+        totalCreated++;
 
         // Verify record exists
         await advSteps.navigateToAdvertisement();
@@ -1296,7 +1304,7 @@ test.describe("Advertisement", () => {
         await advSteps.verifyDeletePopup();
         await advSteps.confirmDelete();
         await advSteps.assertSuccessToast();
-        _totalDeleted++;
+        totalDeleted++;
 
         await advSteps.clearSearch();
     });
@@ -1322,7 +1330,7 @@ test.describe("Advertisement", () => {
         await advSteps.clickCreateAdvertisement();
         const toastMsg = await advSteps.assertSuccessToast();
         console.log(`[TC_ADV_43] Create success message: '${toastMsg}'`);
-        _totalCreated++;
+        totalCreated++;
 
         // Verify record exists
         await advSteps.navigateToAdvertisement();
@@ -1348,7 +1356,7 @@ test.describe("Advertisement", () => {
         await advSteps.verifyDeletePopup();
         await advSteps.confirmDelete();
         await advSteps.assertSuccessToast();
-        _totalDeleted++;
+        totalDeleted++;
 
         await advSteps.clearSearch();
     });
@@ -1629,12 +1637,12 @@ test.describe("Advertisement", () => {
         
         const toastText = await advSteps.assertSuccessToast();
         console.log(`[TC_ADV_56] PASS  --  Create Banner with Language toast: '${toastText}'`);
-        _totalCreated++;
+        totalCreated++;
 
         await advSteps.navigateToAdvertisement();
         // Standalone record (not needed by downstream tests) — register for afterEach cleanup
         const tc56Placement = await advSteps.getFirstRowPlacement();
-        if (tc56Placement) _cleanupQueue.push(tc56Placement);
+        if (tc56Placement) cleanupQueue.push(tc56Placement);
         console.log(`[TC_ADV_56] afterEach cleanup tag: '${tc56Placement}'`);
     });
 

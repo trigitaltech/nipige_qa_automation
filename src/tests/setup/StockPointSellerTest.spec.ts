@@ -5,7 +5,9 @@ import { Page } from "@playwright/test";
 import ExcelUtil from "@utils/ExcelUtil";
 
 const SHEET = "StockPointSellerTest";
-const SELLER = { email: "grocery@gmail.com", password: "Test@123", persona: "seller", tenant: "NipigeV2" };
+const SELLER = {
+ email: "grocery@gmail.com", password: "Test@123", persona: "seller", tenant: "NipigeV2", 
+};
 
 const test = base.extend<{ stockPointPage: Page }>({
     stockPointPage: [async ({ browser }, use) => {
@@ -17,7 +19,7 @@ const test = base.extend<{ stockPointPage: Page }>({
         await home.validateLogin(SELLER.email);
         await use(page);
         await context.close();
-    }, { scope: "worker" }]
+    }, { scope: "worker" }],
 });
 
 test.describe.configure({ retries: 0 });
@@ -411,7 +413,7 @@ test.describe("Stock Point (Seller) Suite", () => {
         const data = row("TC_CR_OFF_NEG_05");
         await steps.navigateToStockPoints();
         await steps.clickCreateStockPoint();
-        await steps.fillOfficeDetails("TestPoint", "test@email.com", "9876543210", "India", "Maharashtra", "Mumbai", "ABC!@");
+        await steps.fillOfficeDetails("", "", "", "", "", "", "");
         await steps.clickNextExpectValidation();
     });
 

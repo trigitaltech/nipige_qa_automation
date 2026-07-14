@@ -2,132 +2,127 @@ import { expect, Page } from "@playwright/test";
 import OrderReportPage from "../pages/OrderReportPage";
 
 export default class OrderReportSteps {
-
     constructor(private page: Page) {}
 
     async openOrderReport() {
-
         await this.page.locator(
-            OrderReportPage.BI_ANALYTICS
+            OrderReportPage.BI_ANALYTICS,
         ).click();
 
         await this.page.waitForTimeout(2000);
 
         await this.page.locator(
-            OrderReportPage.ORDER_REPORTS
+            OrderReportPage.ORDER_REPORTS,
         ).click();
 
         await this.page.waitForTimeout(5000);
     }
 
     async verifyOrderReportLoaded() {
+        await expect(
+            this.page.locator(
+                OrderReportPage.PAGE_HEADER,
+            ),
+        ).toBeVisible();
 
         await expect(
             this.page.locator(
-                OrderReportPage.PAGE_HEADER
-            )
+                OrderReportPage.PAGE_HEADER,
+            ),
         ).toBeVisible();
 
         console.log(
-            "Order Report Loaded Successfully"
+            "Order Report Loaded Successfully",
         );
     }
 
     async verifyDateFilters() {
-
         const filters = [
             {
                 locator: OrderReportPage.TODAY,
-                name: "Today"
+                name: "Today",
             },
             {
                 locator: OrderReportPage.SEVEN_DAYS,
-                name: "7 Days"
+                name: "7 Days",
             },
             {
                 locator: OrderReportPage.THIRTY_DAYS,
-                name: "30 Days"
+                name: "30 Days",
             },
             {
                 locator: OrderReportPage.NINETY_DAYS,
-                name: "90 Days"
+                name: "90 Days",
             },
             {
                 locator: OrderReportPage.YTD,
-                name: "YTD"
-            }
+                name: "YTD",
+            },
         ];
 
-        for (const filter of filters) {
-
+        for (let i = 0; i < filters.length; i += 1) {
+            const filter = filters[i];
             await this.page.locator(
-                filter.locator
+                filter.locator,
             ).click();
 
             await this.page.waitForTimeout(3000);
 
             console.log(
-                `Filter Applied: ${filter.name}`
+                `Filter Applied: ${filter.name}`,
             );
         }
     }
 
     async verifyRefreshButton() {
-
         await this.page.locator(
-            OrderReportPage.REFRESH
+            OrderReportPage.REFRESH,
         ).click();
 
         await this.page.waitForTimeout(5000);
 
         console.log(
-            "Refresh Successful"
+            "Refresh Successful",
         );
     }
 
     private formatDate(
-        dateValue: string | Date
+        dateValue: string | Date,
     ): string {
+        const date = new Date(dateValue);
 
-        const date =
-            new Date(dateValue);
+        const year = date.getUTCFullYear();
 
-        const year =
-            date.getUTCFullYear();
-
-        const month =
-            String(
-                date.getUTCMonth() + 1
+        const month = String(
+                date.getUTCMonth() + 1,
             ).padStart(2, "0");
 
-        const day =
-            String(
-                date.getUTCDate()
+        const day = String(
+                date.getUTCDate(),
             ).padStart(2, "0");
 
         return `${year}-${month}-${day}`;
     }
 
     private async scrollDownAndUp(
-        locator: string
+        locator: string,
     ) {
-
         await this.page.mouse.wheel(
             0,
-            150
+            150,
         );
 
         await this.page.waitForTimeout(1000);
 
         await this.page.mouse.wheel(
             0,
-            -150
+            -150,
         );
 
         await this.page.waitForTimeout(1000);
 
         await this.page.locator(
-            locator
+            locator,
         ).scrollIntoViewIfNeeded();
 
         await this.page.waitForTimeout(1000);
@@ -135,25 +130,24 @@ export default class OrderReportSteps {
 
     private async applyCustomDateRange(
         fromDate: string | Date,
-        toDate: string | Date
+        toDate: string | Date,
     ) {
-
         await this.page.locator(
-            OrderReportPage.CUSTOM_FROM_DATE
+            OrderReportPage.CUSTOM_FROM_DATE,
         ).fill(
-            this.formatDate(fromDate)
+            this.formatDate(fromDate),
         );
 
         await this.page.locator(
-            OrderReportPage.CUSTOM_TO_DATE
+            OrderReportPage.CUSTOM_TO_DATE,
         ).fill(
-            this.formatDate(toDate)
+            this.formatDate(toDate),
         );
 
         await this.page.waitForTimeout(1000);
 
         await this.page.locator(
-            OrderReportPage.APPLY_BUTTON
+            OrderReportPage.APPLY_BUTTON,
         ).last()
         .click();
 
@@ -162,12 +156,11 @@ export default class OrderReportSteps {
 
     async verifyOrderValueChartFilter(
         fromDate: string | Date,
-        toDate: string | Date
+        toDate: string | Date,
     ) {
-
         await this.page.mouse.wheel(
             0,
-            700
+            700,
         );
 
         await this.page.waitForTimeout(3000);
@@ -176,23 +169,22 @@ export default class OrderReportSteps {
             "Today",
             "7 days",
             "30 days",
-            "Custom"
+            "Custom",
         ];
 
-        for (const date of dateFilters) {
-
+        for (let i = 0; i < dateFilters.length; i += 1) {
+            const date = dateFilters[i];
             await this.page.locator(
-                OrderReportPage.ORDER_VALUE_DATE_FILTER
+                OrderReportPage.ORDER_VALUE_DATE_FILTER,
             ).click();
 
             await this.page.waitForTimeout(1000);
 
             if (date === "Custom") {
-
                 await this.page
                     .getByRole(
                         "option",
-                        { name: "Custom" }
+                        { name: "Custom" },
                     )
                     .locator("button")
                     .click();
@@ -201,86 +193,82 @@ export default class OrderReportSteps {
 
                 await this.applyCustomDateRange(
                     fromDate,
-                    toDate
+                    toDate,
                 );
 
                 console.log(
-                    "Date Selected = Custom"
+                    "Date Selected = Custom",
                 );
 
                 await this.scrollDownAndUp(
-                    OrderReportPage.ORDER_VALUE_DATE_FILTER
+                    OrderReportPage.ORDER_VALUE_DATE_FILTER,
+                );
+            } else {
+                await this.page
+                    .getByRole("option")
+                    .getByRole(
+                        "button",
+                        {
+                            name: date,
+                            exact: true,
+                        },
+                    )
+                    .click();
+
+                await this.page.waitForTimeout(3000);
+
+                console.log(
+                    `Date Selected = ${date}`,
                 );
 
-                continue;
+                await this.scrollDownAndUp(
+                    OrderReportPage.ORDER_VALUE_DATE_FILTER,
+                );
             }
-
-            await this.page
-                .getByRole("option")
-                .getByRole(
-                    "button",
-                    {
-                        name: date,
-                        exact: true
-                    }
-                )
-                .click();
-
-            await this.page.waitForTimeout(3000);
-
-            console.log(
-                `Date Selected = ${date}`
-            );
-
-            await this.scrollDownAndUp(
-                OrderReportPage.ORDER_VALUE_DATE_FILTER
-            );
         }
     }
 
     async verifyOrderStatusFilter(
         fromDate: string | Date,
-        toDate: string | Date
+        toDate: string | Date,
     ) {
-
         const statuses = [
             "All Status",
             "Processing",
             "Delivered",
             "Created",
-            "Out For Delivery"
+            "Out For Delivery",
         ];
 
         const dates = [
             "Today",
             "7 days",
             "30 days",
-            "Custom"
+            "Custom",
         ];
 
         await this.page.locator(
-            OrderReportPage.ORDER_STATUS_FILTER
+            OrderReportPage.ORDER_STATUS_FILTER,
         ).scrollIntoViewIfNeeded();
 
         await this.page.waitForTimeout(2000);
 
-        for (const date of dates) {
-
+        for (let i = 0; i < dates.length; i += 1) {
+            const date = dates[i];
             await this.page.locator(
-                OrderReportPage.ORDER_STATUS_DATE_FILTER
+                OrderReportPage.ORDER_STATUS_DATE_FILTER,
             ).click();
 
             await this.page.waitForTimeout(1000);
 
             if (date === "Custom") {
-
                 await this.page
                     .getByRole(
                         "button",
                         {
                             name: "Custom",
-                            exact: true
-                        }
+                            exact: true,
+                        },
                     )
                     .last()
                     .click();
@@ -289,18 +277,16 @@ export default class OrderReportSteps {
 
                 await this.applyCustomDateRange(
                     fromDate,
-                    toDate
+                    toDate,
                 );
-            }
-            else {
-
+            } else {
                 await this.page
                     .getByRole(
                         "button",
                         {
                             name: date,
-                            exact: true
-                        }
+                            exact: true,
+                        },
                     )
                     .last()
                     .click();
@@ -309,13 +295,13 @@ export default class OrderReportSteps {
             }
 
             console.log(
-                `Date Selected = ${date}`
+                `Date Selected = ${date}`,
             );
 
-            for (const status of statuses) {
-
+            for (let j = 0; j < statuses.length; j += 1) {
+                const status = statuses[j];
                 await this.page.locator(
-                    OrderReportPage.ORDER_STATUS_FILTER
+                    OrderReportPage.ORDER_STATUS_FILTER,
                 ).click();
 
                 await this.page.waitForTimeout(1000);
@@ -325,8 +311,8 @@ export default class OrderReportSteps {
                         "button",
                         {
                             name: status,
-                            exact: true
-                        }
+                            exact: true,
+                        },
                     )
                     .last()
                     .click();
@@ -334,42 +320,41 @@ export default class OrderReportSteps {
                 await this.page.waitForTimeout(3000);
 
                 console.log(
-                    `Status Selected = ${status}`
+                    `Status Selected = ${status}`,
                 );
 
                 await this.scrollDownAndUp(
-                    OrderReportPage.ORDER_STATUS_FILTER
+                    OrderReportPage.ORDER_STATUS_FILTER,
                 );
             }
         }
     }
 
     async verifyOrderBySalesChannelAndType() {
-
         await this.page.locator(
-            OrderReportPage.ORDER_BY_SALES_CHANNEL
+            OrderReportPage.ORDER_BY_SALES_CHANNEL,
         ).scrollIntoViewIfNeeded();
 
         await this.page.waitForTimeout(2000);
 
         await expect(
             this.page.locator(
-                OrderReportPage.ORDER_BY_SALES_CHANNEL
-            )
+                OrderReportPage.ORDER_BY_SALES_CHANNEL,
+            ),
         ).toBeVisible();
 
         console.log(
-            "Order By Sales Channel Visible"
+            "Order By Sales Channel Visible",
         );
 
         await expect(
             this.page.locator(
-                OrderReportPage.ORDER_BY_TYPE
-            )
+                OrderReportPage.ORDER_BY_TYPE,
+            ),
         ).toBeVisible();
 
         console.log(
-            "Order By Type Visible"
+            "Order By Type Visible",
         );
 
         await this.page.waitForTimeout(2000);
@@ -378,12 +363,11 @@ export default class OrderReportSteps {
     async verifyOrderDetailFilters(
         searchName: string,
         searchOrderId: string,
-        invalidSearch: string
+        invalidSearch: string,
     ) {
-
         const searches = [
             searchName,
-            searchOrderId
+            searchOrderId,
         ];
 
         const statuses = [
@@ -393,41 +377,41 @@ export default class OrderReportSteps {
             "Fulfillment Pending",
             "Out For Delivery",
             "Partially Delivered",
-            "Delivered"
+            "Delivered",
         ];
 
         await this.page.locator(
-            OrderReportPage.ORDER_DETAIL_HEADER
+            OrderReportPage.ORDER_DETAIL_HEADER,
         ).scrollIntoViewIfNeeded();
 
         await this.page.waitForTimeout(2000);
 
         // Positive Search
 
-        for (const searchText of searches) {
-
+        for (let i = 0; i < searches.length; i += 1) {
+            const searchText = searches[i];
             await this.page.fill(
                 OrderReportPage.SEARCH_BOX,
-                searchText
+                searchText,
             );
 
             await this.page.locator(
-                OrderReportPage.ORDER_DETAIL_APPLY_BUTTON
+                OrderReportPage.ORDER_DETAIL_APPLY_BUTTON,
             ).click();
 
             await this.page.waitForTimeout(3000);
 
             console.log(
-                `Search Applied: ${searchText}`
+                `Search Applied: ${searchText}`,
             );
 
             await this.scrollDownAndUp(
-                OrderReportPage.ORDER_DETAIL_HEADER
+                OrderReportPage.ORDER_DETAIL_HEADER,
             );
 
             await this.page.fill(
                 OrderReportPage.SEARCH_BOX,
-                ""
+                "",
             );
 
             await this.page.waitForTimeout(1000);
@@ -437,55 +421,55 @@ export default class OrderReportSteps {
 
         await this.page.fill(
             OrderReportPage.SEARCH_BOX,
-            invalidSearch
+            invalidSearch,
         );
 
         await this.page.locator(
-            OrderReportPage.ORDER_DETAIL_APPLY_BUTTON
+            OrderReportPage.ORDER_DETAIL_APPLY_BUTTON,
         ).click();
 
         await this.page.waitForTimeout(3000);
 
         console.log(
-            `Negative Search Applied: ${invalidSearch}`
+            `Negative Search Applied: ${invalidSearch}`,
         );
 
         await this.scrollDownAndUp(
-            OrderReportPage.ORDER_DETAIL_HEADER
+            OrderReportPage.ORDER_DETAIL_HEADER,
         );
 
         await this.page.fill(
             OrderReportPage.SEARCH_BOX,
-            ""
+            "",
         );
 
         await this.page.locator(
-            OrderReportPage.ORDER_DETAIL_APPLY_BUTTON
+            OrderReportPage.ORDER_DETAIL_APPLY_BUTTON,
         ).click();
 
         await this.page.waitForTimeout(1000);
 
         // Status Filter
 
-        for (const status of statuses) {
-
+        for (let i = 0; i < statuses.length; i += 1) {
+            const status = statuses[i];
             await this.page.selectOption(
                 OrderReportPage.STATUS_FILTER,
-                { label: status }
+                { label: status },
             );
 
             await this.page.locator(
-                OrderReportPage.ORDER_DETAIL_APPLY_BUTTON
+                OrderReportPage.ORDER_DETAIL_APPLY_BUTTON,
             ).click();
 
             await this.page.waitForTimeout(3000);
 
             console.log(
-                `Status Filter Applied: ${status}`
+                `Status Filter Applied: ${status}`,
             );
 
             await this.scrollDownAndUp(
-                OrderReportPage.ORDER_DETAIL_HEADER
+                OrderReportPage.ORDER_DETAIL_HEADER,
             );
         }
 
@@ -493,11 +477,11 @@ export default class OrderReportSteps {
 
         await this.page.selectOption(
             OrderReportPage.STATUS_FILTER,
-            { label: "All Status" }
+            { label: "All Status" },
         );
 
         await this.page.locator(
-            OrderReportPage.ORDER_DETAIL_APPLY_BUTTON
+            OrderReportPage.ORDER_DETAIL_APPLY_BUTTON,
         ).click();
 
         await this.page.waitForTimeout(1000);

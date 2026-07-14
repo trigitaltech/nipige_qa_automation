@@ -17,7 +17,7 @@ const test = base.extend<{ partnerPage: Page }>({
         await home.validateLogin(TENANT.email);
         await use(page);
         await context.close();
-    }, { scope: "worker" }]
+    }, { scope: "worker" }],
 });
 
 test.describe.configure({ retries: 0 });
@@ -969,6 +969,4 @@ test.describe("Partner (Tenant) Suite", () => {
            await steps.clickDone();
         }
     });
-
 });
-

@@ -168,12 +168,12 @@ export default class StockPointSteps {
 
     /** Click Create Stock Point button */
     public async clickCreateStockPoint() {
-        const origin = new URL(this.page.url()).origin;
+        const { origin } = new URL(this.page.url());
         await this.page.goto(`${origin}/stock-point/create`);
         await this.page.waitForURL(StockPointPage.CREATE_URL_GUARD, { timeout: 15000 }).catch(() => {});
         // Wait for the first form field to be visible
         await expect(
-            this.page.locator(StockPointPage.STOCK_POINT_NAME_INPUT).first()
+            this.page.locator(StockPointPage.STOCK_POINT_NAME_INPUT).first(),
         ).toBeVisible({ timeout: 15000 });
     }
 
@@ -310,7 +310,7 @@ export default class StockPointSteps {
         country: string,
         state: string,
         city: string,
-        zipcode: string
+        zipcode: string,
     ) {
         await this.page.locator(StockPointPage.STOCK_POINT_NAME_INPUT).first().fill(stockPointName);
         await this.page.locator(StockPointPage.EMAIL_INPUT).first().fill(email);
@@ -333,7 +333,7 @@ export default class StockPointSteps {
             "India",
             "Maharashtra",
             "Mumbai",
-            "400001"
+            "400001",
         );
     }
 
@@ -360,7 +360,7 @@ export default class StockPointSteps {
         const typeSelect = this.page.locator(StockPointPage.OFFICE_TYPE_SELECT).first();
         try {
             await typeSelect.waitFor({ state: "visible", timeout: 5000 });
-            const tagName = await typeSelect.evaluate(el => el.tagName.toLowerCase()).catch(() => "button");
+            const tagName = await typeSelect.evaluate((el) => el.tagName.toLowerCase()).catch(() => "button");
             if (tagName === "select") {
                 await typeSelect.selectOption({ label: officeType });
             } else {
@@ -402,7 +402,7 @@ export default class StockPointSteps {
         orgName: string,
         regNo: string,
         gstNo: string,
-        fssaiNo: string
+        fssaiNo: string,
     ) {
         if (orgName !== "") {
             await this.uploadLogo("test-data/uploads/valid-logo.png");
@@ -450,7 +450,7 @@ export default class StockPointSteps {
         username: string,
         email: string,
         phone: string,
-        password: string
+        password: string,
     ) {
         await this.page.locator(StockPointPage.USERNAME_INPUT).first().fill(username);
         await this.page.locator(StockPointPage.AUTH_EMAIL_INPUT).first().fill(email);
