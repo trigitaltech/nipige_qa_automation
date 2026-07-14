@@ -24,9 +24,12 @@ export default class FreshCartSteps {
             const password = process.env.FRESHCART_PASSWORD || freshCartRow.Password;
             await this.ui.goto(url, FreshCartConstants.LOGIN_PAGE);
 
-            const loginLink = this.page.locator('a[href*="login"], a:has-text("Login"), button:has-text("Login")').first();
-            if (await loginLink.isVisible({ timeout: 2000 }).catch(() => false)) {
-                await loginLink.click();
+            const loginInput = this.page.locator(FreshCartPage.USERNAME_INPUT).first();
+            if (!(await loginInput.isVisible({ timeout: 2000 }).catch(() => false))) {
+                const loginLink = this.page.locator('a[href*="login"], a:has-text("Login"), button:has-text("Login")').first();
+                if (await loginLink.isVisible({ timeout: 2000 }).catch(() => false)) {
+                    await loginLink.click();
+                }
             }
 
             await this.ui.editBox(FreshCartPage.USERNAME_INPUT,

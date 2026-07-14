@@ -87,7 +87,7 @@ jobs:
 
       - name: Run Playwright tests
         env:
-          CI_WORKERS: 3
+          CI_WORKERS: 2
         run: |
           # Generate the suite once, then run this shard's slice. `npm run test:regression --`
           # would forward args to create:suite (not playwright), so the two steps are explicit.
