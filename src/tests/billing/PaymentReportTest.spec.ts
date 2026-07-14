@@ -8,79 +8,73 @@ const SHEET = "PaymentReportTest";
 
 const testCases = [
     "TC01_PaymentReportLoad",
-    "TC02_DateFilterValidation",
-    "TC03_RefreshValidation",
-    // "TC04_ExportCSVValidation",
-    // "TC05_PDFValidation",
-    "TC06_CollectionTrendFilters"
+    "TC02_TodayFilter",
+    "TC07_RefreshValidation",
+    // "TC08_ExportCSV",
+    // "TC09_PDFExport",
+    "TC12_CollectionsTrendChart",
 ];
 
-for (const testCase of testCases) {
-
+testCases.forEach((testCase) => {
     const data = ExcelUtil.getTestData(
         SHEET,
-        testCase
+        testCase,
     );
 
     test(`${data.TestID} - ${data.Description} @regression @billing`,
         async ({ page }) => {
-
             Allure.attachDetails(
                 data.Description,
-                data.Issue
+                data.Issue,
             );
 
-            const home =
-                new HomeSteps(page);
+            const home = new HomeSteps(page);
 
-            const payment =
-                new PaymentReportSteps(page);
+            const payment = new PaymentReportSteps(page);
 
             await home.launchApplication();
 
             await home.login(
                 data.UserName,
                 data.Password,
-                data.persona
+                data.persona,
             );
 
             await payment.openPaymentReport();
 
             switch (data.TestID) {
-
                 case "TC01_PaymentReportLoad":
                     await payment.verifyPaymentReportLoaded();
                     break;
 
-                case "TC02_DateFilterValidation":
+                case "TC02_TodayFilter":
                     await payment.verifyDateFilters();
                     break;
 
-                case "TC03_RefreshValidation":
+                case "TC07_RefreshValidation":
                     await payment.verifyRefreshButton();
                     break;
 
-                // case "TC04_ExportCSVValidation":
+                // case "TC08_ExportCSV":
                 //     await payment.verifyExportCSV();
                 //     break;
 
-                // case "TC05_PDFValidation":
+                // case "TC09_PDFExport":
                 //     await payment.verifyPDFDownload();
                 //     break;
 
-                case "TC06_CollectionTrendFilters":
+                case "TC12_CollectionsTrendChart":
+                    await payment.verifyCollectionTrendFilters(
+                        data.FromDate,
+                        data.ToDate,
+                    );
+                    break;
 
-    await payment.verifyCollectionTrendFilters(
-        data.FromDate,
-        data.ToDate
-    );
-
-    break;
-
-    break;
+                default:
+                    break;
             }
 
             await home.logout();
-        }
+        },
     );
-}
+});
