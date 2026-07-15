@@ -353,7 +353,9 @@ export default class OfficeSteps {
                     + `Diagnostic inputs: name="${name}", address="${address}"`);
             }
             
-            await nextBtn.click();
+            // Press Escape to dismiss any Google Maps Autocomplete dropdown (pac-container) that might intercept the click
+            await this.page.keyboard.press("Escape").catch(() => {});
+            await nextBtn.click({ force: true });
             await this.page.waitForTimeout(800);
         });
     }

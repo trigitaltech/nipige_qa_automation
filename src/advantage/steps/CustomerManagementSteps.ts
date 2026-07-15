@@ -86,11 +86,35 @@ export default class CustomerManagementSteps {
      */
     public async searchCustomer(searchType: string, searchValue: string) {
         await test.step(`Search customer by ${searchType} '${searchValue}'`, async () => {
-            await this.enterSearch(searchType, searchValue);
-            // The profile opens at /customer-management/<id>; wait for the route plus the "Back"
-            // control so detail assertions run against a fully-rendered profile.
-            await this.page.waitForURL(/\/customer-management\/.+/,
-                { timeout: CommonConstants.DEFAULT_TIMEOUT * CommonConstants.ONE_THOUSAND });
+            let navigated = false;
+
+            for (let attempt = 1; attempt <= 3; attempt++) {
+                try {
+                    await this.enterSearch(searchType, searchValue);
+                    // Wait up to 5s for the URL to change to the profile view
+                    await this.page.waitForURL(/\/customer-management\/.+/, { timeout: 5000 });
+                    navigated = true;
+                    break;
+                } catch (err) {
+                    console.log(`[searchCustomer] Search attempt ${attempt} failed: ${err.message}. Retrying...`);
+                    // If it failed due to click interception or dead click, try pressing Enter
+                    try {
+                        await this.page.locator(CustomerManagementPage.SEARCH_INPUT).press("Enter");
+                        await this.page.waitForURL(/\/customer-management\/.+/, { timeout: 5000 });
+                        navigated = true;
+                        break;
+                    } catch (pressErr) {
+                        console.log(`[searchCustomer] Enter key attempt failed: ${pressErr.message}`);
+                    }
+                }
+            }
+
+            if (!navigated) {
+                // If it still hasn't navigated, wait for the original 30s timeout to surface any API error
+                await this.page.waitForURL(/\/customer-management\/.+/,
+                    { timeout: CommonConstants.DEFAULT_TIMEOUT * CommonConstants.ONE_THOUSAND });
+            }
+
             await this.ui.element(CustomerManagementPage.CUSTOMER_PROFILE_READY,
                 CustomerManagementConstants.CUSTOMER_PROFILE).waitTillVisible(CommonConstants.DEFAULT_TIMEOUT);
         });
@@ -232,6 +256,10 @@ export default class CustomerManagementSteps {
         await this.selectSearchType(searchType);
         await this.ui.editBox(CustomerManagementPage.SEARCH_INPUT,
             CustomerManagementConstants.SEARCH_INPUT).fill(String(searchValue));
+
+        // Wait up to 2s for the dropdown options to close to avoid click interception
+        await this.page.locator('[role="option"]').first().waitFor({ state: "hidden", timeout: 2000 }).catch(() => {});
+
         await this.ui.element(CustomerManagementPage.SEARCH_BUTTON,
             CustomerManagementConstants.SEARCH_BUTTON).click();
     }

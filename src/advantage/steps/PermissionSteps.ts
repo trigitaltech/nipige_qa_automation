@@ -52,6 +52,29 @@ export default class PermissionSteps {
         await this.page.waitForLoadState("networkidle").catch(() => {});
     }
 
+    public async clickCreatePermission() {
+        const dialog = this.page.getByRole("dialog").filter({ hasText: /Create Permission/i }).last();
+        let opened = false;
+
+        for (let attempt = 1; attempt <= 3; attempt++) {
+            try {
+                await this.ui.element(PermissionPage.CREATE_BUTTON, "Create Button").click();
+                // Wait up to 3s for the dialog to become visible
+                await dialog.waitFor({ state: "visible", timeout: 3000 });
+                opened = true;
+                break;
+            } catch (err) {
+                console.log(`[PermissionSteps] Open dialog attempt ${attempt} failed: ${err.message}. Retrying click...`);
+                await this.page.waitForTimeout(1000);
+            }
+        }
+
+        if (!opened) {
+            // Fallback to wait with a slightly longer timeout to fail cleanly with full traceback
+            await dialog.waitFor({ state: "visible", timeout: 8000 });
+        }
+    }
+
     public async runPositiveTest(data: any) {
         await test.step(`Executing positive test: ${data.TC_ID}`, async () => {
             const id = data.TC_ID;
@@ -68,9 +91,7 @@ export default class PermissionSteps {
                 await expect(this.page.locator(PermissionPage.ROWS).first()).toBeVisible({ timeout: this.searchTimeout });
             }
             else if (id === "TC_PERM_03") {
-                await this.ui.element(PermissionPage.CREATE_BUTTON, "Create Button").click();
-                await this.page.waitForTimeout(1000);
-                await expect(this.page.getByRole("dialog").filter({ hasText: /Create Permission/i }).last()).toBeVisible({ timeout: this.timeout });
+                await this.clickCreatePermission();
             }
             else if (id === "TC_PERM_04") {
                 const lockIcon = this.page.locator(PermissionPage.ROWS).first().locator("button svg.lucide-lock, button svg.lucide-key, button[aria-label*=\"Assign\"], button[aria-label*=\"Lock\"]").first();
@@ -135,8 +156,7 @@ export default class PermissionSteps {
             // Delete
             else if (id === "TC_PERM_14" || id === "TC_PERM_15" || id === "TC_PERM_17") {
                 // To avoid breaking existing permissions, create a dummy one first
-                await this.ui.element(PermissionPage.CREATE_BUTTON, "Create").click();
-                await this.page.waitForTimeout(1000);
+                await this.clickCreatePermission();
                 const dialog = this.page.getByRole("dialog").filter({ hasText: /Create Permission/i }).last();
                 const stamp = Date.now();
                 const dummyName = "DEL_" + stamp;
@@ -169,8 +189,7 @@ export default class PermissionSteps {
             }
             // Create
             else if (id === "TC_PERM_19" || id === "TC_PERM_20" || id === "TC_PERM_21" || id === "TC_PERM_23") {
-                await this.ui.element(PermissionPage.CREATE_BUTTON, "Create").click();
-                await this.page.waitForTimeout(1000);
+                await this.clickCreatePermission();
                 const dialog = this.page.getByRole("dialog").filter({ hasText: /Create Permission/i }).last();
                 const stamp = Date.now();
                 const dummyName = "NEW_" + stamp;
@@ -184,8 +203,7 @@ export default class PermissionSteps {
                 await expect(dialog).toBeHidden({ timeout: 5000 }).catch(() => {});
             }
             else if (id === "TC_PERM_22") {
-                await this.ui.element(PermissionPage.CREATE_BUTTON, "Create").click();
-                await this.page.waitForTimeout(1000);
+                await this.clickCreatePermission();
                 const dialog = this.page.getByRole("dialog").filter({ hasText: /Create Permission/i }).last();
                 await dialog.getByRole("button", { name: "Cancel" }).first().click();
                 await expect(dialog).toBeHidden({ timeout: this.timeout });
