@@ -65,6 +65,8 @@ test.describe.serial("Notification Template Suite", () => {
                     await notif.clickCreateTemplate();
                     break;
                 case "TC_NT_04":
+                    await notif.clickCreateTemplate();
+                    await notif.clearConcernSelection();
                     await notif.verifyCannotCreateWithoutConcern();
                     break;
                 case "TC_NT_05":

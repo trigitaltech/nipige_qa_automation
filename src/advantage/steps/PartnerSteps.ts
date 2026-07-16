@@ -521,7 +521,13 @@ export default class PartnerSteps {
     public async verifyNextDisabled() {
         const nextButton = this.page.getByRole('button', { name: /^(Next|Continue)$/i }).first();
         await expect(nextButton).toBeVisible({ timeout: 10000 });
-        await expect(nextButton).toBeDisabled();
+
+        // Wait up to 5 seconds for it to become disabled (form validation delay)
+        for (let i = 0; i < 10; i++) {
+            if (await nextButton.isDisabled().catch(() => false)) return;
+            await this.page.waitForTimeout(500);
+        }
+        throw new Error("Next button remained enabled; form validation did not block navigation.");
     }
 
     public async verifyPhoneDoesNotContain(invalidText: string) {
