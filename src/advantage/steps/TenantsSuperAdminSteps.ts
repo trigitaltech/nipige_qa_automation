@@ -143,17 +143,33 @@ export default class TenantsSuperAdminSteps {
             await this.dismissSwalIfPresent();
             const combobox = this.page.locator('[role="combobox"]').first();
             await expect(combobox, "Search dropdown combobox should be visible").toBeVisible({ timeout: this.timeout });
-            await combobox.click({ force: true });
-            await this.page.waitForTimeout(500);
 
             const optionSelector = `[role="option"] button:has-text("Search by ${field}"), [role="option"]:has-text("Search by ${field}"), button:has-text("Search by ${field}")`;
             const option = this.page.locator(optionSelector).first();
-            if (!await option.isVisible().catch(() => false)) {
-                console.log("[searchTenantByField] Option not visible, clicking combobox again");
-                await combobox.click({ force: true });
-                await this.page.waitForTimeout(500);
+
+            let opened = false;
+            for (let attempt = 1; attempt <= 3; attempt++) {
+                try {
+                    const expanded = await combobox.getAttribute("aria-expanded").catch(() => "false");
+                    if (expanded !== "true") {
+                        await combobox.click({ force: true });
+                    }
+                    // Wait up to 3s for the option to become visible
+                    await option.waitFor({ state: "visible", timeout: 3000 });
+                    opened = true;
+                    break;
+                } catch (err) {
+                    console.log(`[searchTenantByField] Attempt ${attempt} failed to show option: ${err.message}. Retrying toggle...`);
+                    await combobox.click({ force: true });
+                    await this.page.waitForTimeout(500);
+                }
             }
-            await option.waitFor({ state: "visible", timeout: this.timeout });
+
+            if (!opened) {
+                // Final wait with original timeout to surface correct error if it still fails
+                await option.waitFor({ state: "visible", timeout: this.timeout });
+            }
+
             await option.click();
             await this.page.waitForTimeout(500);
 

@@ -86,7 +86,7 @@ export default class PartnerSteps {
             .first();
 
         // Wait for either the data row or the empty state to appear
-        await expect(rowLocator.or(emptyStateLocator)).toBeVisible({ timeout: 30000 });
+        await expect(rowLocator.or(emptyStateLocator).first()).toBeVisible({ timeout: 30000 });
 
         if (await emptyStateLocator.isVisible()) {
             await this.page.locator(PartnerPage.SEARCH_INPUT).fill('@');
@@ -498,7 +498,7 @@ export default class PartnerSteps {
             await this.page.reload();
             await this.page.waitForLoadState('domcontentloaded');
         }
-        await expect(this.page.locator(PartnerPage.TABLE_ROWS).first().or(this.page.getByText(PartnerPage.EMPTY_STATE_TEXT))).toBeVisible({ timeout: 10000 });
+        await expect(this.page.locator(PartnerPage.TABLE_ROWS).first().or(this.page.getByText(PartnerPage.EMPTY_STATE_TEXT)).first()).toBeVisible({ timeout: 10000 });
     }
 
     public async cancelDelete() {
@@ -521,7 +521,13 @@ export default class PartnerSteps {
     public async verifyNextDisabled() {
         const nextButton = this.page.getByRole('button', { name: /^(Next|Continue)$/i }).first();
         await expect(nextButton).toBeVisible({ timeout: 10000 });
-        await expect(nextButton).toBeDisabled();
+
+        // Wait up to 5 seconds for it to become disabled (form validation delay)
+        for (let i = 0; i < 10; i++) {
+            if (await nextButton.isDisabled().catch(() => false)) return;
+            await this.page.waitForTimeout(500);
+        }
+        throw new Error("Next button remained enabled; form validation did not block navigation.");
     }
 
     public async verifyPhoneDoesNotContain(invalidText: string) {

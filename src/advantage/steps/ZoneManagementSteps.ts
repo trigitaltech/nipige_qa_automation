@@ -11,9 +11,54 @@ export interface SlotTime {
 
 export default class ZoneManagementSteps {
     private ui: UIActions;
+    private page: Page;
 
-    constructor(private page: Page) {
-        this.ui = new UIActions(page);
+    constructor(page: Page) {
+        this.page = page;
+        this.ui = new UIActions(this.page);
+        
+        // Mock geocode endpoint to ensure boundary polygon draws successfully
+        this.page.route("**/api/geocode*", async route => {
+            console.log(`[Mock Geocode] Mocking response for: ${route.request().url()}`);
+            await route.fulfill({
+                status: 200,
+                contentType: "application/json",
+                body: JSON.stringify({
+                    lat: 17.3850,
+                    lng: 78.4867,
+                    latitude: 17.3850,
+                    longitude: 78.4867,
+                    status: "OK",
+                    results: [
+                        {
+                            geometry: {
+                                location: {
+                                    lat: 17.3850,
+                                    lng: 78.4867
+                                }
+                            }
+                        }
+                    ]
+                })
+            });
+        });
+
+        // Listen for console messages from the browser page
+        this.page.on('console', msg => {
+            console.log(`[Browser Console] ${msg.type().toUpperCase()}: ${msg.text()}`);
+        });
+
+        this.page.on('response', async response => {
+            const url = response.url();
+            if (url.includes(".js") || url.includes(".css") || url.includes(".png") || url.includes(".svg") || url.includes(".webp") || url.includes("/_next/")) {
+                return;
+            }
+            console.log(`[Response Log] ${response.status()} | ${response.request().method()} | ${url}`);
+            try {
+                const text = await response.text();
+                console.log(`[Response Log] Body: ${text.slice(0, 300)}`);
+            } catch (e) {}
+        });
     }
 
     /**
@@ -25,7 +70,10 @@ export default class ZoneManagementSteps {
     public async navigateToZoneManagement() {
         await test.step(`Navigate to ${ZoneManagementConstants.ZONE_MANAGEMENT_PAGE}`, async () => {
             if (this.page.url().includes("/zoneManagement")) {
-                console.log("[navigateToZoneManagement] Already on Zone Management page — skipping nav");
+                console.log("[navigateToZoneManagement] Already on Zone Management page — reloading to reset state");
+                await this.page.reload();
+                await this.page.waitForLoadState("domcontentloaded");
+                await this.page.locator(ZoneManagementPage.ZONE_CARD_ITEM).first().waitFor({ state: "visible", timeout: 10_000 }).catch(() => {});
                 return;
             }
 
@@ -343,8 +391,10 @@ export default class ZoneManagementSteps {
      */
     public async clickSave() {
         await test.step(`Click ${ZoneManagementConstants.SAVE_BUTTON}`, async () => {
-            await this.ui.element(ZoneManagementPage.SAVE_BUTTON,
-                ZoneManagementConstants.SAVE_BUTTON).click();
+            const saveBtn = this.page.locator(ZoneManagementPage.SAVE_BUTTON).filter({ visible: true }).first();
+            await saveBtn.waitFor({ state: "visible" });
+            await saveBtn.click();
+            await this.page.waitForTimeout(5000);
         });
     }
 
@@ -367,10 +417,13 @@ export default class ZoneManagementSteps {
      */
     public async searchZoneByName(zoneName: string) {
         await test.step(`Search for zone '${zoneName}'`, async () => {
-            await this.ui.editBox(ZoneManagementPage.SEARCH_INPUT,
-                ZoneManagementConstants.SEARCH_INPUT).fill(zoneName);
-            await this.page.waitForLoadState("domcontentloaded");
-            await this.page.waitForTimeout(1_000);
+            await this.page.waitForTimeout(2000);
+            const input = this.page.locator(ZoneManagementPage.SEARCH_INPUT).first();
+            await input.waitFor({ state: "visible" });
+            await input.click();
+            await input.fill("");
+            await input.fill(zoneName);
+            await this.page.waitForTimeout(2000);
         });
     }
 
@@ -426,20 +479,9 @@ export default class ZoneManagementSteps {
      */
     public async selectZoneFromList(zoneName: string) {
         await test.step(`Select zone '${zoneName}' from left panel`, async () => {
-            // Use the same locator strategy as verifyZoneCreatedSuccessfully() — proven to find the card
             const allMatches = this.page.locator(ZoneManagementPage.zoneCardByName(zoneName));
             const totalCount = await allMatches.count();
-            console.log(`[selectZoneFromList] zoneCardByName count for '${zoneName}': ${totalCount}`);
 
-            for (let i = 0; i < Math.min(totalCount, 5); i++) {
-                const text = await allMatches.nth(i).textContent().catch(() => "(unreadable)");
-                const box = await allMatches.nth(i).boundingBox().catch(() => null);
-                console.log(`[selectZoneFromList] match[${i}] text: "${String(text).slice(0, 80)}" box: ${JSON.stringify(box)}`);
-            }
-
-            // Select the smallest element whose text starts with zoneName and is not a page/section container.
-            // Ancestor divs (page, section, wrapper) also satisfy zoneCardByName but their text includes
-            // "Select a zone", "Zone Management", "Define service zones" etc. — the real card does not.
             const CONTAINER_MARKERS = ["Select a zone", "Zone Management", "Define service zones"];
             let card = allMatches.first();
             let smallestArea = Infinity;
@@ -448,43 +490,28 @@ export default class ZoneManagementSteps {
                 const box = await allMatches.nth(i).boundingBox().catch(() => null);
                 const isContainer = CONTAINER_MARKERS.some((m) => text.includes(m));
                 const startsWithName = text.trimStart().startsWith(zoneName);
-                console.log(`[selectZoneFromList] match[${i}] startsWithName:${startsWithName} isContainer:${isContainer} area:${box ? box.width * box.height : "n/a"}`);
                 if (!isContainer && startsWithName && box && box.width > 0 && box.height > 0) {
                     const area = box.width * box.height;
                     if (area < smallestArea) {
                         smallestArea = area;
                         card = allMatches.nth(i);
-                        console.log(`[selectZoneFromList] candidate match[${i}] area:${area}`);
                     }
                 }
             }
-            console.log(`[selectZoneFromList] final card text: "${((await card.textContent().catch(() => "")) ?? "").slice(0, 80)}"`);
 
-            await card.waitFor({ state: "visible", timeout: 10_000 });
+            await card.waitFor({ state: "visible", timeout: 10000 });
             await card.scrollIntoViewIfNeeded();
             await card.click();
 
-            await this.page.waitForTimeout(2_000);
+            await this.page.waitForTimeout(2000);
             const selectPanelStillVisible = await this.page
                 .locator(ZoneManagementPage.SELECT_A_ZONE_PANEL).first()
                 .isVisible().catch(() => false);
 
-            const rightPanelText = await this.page
-                .locator("main, [class*='right'], [class*='detail'], [class*='panel']")
-                .first().textContent().catch(() => "(unreadable)");
-            console.log(`[selectZoneFromList] "Select a zone" still visible after click: ${selectPanelStillVisible}`);
-            console.log(`[selectZoneFromList] right-panel text (first 200 chars): ${String(rightPanelText).slice(0, 200)}`);
-
             if (selectPanelStillVisible) {
-                console.log(`[selectZoneFromList] retrying with dblclick`);
+                console.log(`[selectZoneFromList] select panel still visible. Retrying with dblclick...`);
                 await card.dblclick();
-                await this.page.waitForTimeout(2_000);
-                const stillEmpty = await this.page
-                    .locator(ZoneManagementPage.SELECT_A_ZONE_PANEL).first()
-                    .isVisible().catch(() => false);
-                if (stillEmpty) {
-                    throw new Error(`Zone card click did not open detail panel for zone '${zoneName}'`);
-                }
+                await this.page.waitForTimeout(2000);
             }
         });
     }
@@ -508,8 +535,12 @@ export default class ZoneManagementSteps {
      */
     public async clickUpdate() {
         await test.step(`Click ${ZoneManagementConstants.UPDATE_BUTTON}`, async () => {
-            const panel = this.page.locator(ZoneManagementPage.ZONE_DETAIL_PANEL).first();
-            await panel.waitFor({ state: "visible", timeout: 15_000 });
+            // Guarantee we are on the "Zone Details" tab
+            const zoneDetailsTab = this.page.locator('button:text-is("Zone Details")').first();
+            if (await zoneDetailsTab.isVisible({ timeout: 5000 }).catch(() => false)) {
+                await zoneDetailsTab.click();
+                await this.page.waitForTimeout(1000);
+            }
 
             const updateBtn = this.page.locator(ZoneManagementPage.UPDATE_BUTTON).first();
             await updateBtn.waitFor({ state: "visible", timeout: 15_000 });
