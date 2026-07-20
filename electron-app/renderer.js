@@ -112,8 +112,8 @@ async function loadModules() {
             
             modules.forEach(mod => {
                 const opt = document.createElement('option');
-                opt.value = mod;
-                opt.textContent = mod;
+                opt.value = mod.fileName;
+                opt.textContent = mod.displayName;
                 moduleNameSelect.appendChild(opt);
             });
         }
