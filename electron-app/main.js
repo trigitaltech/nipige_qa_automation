@@ -143,7 +143,6 @@ ipcMain.handle('get-modules', async () => {
         for (const file of files) {
             const fullPath = path.join(testsDir, file);
             if (fs.statSync(fullPath).isDirectory()) {
-                if (file.toLowerCase() === 'setup') continue;
                 
                 // Helper to check if folder has spec files recursively
                 const hasSpecs = (dir) => {
