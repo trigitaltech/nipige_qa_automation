@@ -52,7 +52,9 @@ export default class TestListener implements Reporter {
             try {
                 const XLSX = require("xlsx");
                 const path = require("path");
-                const filePath = path.resolve("src/resources/data/testData.xlsx");
+                const filePath = process.env.TEST_DATA_PATH
+                    ? path.resolve(process.env.TEST_DATA_PATH)
+                    : path.resolve("src/resources/data/testData.xlsx");
                 const wb = XLSX.readFile(filePath);
                 const ws = wb.Sheets[sheetName];
                 if (ws) {
@@ -121,7 +123,9 @@ export default class TestListener implements Reporter {
         try {
             const XLSX = require("xlsx");
             const path = require("path");
-            const filePath = path.resolve("src/resources/data/testData.xlsx");
+            const filePath = process.env.TEST_DATA_PATH
+                ? path.resolve(process.env.TEST_DATA_PATH)
+                : path.resolve("src/resources/data/testData.xlsx");
             const wb = XLSX.readFile(filePath);
 
             // OfficeManagement Summary
