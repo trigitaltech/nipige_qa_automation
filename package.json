@@ -22,7 +22,7 @@
   "author": "Vinay Kumar B M",
   "license": "ISC",
   "devDependencies": {
-    "@faker-js/faker": "^10.5.0",
+    "@faker-js/faker": "^9.5.0",
     "@playwright/test": "1.54.2",
     "@types/convert-excel-to-json": "1.7.1",
     "@types/easy-soap-request": "^5.6.1",

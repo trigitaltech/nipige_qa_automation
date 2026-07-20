@@ -1,0 +1,84 @@
+{
+  "name": "nipige-qa-automation-ui",
+  "version": "1.0.0",
+  "description": "Nipige QA Automation Desktop Tool",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "postinstall": "electron-builder install-app-deps",
+    "build-node": "node scripts/download-node.js",
+    "dist": "npm run build-node && electron-builder"
+  },
+  "keywords": [],
+  "author": "Antigravity",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "electron": "^28.2.0",
+    "electron-builder": "^24.9.1"
+  },
+  "build": {
+    "appId": "com.qa.nipige.automation",
+    "productName": "NipigeAutomation",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "index.html",
+      "renderer.js",
+      "style.css"
+    ],
+    "extraResources": [
+      {
+        "from": "../src",
+        "to": "automation/src"
+      },
+      {
+        "from": "../tsconfig.json",
+        "to": "automation/tsconfig.json"
+      },
+      {
+        "from": "../playwright.config.ts",
+        "to": "automation/playwright.config.ts"
+      },
+      {
+        "from": "../package.json",
+        "to": "automation/package.json"
+      },
+      {
+        "from": "../node_modules",
+        "to": "automation/node_modules"
+      },
+      {
+        "from": "../.env",
+        "to": "automation/.env"
+      },
+      {
+        "from": "./bin",
+        "to": "bin"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
+  }
+}
