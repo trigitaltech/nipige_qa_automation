@@ -132,39 +132,46 @@ ipcMain.handle('get-defaults', () => {
     }
 });
 
-// Get list of available modules
+// Get list of available modules (individual spec files)
 ipcMain.handle('get-modules', async () => {
     try {
         const testsDir = path.join(automationDir, 'src', 'tests');
         if (!fs.existsSync(testsDir)) return [];
         
-        const files = fs.readdirSync(testsDir);
-        const modules = [];
-        for (const file of files) {
-            const fullPath = path.join(testsDir, file);
-            if (fs.statSync(fullPath).isDirectory()) {
-                if (file.toLowerCase() === 'setup') continue;
-                
-                // Helper to check if folder has spec files recursively
-                const hasSpecs = (dir) => {
-                    const subFiles = fs.readdirSync(dir);
-                    for (const sf of subFiles) {
-                        const sfp = path.join(dir, sf);
-                        if (fs.statSync(sfp).isDirectory()) {
-                            if (hasSpecs(sfp)) return true;
-                        } else if (sf.endsWith('.spec.ts')) {
-                            return true;
-                        }
+        const specs = [];
+        const walk = (dir) => {
+            const files = fs.readdirSync(dir);
+            for (const file of files) {
+                const fullPath = path.join(dir, file);
+                if (fs.statSync(fullPath).isDirectory()) {
+                    walk(fullPath);
+                } else if (file.endsWith('.spec.ts')) {
+                    if (file.startsWith('scratch_')) continue; // skip scratch files
+                    
+                    const rawName = file.replace(/\.spec\.ts$/, '');
+                    let displayName = rawName;
+                    if (displayName.endsWith('Test')) {
+                        displayName = displayName.slice(0, -4);
                     }
-                    return false;
-                };
-                
-                if (hasSpecs(fullPath)) {
-                    modules.push(file);
+                    
+                    // Format camel case to spaced words (e.g. TaxCode -> Tax Code)
+                    displayName = displayName
+                        .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+                        .replace(/([A-Z])([A-Z][a-z])/g, '$1 $2');
+                    
+                    specs.push({
+                        displayName: displayName,
+                        fileName: rawName
+                    });
                 }
             }
-        }
-        return modules.sort();
+        };
+        
+        walk(testsDir);
+        
+        // Sort by displayName alphabetically
+        specs.sort((a, b) => a.displayName.localeCompare(b.displayName));
+        return specs;
     } catch (e) {
         console.error("Failed to read modules list", e);
         return [];
@@ -360,19 +367,18 @@ ipcMain.on('run-tests', async (event, options) => {
             BROWSER: browser,
             HEADLESS: String(headless),
             BASE_URL: envUrl,
-            PARALLEL_THREAD: String(workers)
+            PARALLEL_THREAD: String(workers),
+            TEST_NAME: moduleName
         });
 
         const playwrightCli = path.join(automationDir, 'node_modules', '@playwright/test', 'cli.js');
-        const modulePath = path.join('src', 'tests', moduleName);
         const testArgs = [
             playwrightCli,
             'test',
-            modulePath,
             '--project=local'
         ];
 
-        sendLog(`Running command: playwright test ${modulePath} --project=local\n`);
+        sendLog(`Running command: playwright test --project=local (matching spec: *${moduleName}*)\n`);
         sendLog(`Headless: ${headless} | Workers: ${workers} | Browser: ${browser}\n\n`);
 
         activeChildProcess = spawn(nodeBin, testArgs, {
