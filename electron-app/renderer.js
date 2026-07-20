@@ -140,9 +140,11 @@ executionModeSelect.addEventListener('change', () => {
     if (mode === 'suite') {
         groupSheet.style.display = 'block';
         groupModule.style.display = 'none';
+        btnRun.textContent = 'Start Suite';
     } else {
         groupSheet.style.display = 'none';
         groupModule.style.display = 'block';
+        btnRun.textContent = 'Start Run';
     }
     updateRunButtonState();
 });
