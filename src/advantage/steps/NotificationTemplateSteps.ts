@@ -27,10 +27,17 @@ export default class NotificationTemplateSteps {
     }
 
     // ---------------------------------------------------------------- navigation + guard
-    /** Navigate Communications → Notification Template via the sidebar, with a direct-URL fallback. */
     public async navigateToNotificationTemplate() {
         await test.step(`Navigate Communications -> Notification Template`, async () => {
             try {
+                const url = this.page.url();
+                const headingText = (await this.page.locator(NotificationTemplatePage.MODULE_HEADING).first().textContent().catch(() => "") ?? "").trim();
+                const createVisible = await this.page.locator(NotificationTemplatePage.CREATE_BUTTON).first().isVisible().catch(() => false);
+                if (/\/notification-template$/i.test(url) && /^Templates$/i.test(headingText) && createVisible) {
+                    await this.resetSearch();
+                    return;
+                }
+
                 const link = this.page.getByRole("link",
                     { name: NotificationTemplatePage.SIDEBAR_LINK, exact: true }).first();
                 if (await link.isVisible().catch(() => false)) {
@@ -372,9 +379,37 @@ export default class NotificationTemplateSteps {
         });
     }
 
+    public async clearConcernSelection() {
+        await test.step("Clear Concern selection", async () => {
+            const toggle = this.page.locator(NotificationTemplatePage.CONCERN_COMBOBOX).first();
+            if (await toggle.isVisible().catch(() => false)) {
+                await toggle.click();
+                const placeholder = this.page.getByRole("option", { name: /select concern|choose concern|-/i }).first();
+                if (await placeholder.isVisible().catch(() => false)) {
+                    await placeholder.click().catch(() => {});
+                } else {
+                    await this.page.keyboard.press("Escape");
+                }
+            }
+            const input = this.page.locator(NotificationTemplatePage.CONCERN_COMBOBOX).first();
+            if (await input.count() > 0) {
+                const val = await input.inputValue().catch(() => "");
+                if (val.trim().length > 0) {
+                    await input.focus();
+                    await this.page.keyboard.press("Control+A");
+                    await this.page.keyboard.press("Backspace");
+                    await this.page.keyboard.press("Tab");
+                    Logger.info("Cleared Concern via keyboard select and delete.");
+                }
+            }
+        });
+    }
+
     public async verifyCannotCreateWithoutConcern() {
         await test.step(`Verify system prevents creation without concern`, async () => {
-            await this.clickCreateTemplate();
+            if (!this.page.url().includes("/create")) {
+                await this.clickCreateTemplate();
+            }
             await this.ui.element(NotificationTemplatePage.SUBMIT_BUTTON, NotificationTemplateConstants.SUBMIT_BUTTON).click();
             await expect(this.page.locator(NotificationTemplatePage.VALIDATION_MESSAGE).first(), "Validation error should appear").toBeVisible({ timeout: this.timeout });
         });

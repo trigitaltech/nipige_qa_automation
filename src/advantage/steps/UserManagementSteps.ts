@@ -218,25 +218,29 @@ export default class UserManagementSteps {
 
         searchText = await this.getFallbackSearchText(searchText);
 
-        const editButton = this.page.locator(
-            UserManagementPage.EDIT_BUTTON
-        ).first();
+        const editPageTitle = this.page.locator(UserManagementPage.EDIT_PAGE_TITLE);
+        let navigated = false;
 
-        await editButton.scrollIntoViewIfNeeded();
+        for (let attempt = 1; attempt <= 3; attempt++) {
+            try {
+                const freshEditButton = this.page.locator(UserManagementPage.EDIT_BUTTON).first();
+                await freshEditButton.scrollIntoViewIfNeeded();
+                await freshEditButton.click({ force: true });
+                
+                // Wait up to 5s for the Edit User title to become visible
+                await editPageTitle.waitFor({ state: "visible", timeout: 5000 });
+                navigated = true;
+                break;
+            } catch (err) {
+                console.log(`[UserManagementSteps] Edit button click attempt ${attempt} failed: ${err.message}. Retrying...`);
+                await this.page.waitForTimeout(1000);
+            }
+        }
 
-        await expect(
-            editButton
-        ).toBeVisible();
-
-        await editButton.click();
-
-        await expect(
-            this.page.locator(
-                UserManagementPage.EDIT_PAGE_TITLE
-            )
-        ).toBeVisible({
-            timeout: 60000
-        });
+        if (!navigated) {
+            // Fallback to assert with original timeout to surface correct error
+            await expect(editPageTitle).toBeVisible({ timeout: 60000 });
+        }
 
         const firstName = this.page.locator(
             UserManagementPage.FIRST_NAME_INPUT

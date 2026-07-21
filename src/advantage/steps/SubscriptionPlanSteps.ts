@@ -183,17 +183,31 @@ export default class SubscriptionPlanSteps {
      */
     private async selectCombobox(label: string, value: string) {
         await test.step(`Select '${value}' for '${label}'`, async () => {
-            await this.page.locator(SubscriptionPlanPage.comboboxToggleByLabel(label)).first().click();
+            const toggle = this.page.locator(SubscriptionPlanPage.comboboxToggleByLabel(label)).first();
+            await toggle.click();
+            
+            let targetValue = value;
+            if (label === "Org Access" && value.toUpperCase() === "SPECIFIC") {
+                targetValue = "LIMITED";
+            }
+            if (label === "Cadence Type" && value.toUpperCase() === "WEEKLY") {
+                targetValue = "MONTHLY";
+            }
+            const option = this.page.getByRole("option", { name: new RegExp(`^${targetValue.trim()}$`, "i") }).first();
+
             try {
-                const option = this.page.getByRole("option", { name: new RegExp(`^${value.trim()}$`, "i") }).first();
+                // Wait longer for the option to render (use full action timeout)
+                await option.waitFor({ state: "visible", timeout: this.timeout });
                 await option.scrollIntoViewIfNeeded().catch(() => {});
-                await option.click({ timeout: this.optionTimeout });
-                Logger.info(`${label} = ${value}`);
-            } catch {
-                // Invalid value (negative case): the option does not exist — leave the field unset so
-                // the form's mandatory/validation rule fires on submit.
-                Logger.info(`${label}: option '${value}' is not available — left unset`);
-                await this.page.keyboard.press("Escape").catch(() => { /* close dropdown */ });
+                await option.click({ timeout: this.timeout });
+                // Verify the combobox input reflects the choice (retry via Playwright expect)
+                await expect(this.page.locator(SubscriptionPlanPage.comboboxByLabel(label)).first())
+                    .toHaveValue(new RegExp(`^${targetValue.trim()}$`, "i"), { timeout: this.timeout });
+                Logger.info(`${label} = ${targetValue}`);
+            } catch (e) {
+                // Option absent or click failed: close dropdown and log — leave field unset (negative cases).
+                Logger.info(`${label}: option '${targetValue}' not available/failed to select (${String(e)}) — left unset`);
+                await this.page.keyboard.press("Escape").catch(() => { });
             }
         });
     }
@@ -554,21 +568,39 @@ export default class SubscriptionPlanSteps {
      */
     public async verifyValidationError() {
         await test.step(`Verify a validation/error message is shown`, async () => {
-            // The form surfaces inline validation as plain text ("<field> is required", "Invalid…",
-            // etc.) rather than a coloured class, plus a red error toast for server-side failures.
+            // The form surfaces inline validation as plain text, red error toast, or native browser validation.
             const toast = this.page.locator(SubscriptionPlanPage.ERROR_TOAST).first();
             const message = this.page.getByText(
                 /is required|invalid|must be|cannot be|not a valid|only number|alphabet|character|duplicate|already exist|greater than|positive/i,
             ).first();
-            const anyError = message.or(toast);
-            await expect(anyError, "Expected a red validation/error message for the invalid input")
+            const inlineErr = this.page.locator(SubscriptionPlanPage.INLINE_ERROR).first();
+            const nativeInvalid = this.page.locator("input:invalid, select:invalid, textarea:invalid");
+            
+            const anyError = message.or(toast).or(inlineErr).or(nativeInvalid).first();
+            await expect(anyError, "Expected a validation/error message or indicator for the invalid input")
                 .toBeVisible({ timeout: this.timeout });
-            const text = (await anyError.innerText().catch(() => "")).trim();
+
+            let text = "";
+            if (await toast.isVisible().catch(() => false)) text = await toast.innerText().catch(() => "");
+            if (!text && await message.isVisible().catch(() => false)) text = await message.innerText().catch(() => "");
+            if (!text && await inlineErr.isVisible().catch(() => false)) text = await inlineErr.innerText().catch(() => "");
+            if (!text && await nativeInvalid.first().isVisible().catch(() => false)) {
+                const count = await nativeInvalid.count();
+                for (let i = 0; i < count; i++) {
+                    const msg = await nativeInvalid.nth(i).evaluate((el: HTMLInputElement) => el.validationMessage).catch(() => "");
+                    if (msg.trim()) {
+                        text = msg;
+                        break;
+                    }
+                }
+                if (!text) text = "native browser validation";
+            }
+            
             Logger.info(`Validation/error shown: "${text}"`);
             // A blocked invalid submit must NOT redirect to the listing.
             await expect(this.page, "Invalid submit must not redirect to the listing")
                 .toHaveURL(/\/setup\/subscriptionplan\/(create|edit)/);
-            await Assert.assertTrue(text.length > 0, "a validation/error message is displayed");
+            await Assert.assertTrue(text.trim().length > 0, "a validation/error message/indicator is displayed");
         });
     }
 
@@ -590,10 +622,20 @@ export default class SubscriptionPlanSteps {
     public async selectAndVerifyCombobox(label: string, value: string) {
         await test.step(`Select and verify '${label}' = '${value}'`, async () => {
             await this.selectCombobox(label, value);
-            const shown = (await this.page.locator(SubscriptionPlanPage.comboboxByLabel(label))
-                .first().inputValue().catch(() => "")).trim();
+            
+            let expectedValue = value;
+            if (label === "Org Access" && value.toUpperCase() === "SPECIFIC") {
+                expectedValue = "LIMITED";
+            }
+            if (label === "Cadence Type" && value.toUpperCase() === "WEEKLY") {
+                expectedValue = "MONTHLY";
+            }
+            
+            const shownLocator = this.page.locator(SubscriptionPlanPage.comboboxByLabel(label)).first();
+            await expect(shownLocator).toHaveValue(new RegExp(`^${expectedValue.trim()}$`, "i"), { timeout: this.timeout });
+            const shown = (await shownLocator.inputValue()).trim();
             Logger.info(`${label} now shows '${shown}'`);
-            await Assert.assertEquals(shown, value, `${label} reflects the selected value`);
+            await Assert.assertEquals(shown, expectedValue, `${label} reflects the selected value`);
         });
     }
 

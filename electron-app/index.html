@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nipige QA Automation Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="logo-glow"></div>
+                <h2>Nipige<span>QA</span></h2>
+            </div>
+            <nav class="nav-menu">
+                <button class="nav-item active" data-tab="dashboard">
+                    <span class="icon">🚀</span> Dashboard
+                </button>
+                <button class="nav-item" data-tab="settings">
+                    <span class="icon">⚙️</span> Configuration
+                </button>
+                <button class="nav-item" data-tab="setup">
+                    <span class="icon">🛠️</span> System Setup
+                </button>
+            </nav>
+            <div class="footer">
+                <p>v1.0.0 • Standalone App</p>
+            </div>
+        </aside>
+
+        <!-- Main Workspace -->
+        <main class="workspace">
+            
+            <!-- Dashboard Tab -->
+            <section id="tab-dashboard" class="tab-content active">
+                <header class="tab-header">
+                    <h1>Automation Runner</h1>
+                    <p>Run data-driven Playwright test suites effortlessly.</p>
+                </header>
+
+                <div class="grid-layout">
+                    
+                    <!-- Run Panel -->
+                    <div class="card run-panel">
+                        <h3>Run Settings</h3>
+                        
+                        <!-- File Picker -->
+                        <div class="form-group">
+                            <label for="excel-path">Test Data Excel File</label>
+                            <div class="file-picker">
+                                <input type="text" id="excel-path" readonly placeholder="Choose external testData.xlsx file...">
+                                <button id="btn-browse" class="btn btn-secondary">Browse</button>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <!-- Execution Mode Select -->
+                            <div class="form-group col">
+                                <label for="execution-mode">Execution Mode</label>
+                                <select id="execution-mode">
+                                    <option value="suite" selected>Suite Execution</option>
+                                    <option value="module">Module Execution</option>
+                                </select>
+                            </div>
+
+                            <!-- Browser Select -->
+                            <div class="form-group col">
+                                <label for="browser-name">Execution Browser</label>
+                                <select id="browser-name">
+                                    <option value="chrome">Google Chrome (System)</option>
+                                    <option value="chromium">Playwright Chromium</option>
+                                    <option value="msedge">Microsoft Edge (System)</option>
+                                    <option value="firefox">Playwright Firefox</option>
+                                    <option value="webkit">Playwright WebKit</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <!-- Sheet Select (Suite Mode only) -->
+                            <div id="group-sheet" class="form-group col">
+                                <label for="sheet-name">Test Suite Sheet</label>
+                                <select id="sheet-name" disabled>
+                                    <option value="" disabled selected>Select Excel file first...</option>
+                                </select>
+                            </div>
+
+                            <!-- Module Select (Module Mode only) -->
+                            <div id="group-module" class="form-group col" style="display: none;">
+                                <label for="module-name">Automation Module</label>
+                                <select id="module-name">
+                                    <option value="" disabled selected>Select module...</option>
+                                </select>
+                            </div>
+
+                            <!-- Worker Thread count -->
+                            <div class="form-group col">
+                                <label for="worker-threads">Parallel Workers</label>
+                                <input type="number" id="worker-threads" min="1" max="20" value="6">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <!-- Base URL Env -->
+                            <div class="form-group col-2">
+                                <label for="env-url">Target URL (BASE_URL)</label>
+                                <input type="url" id="env-url" placeholder="https://example.com">
+                            </div>
+                        </div>
+
+                        <!-- Toggle Headless -->
+                        <div class="form-group checkbox-group">
+                            <label class="checkbox-container">
+                                <input type="checkbox" id="headless-mode" checked>
+                                <span class="checkmark"></span>
+                                Run in Headless Mode (Recommended for speed)
+                            </label>
+                        </div>
+
+                        <!-- Control Buttons -->
+                        <div class="actions">
+                            <button id="btn-run" class="btn btn-primary btn-glow" disabled>Start Suite</button>
+                            <button id="btn-cancel" class="btn btn-danger" disabled>Cancel</button>
+                            <button id="btn-report" class="btn btn-secondary" disabled>View Last Report</button>
+                        </div>
+                    </div>
+
+                    <!-- Progress & Status Card -->
+                    <div class="card status-panel">
+                        <h3>Execution Progress</h3>
+                        <div class="progress-details">
+                            <div class="status-indicator">
+                                <span class="dot"></span>
+                                <span id="status-text">Idle</span>
+                            </div>
+                            <div class="progress-bar-container">
+                                <div id="progress-bar" class="progress-bar" style="width: 0%"></div>
+                            </div>
+                            <div id="progress-percent" class="progress-percent">0%</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Console Output Card -->
+                <div class="card console-card">
+                    <div class="console-header">
+                        <h3>Console Logs</h3>
+                        <button id="btn-clear-console" class="btn btn-text">Clear Logs</button>
+                    </div>
+                    <div class="console-body">
+                        <pre id="console-logs">Waiting for test run to begin...</pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Configuration / Settings Tab -->
+            <section id="tab-settings" class="tab-content">
+                <header class="tab-header">
+                    <h1>Environment variables (.env)</h1>
+                    <p>Modify role emails, passwords, databases, and general parameters.</p>
+                </header>
+
+                <div class="card">
+                    <h3>Credential Configuration</h3>
+                    <div class="form-row">
+                        <div class="form-group col">
+                            <label for="set-tenant-email">Tenant Email</label>
+                            <input type="email" id="set-tenant-email">
+                        </div>
+                        <div class="form-group col">
+                            <label for="set-tenant-pass">Tenant Password</label>
+                            <input type="text" id="set-tenant-pass">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group col">
+                            <label for="set-admin-email">Admin Email</label>
+                            <input type="email" id="set-admin-email">
+                        </div>
+                        <div class="form-group col">
+                            <label for="set-admin-pass">Admin Password</label>
+                            <input type="text" id="set-admin-pass">
+                        </div>
+                    </div>
+
+                    <h3>API & DB Endpoints</h3>
+                    <div class="form-row">
+                        <div class="form-group col">
+                            <label for="set-soap-url">SOAP API URL</label>
+                            <input type="text" id="set-soap-url">
+                        </div>
+                        <div class="form-group col">
+                            <label for="set-rest-url">REST API URL</label>
+                            <input type="text" id="set-rest-url">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="set-db-config">Database Connection String (DB_CONFIG)</label>
+                        <input type="text" id="set-db-config">
+                    </div>
+
+                    <div class="actions">
+                        <button id="btn-save-settings" class="btn btn-primary">Save Settings</button>
+                        <div id="save-status" class="save-status"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- System Setup Tab -->
+            <section id="tab-setup" class="tab-content">
+                <header class="tab-header">
+                    <h1>System Setup</h1>
+                    <p>Configure local dependencies, install testing browser runtimes.</p>
+                </header>
+
+                <div class="card setup-card">
+                    <h3>Playwright Browser Runtimes</h3>
+                    <p>Playwright needs standalone browser binaries to run. If this is a new QA machine, click below to install the necessary runtimes.</p>
+                    
+                    <div class="actions" style="margin-top: 20px;">
+                        <button id="btn-install-browsers" class="btn btn-secondary">Install Playwright Browsers</button>
+                    </div>
+
+                    <div id="setup-progress-details" class="progress-details" style="display: none; margin-top: 20px;">
+                        <div class="status-indicator">
+                            <span class="dot pulse"></span>
+                            <span id="setup-status-text">Installing...</span>
+                        </div>
+                        <div class="progress-bar-container">
+                            <div id="setup-progress-bar" class="progress-bar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+    <script src="renderer.js"></script>
+</body>
+</html>
+

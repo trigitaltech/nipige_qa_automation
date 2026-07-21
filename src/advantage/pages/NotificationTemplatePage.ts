@@ -16,7 +16,7 @@ export default class NotificationTemplatePage {
     static readonly SIDEBAR_LINK = "Notification Template";
 
     // ---- Module guard ----
-    static readonly URL_GUARD = /\/notification-template/i;
+    static readonly URL_GUARD = /\/notification-template$/i;
     static readonly HEADING_GUARD = /^Templates$/i;
     static readonly MODULE_HEADING = "main h1, main h2";
 

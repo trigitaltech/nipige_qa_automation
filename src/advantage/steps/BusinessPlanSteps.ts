@@ -159,10 +159,19 @@ export default class BusinessPlanSteps {
 
     public async clickViewMoreOnFirstCard() {
         await test.step("Click View More on the first plan card", async () => {
-            const btn = this.page.locator(BusinessPlanPage.VIEW_MORE_BTN).first();
-            await expect(btn, "View More button must be visible").toBeVisible({ timeout: 8000 });
-            await btn.click();
-            await this.page.waitForLoadState("networkidle");
+            for (let attempt = 0; attempt < 3; attempt++) {
+                const btn = this.page.locator(BusinessPlanPage.VIEW_MORE_BTN).first();
+                if (await btn.isVisible({ timeout: 4000 }).catch(() => false)) {
+                    await btn.click();
+                    await this.page.waitForLoadState("networkidle");
+                    return;
+                }
+                // Try refreshing the listing and wait for cards to load
+                console.log(`[BusinessPlan] View More not visible (attempt ${attempt + 1}) — reloading and retrying`);
+                await this.page.reload();
+                await this.waitForCardsLoaded();
+            }
+            throw new Error("View More button not visible after retries — possible no data in environment or rate-limit.");
         });
     }
 

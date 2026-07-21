@@ -4,8 +4,9 @@ node_modules/
 /.pnpm-store
 
 # Build & Output
-/dist
-/build
+dist/
+build/
+bin/
 *.test.ts
 
 # Test Results & Reports

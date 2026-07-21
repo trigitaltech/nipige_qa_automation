@@ -1,1509 +1,623 @@
 /**
- * Adds (or replaces) the CatalogTest sheet in testData.xlsx.
+ * Updates the "CatalogTest" sheet in testData.xlsx — updates descriptions and expected results for all 140 rows.
  * Run once: node scripts/addCatalogTestSheet.js
- *
- * Columns: TestID | Description | persona | CatalogNode | ParentNode | ChildNode |
- *          ExpectedChildren | ExpectedCount | Language | Name | DisplayName |
- *          LongDescription | ShortDescription | CatalogType | Parent |
- *          DuplicateName | InvalidName | LongName | LongDisplayName | SearchTerm |
- *          ThumbnailPath | NonImageFilePath | OversizedImagePath | CorruptedImagePath |
- *          CreatedName | ExpectedResult | Issue
  */
 const XLSX = require("xlsx");
 const path = require("path");
 
 const FILE = path.resolve(__dirname, "../src/resources/data/testData.xlsx");
-const SHEET = "CatalogAdminTest";
+const SHEET_NAME = "CatalogTest";
 
-const ADMIN_PERSONA = "tenant";
-const ROOT_NODE = "Root";
-const CHILD_NODE = "Nipigev2";
-const GROCERY_NODE = "Grocery";
+const updates = {
+    // ── Catalog Main Screen (TC01 to TC20) ──
+    "TC01_MainScreen_PageLoads": {
+        "Description": "Verify Catalog page loads successfully with Catalog Tree and Catalog Details sections displayed.",
+        "ExpectedResult": "Catalog page loads successfully with tree and details sections."
+    },
+    "TC02_MainScreen_ExpandNode": {
+        "Description": "Verify expanding a catalog node displays all child categories correctly.",
+        "ExpectedResult": "All child categories are displayed correctly under parent."
+    },
+    "TC03_MainScreen_SelectNode": {
+        "Description": "Verify selecting a catalog item populates the Catalog Details panel with correct information.",
+        "ExpectedResult": "Catalog Details panel populates with correct information."
+    },
+    "TC04_MainScreen_CreateButton": {
+        "Description": "Verify Create Catalog button opens the catalog creation form/modal successfully.",
+        "ExpectedResult": "Catalog creation form/modal opens successfully."
+    },
+    "TC05_MainScreen_NameField": {
+        "Description": "Verify catalog Name field displays the selected catalog name correctly.",
+        "ExpectedResult": "Name field displays the correct selected name."
+    },
+    "TC06_MainScreen_DisplayNameField": {
+        "Description": "Verify Display Name field shows the correct display name for the selected catalog.",
+        "ExpectedResult": "Display Name field shows the correct display name."
+    },
+    "TC07_MainScreen_LongDescField": {
+        "Description": "Verify Long Description field displays saved catalog description correctly.",
+        "ExpectedResult": "Long Description displays the saved description text."
+    },
+    "TC08_MainScreen_ShortDescField": {
+        "Description": "Verify Short Description field displays saved catalog summary correctly.",
+        "ExpectedResult": "Short Description displays the saved summary text."
+    },
+    "TC09_MainScreen_AttributeCount": {
+        "Description": "Verify Attribute Count displays the correct number of attributes for the selected catalog.",
+        "ExpectedResult": "Attribute Count matches actual catalog attributes."
+    },
+    "TC10_MainScreen_TreeHierarchy": {
+        "Description": "Verify Catalog Tree hierarchy is displayed in the correct parent-child structure.",
+        "ExpectedResult": "Catalog Tree displays in correct parent-child structure."
+    },
+    "TC11_MainScreen_EmptyDetails": {
+        "Description": "Verify Catalog Details section remains empty or shows a message when no catalog is selected.",
+        "ExpectedResult": "Empty details message or empty section displays."
+    },
+    "TC12_MainScreen_APIFailure": {
+        "Description": "Verify system handles Catalog API failure without crashing the page.",
+        "ExpectedResult": "Graceful error toaster or message shows."
+    },
+    "TC13_MainScreen_InvalidNodes": {
+        "Description": "Verify invalid or deleted catalog nodes are not displayed in the Catalog Tree.",
+        "ExpectedResult": "Deleted or invalid nodes do not show."
+    },
+    "TC14_MainScreen_MissingDetails": {
+        "Description": "Verify selecting a catalog with missing details does not break the UI.",
+        "ExpectedResult": "UI handles blank or null details gracefully."
+    },
+    "TC15_MainScreen_UnauthorizedCreate": {
+        "Description": "Verify Create Catalog action is restricted for unauthorized users.",
+        "ExpectedResult": "Action blocked or access denied error."
+    },
+    "TC16_MainScreen_LongNameDisplay": {
+        "Description": "Verify extremely long catalog names are displayed without UI overlap or truncation issues.",
+        "ExpectedResult": "Text wraps or scrolls cleanly without breaking layout."
+    },
+    "TC17_MainScreen_EmptyTree": {
+        "Description": "Verify Catalog Tree handles empty catalog data gracefully.",
+        "ExpectedResult": "No data/empty tree displays safely."
+    },
+    "TC18_MainScreen_DuplicateName": {
+        "Description": "Verify system prevents duplicate catalog creation when the same catalog name already exists.",
+        "ExpectedResult": "Validation error blocks duplicate creation."
+    },
+    "TC19_MainScreen_LargeHierarchy": {
+        "Description": "Verify page remains responsive when loading a very large catalog hierarchy (1000+ nodes).",
+        "ExpectedResult": "Hierarchy loads successfully and page stays responsive."
+    },
+    "TC20_MainScreen_DisabledButtons": {
+        "Description": "Verify clicking disabled Details/Delete Catalog buttons without selecting a catalog does not trigger any action.",
+        "ExpectedResult": "No actions are triggered on click."
+    },
 
-const rows = [
-  // ═══════════════════════════════════════════════════════════════════════
-  // CATALOG MAIN SCREEN — Positive
-  // ═══════════════════════════════════════════════════════════════════════
-  {
-    TestID: "TC01_MainScreen_PageLoads",
-    Description: "Verify the Catalog page loads successfully with Catalog Tree, Catalog Details section, and action buttons displayed.",
-    persona: ADMIN_PERSONA, CatalogNode: "", ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "", DisplayName: "", LongDescription: "", ShortDescription: "",
-    CatalogType: "", Parent: "", DuplicateName: "", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "catalog tree and details visible", Issue: "",
-  },
-  {
-    TestID: "TC02_MainScreen_SelectNode",
-    Description: "Verify selecting a catalog node from the Catalog Tree displays the correct catalog details (Name, Type, Description, Attribute Count).",
-    persona: ADMIN_PERSONA, CatalogNode: ROOT_NODE, ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "", DisplayName: "", LongDescription: "", ShortDescription: "",
-    CatalogType: "", Parent: "", DuplicateName: "", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "details populated", Issue: "",
-  },
-  {
-    TestID: "TC03_MainScreen_CreateButton",
-    Description: "Verify the Create Catalog button navigates to the Create Catalog page successfully.",
-    persona: ADMIN_PERSONA, CatalogNode: "", ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "", DisplayName: "", LongDescription: "", ShortDescription: "",
-    CatalogType: "", Parent: "", DuplicateName: "", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "create form loaded", Issue: "",
-  },
-  {
-    TestID: "TC04_MainScreen_ExpandCollapse",
-    Description: "Verify catalog hierarchy expands and collapses correctly when clicking parent nodes.",
-    persona: ADMIN_PERSONA, CatalogNode: "", ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "", DisplayName: "", LongDescription: "", ShortDescription: "",
-    CatalogType: "", Parent: "", DuplicateName: "", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "children visible then hidden", Issue: "",
-  },
-  {
-    TestID: "TC05_MainScreen_AccurateDetails",
-    Description: "Verify catalog details fields display accurate data for the selected catalog.",
-    persona: ADMIN_PERSONA, CatalogNode: ROOT_NODE, ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "", DisplayName: "", LongDescription: "", ShortDescription: "",
-    CatalogType: "", Parent: "", DuplicateName: "", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "all fields populated correctly", Issue: "",
-  },
-  {
-    TestID: "TC06_MainScreen_AttributeCount",
-    Description: "Verify the Attribute Count displayed matches the actual number of attributes associated with the catalog.",
-    persona: ADMIN_PERSONA, CatalogNode: ROOT_NODE, ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "", DisplayName: "", LongDescription: "", ShortDescription: "",
-    CatalogType: "", Parent: "", DuplicateName: "", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "attribute count visible", Issue: "",
-  },
-  {
-    TestID: "TC07_MainScreen_DetailsButtonEnabled",
-    Description: "Verify the Details button becomes enabled when a valid catalog is selected.",
-    persona: ADMIN_PERSONA, CatalogNode: ROOT_NODE, ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "", DisplayName: "", LongDescription: "", ShortDescription: "",
-    CatalogType: "", Parent: "", DuplicateName: "", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "details button enabled", Issue: "",
-  },
-  {
-    TestID: "TC08_MainScreen_SelectedHighlighted",
-    Description: "Verify the selected catalog remains highlighted in the Catalog Tree after page refresh.",
-    persona: ADMIN_PERSONA, CatalogNode: ROOT_NODE, ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "", DisplayName: "", LongDescription: "", ShortDescription: "",
-    CatalogType: "", Parent: "", DuplicateName: "", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "catalog page loaded after refresh", Issue: "",
-  },
+    // ── Catalog Details Screen (TC21 to TC90) ──
+    "TC21_Details_PageLoads": {
+        "Description": "Verify Catalog Details page loads successfully with all sections displayed.",
+        "ExpectedResult": "Catalog Details page loads successfully."
+    },
+    "TC22_Details_AllFieldsPopulated": {
+        "Description": "Verify selected catalog information is populated correctly in all fields.",
+        "ExpectedResult": "All details fields populate correctly."
+    },
+    "TC23_Details_NameField": {
+        "Description": "Verify Name field displays the correct catalog name.",
+        "ExpectedResult": "Name field displays correct catalog name."
+    },
+    "TC24_Details_DisplayNameField": {
+        "Description": "Verify Display Name field displays the correct value.",
+        "ExpectedResult": "Display Name field displays correct value."
+    },
+    "TC25_Details_LongDescField": {
+        "Description": "Verify Long Description field displays saved data correctly.",
+        "ExpectedResult": "Long Description displays correct saved data."
+    },
+    "TC26_Details_ShortDescField": {
+        "Description": "Verify Short Description field displays saved data correctly.",
+        "ExpectedResult": "Short Description displays correct saved data."
+    },
+    "TC27_Details_LanguageDropdown": {
+        "Description": "Verify Select Language dropdown displays available languages.",
+        "ExpectedResult": "Language dropdown lists all available translation options."
+    },
+    "TC28_Details_ChangeLanguage": {
+        "Description": "Verify changing language updates localized catalog details correctly.",
+        "ExpectedResult": "Localized catalog details update correctly."
+    },
+    "TC29_Details_CatalogLevel": {
+        "Description": "Verify Catalog Level field displays correct hierarchy level.",
+        "ExpectedResult": "Catalog Level shows correct hierarchy depth."
+    },
+    "TC30_Details_ParentField": {
+        "Description": "Verify Parent field displays correct parent catalog.",
+        "ExpectedResult": "Parent catalog displays correctly."
+    },
+    "TC31_Details_AliasField": {
+        "Description": "Verify Catalog Alias field displays correct alias values.",
+        "ExpectedResult": "Catalog Alias shows correct alias values."
+    },
+    "TC32_Details_CatalogTypeField": {
+        "Description": "Verify Catalog Type field displays assigned catalog type.",
+        "ExpectedResult": "Catalog Type shows assigned type details."
+    },
+    "TC33_Details_IconUpload": {
+        "Description": "Verify icon image uploads successfully with supported image format.",
+        "ExpectedResult": "Icon image uploads successfully."
+    },
+    "TC34_Details_IconPreview": {
+        "Description": "Verify uploaded icon preview is displayed correctly.",
+        "ExpectedResult": "Icon preview displays correctly."
+    },
+    "TC35_Details_ChangeImage": {
+        "Description": "Verify Change Image button allows replacing existing image.",
+        "ExpectedResult": "Image replaced successfully."
+    },
+    "TC36_Details_ImageLibrary": {
+        "Description": "Verify Image Library section displays uploaded images correctly.",
+        "ExpectedResult": "Uploaded library images display correctly."
+    },
+    "TC37_Details_AddImage": {
+        "Description": "Verify Add Image button uploads additional images successfully.",
+        "ExpectedResult": "Additional images uploaded successfully."
+    },
+    "TC38_Details_ImageTitle": {
+        "Description": "Verify image title is displayed correctly in Image Library.",
+        "ExpectedResult": "Image title displays correctly."
+    },
+    "TC39_Details_ImageDescription": {
+        "Description": "Verify image description is displayed correctly in Image Library.",
+        "ExpectedResult": "Image description displays correctly."
+    },
+    "TC40_Details_AddAttribute": {
+        "Description": "Verify Add Attribute button creates a new attribute successfully.",
+        "ExpectedResult": "New attribute created successfully."
+    },
+    "TC41_Details_AttributeSearch": {
+        "Description": "Verify attribute search returns matching attributes.",
+        "ExpectedResult": "Attribute search returns matching attributes."
+    },
+    "TC42_Details_VisibleToggle": {
+        "Description": "Verify Visible toggle updates attribute visibility successfully.",
+        "ExpectedResult": "Attribute visibility updates successfully."
+    },
+    "TC43_Details_RequiredToggle": {
+        "Description": "Verify Required toggle updates attribute requirement successfully.",
+        "ExpectedResult": "Attribute requirement updates successfully."
+    },
+    "TC44_Details_SearchableToggle": {
+        "Description": "Verify Searchable toggle updates attribute searchability successfully.",
+        "ExpectedResult": "Attribute searchability updates successfully."
+    },
+    "TC45_Details_InventoryableToggle": {
+        "Description": "Verify Inventoryable toggle updates inventory settings correctly.",
+        "ExpectedResult": "Inventory settings update correctly."
+    },
+    "TC46_Details_VariantToggle": {
+        "Description": "Verify Variant toggle updates variant settings correctly.",
+        "ExpectedResult": "Variant settings update correctly."
+    },
+    "TC47_Details_VisibleOnCreate": {
+        "Description": "Verify Visible on Create toggle updates successfully.",
+        "ExpectedResult": "Visible on Create updates successfully."
+    },
+    "TC48_Details_VisibleOnUpdate": {
+        "Description": "Verify Visible on Update toggle updates successfully.",
+        "ExpectedResult": "Visible on Update updates successfully."
+    },
+    "TC49_Details_VisibleOnShow": {
+        "Description": "Verify Visible on Show toggle updates successfully.",
+        "ExpectedResult": "Visible on Show updates successfully."
+    },
+    "TC50_Details_AttributeSorting": {
+        "Description": "Verify attribute sorting updates display order correctly.",
+        "ExpectedResult": "Sorting updates attribute display order correctly."
+    },
+    "TC51_Details_FormLayout": {
+        "Description": "Verify Form Layout section displays all configured fields correctly.",
+        "ExpectedResult": "Form Layout displays all fields correctly."
+    },
+    "TC52_Details_AddBlock": {
+        "Description": "Verify Add Block button creates a new form block successfully.",
+        "ExpectedResult": "New form block created successfully."
+    },
+    "TC53_Details_AddAttrToBlock": {
+        "Description": "Verify Add Attribute to block works successfully.",
+        "ExpectedResult": "Attribute added to block successfully."
+    },
+    "TC54_Details_OrderTypes": {
+        "Description": "Verify Order Types section displays assigned order types correctly.",
+        "ExpectedResult": "Assigned order types display correctly."
+    },
+    "TC55_Details_Pagination": {
+        "Description": "Verify pagination works correctly when multiple attributes exist.",
+        "ExpectedResult": "Pagination navigates correctly between attribute pages."
+    },
+    "TC56_Details_APIFailure": {
+        "Description": "Verify page handles Catalog Details API failure gracefully.",
+        "ExpectedResult": "API failure handled gracefully."
+    },
+    "TC57_Details_EmptyState": {
+        "Description": "Verify page displays empty state when catalog details are unavailable.",
+        "ExpectedResult": "Empty state displays successfully."
+    },
+    "TC58_Details_SpecialCharsName": {
+        "Description": "Verify Name field rejects unsupported special characters if restricted.",
+        "ExpectedResult": "Unsupported characters rejected with validation."
+    },
+    "TC59_Details_DuplicateAlias": {
+        "Description": "Verify duplicate catalog alias values are not allowed.",
+        "ExpectedResult": "Duplicate alias values blocked with validation."
+    },
+    "TC60_Details_MissingTranslation": {
+        "Description": "Verify language selection handles missing translations gracefully.",
+        "ExpectedResult": "Missing translations handled gracefully."
+    },
+    "TC61_Details_UnsupportedImageFormat": {
+        "Description": "Verify unsupported image formats are rejected during icon upload.",
+        "ExpectedResult": "Unsupported image format rejected."
+    },
+    "TC62_Details_ImageSizeExceeded": {
+        "Description": "Verify image upload fails when file size exceeds allowed limit.",
+        "ExpectedResult": "Oversized image rejected."
+    },
+    "TC63_Details_CorruptedImage": {
+        "Description": "Verify corrupted image files cannot be uploaded.",
+        "ExpectedResult": "Corrupted image upload blocked."
+    },
+    "TC64_Details_InvalidImageURL": {
+        "Description": "Verify image preview does not break when image URL is invalid.",
+        "ExpectedResult": "Invalid URL preview handles gracefully."
+    },
+    "TC65_Details_ImageUploadFailure": {
+        "Description": "Verify Add Image action handles upload service failure gracefully.",
+        "ExpectedResult": "Upload service failure handled gracefully."
+    },
+    "TC66_Details_DeleteImage": {
+        "Description": "Verify deleting an image removes it from Image Library successfully.",
+        "ExpectedResult": "Image deleted from library successfully."
+    },
+    "TC67_Details_DuplicateImage": {
+        "Description": "Verify duplicate image uploads are handled appropriately.",
+        "ExpectedResult": "Duplicate image handled appropriately."
+    },
+    "TC68_Details_AddAttrMandatoryMissing": {
+        "Description": "Verify Add Attribute fails when mandatory attribute information is missing.",
+        "ExpectedResult": "Attribute addition blocked."
+    },
+    "TC69_Details_DuplicateAttribute": {
+        "Description": "Verify duplicate attributes cannot be added to the same catalog.",
+        "ExpectedResult": "Duplicate attribute addition blocked."
+    },
+    "TC70_Details_InvalidAttrType": {
+        "Description": "Verify invalid attribute types are rejected.",
+        "ExpectedResult": "Invalid attribute types rejected."
+    },
+    "TC71_Details_AttrSearchNoResults": {
+        "Description": "Verify attribute search with invalid text returns no results.",
+        "ExpectedResult": "Search returns no results."
+    },
+    "TC72_Details_ToggleAPIFailure": {
+        "Description": "Verify attribute toggles handle API failures without UI corruption.",
+        "ExpectedResult": "Toggle API failure handled gracefully."
+    },
+    "TC73_Details_InvalidSortPosition": {
+        "Description": "Verify sorting attributes with invalid positions is prevented.",
+        "ExpectedResult": "Invalid sorting prevented."
+    },
+    "TC74_Details_RequiredToggleUnsupported": {
+        "Description": "Verify Required toggle cannot be enabled for unsupported attribute types.",
+        "ExpectedResult": "Required toggle disabled for unsupported types."
+    },
+    "TC75_Details_DeleteAttribute": {
+        "Description": "Verify deleting an attribute updates the list correctly without page refresh issues.",
+        "ExpectedResult": "Attribute list updates successfully."
+    },
+    "TC76_Details_EmptyBlock": {
+        "Description": "Verify Form Layout handles empty blocks correctly.",
+        "ExpectedResult": "Empty blocks handled correctly."
+    },
+    "TC77_Details_DuplicateFieldInBlock": {
+        "Description": "Verify adding duplicate fields to the same block is restricted.",
+        "ExpectedResult": "Duplicate fields in block restricted."
+    },
+    "TC78_Details_BlockDeletion": {
+        "Description": "Verify block deletion updates layout correctly.",
+        "ExpectedResult": "Layout updates correctly after block deletion."
+    },
+    "TC79_Details_InvalidDragDrop": {
+        "Description": "Verify drag-and-drop reordering handles invalid drop positions.",
+        "ExpectedResult": "Invalid drop positions handled gracefully."
+    },
+    "TC80_Details_MandatoryFieldsMissing": {
+        "Description": "Verify system prevents saving layout with mandatory fields missing.",
+        "ExpectedResult": "Layout save blocked with validation."
+    },
+    "TC81_Details_LayoutAfterRefresh": {
+        "Description": "Verify layout remains intact after browser refresh.",
+        "ExpectedResult": "Layout remains intact after refresh."
+    },
+    "TC82_Details_LargeAttrCount": {
+        "Description": "Verify page handles large numbers of attributes (500+) without performance issues.",
+        "ExpectedResult": "Large numbers of attributes handled without lag."
+    },
+    "TC83_Details_UnauthorizedModify": {
+        "Description": "Verify unauthorized users cannot modify catalog details.",
+        "ExpectedResult": "Modification blocked for unauthorized users."
+    },
+    "TC84_Details_UnauthorizedImageUpload": {
+        "Description": "Verify unauthorized users cannot upload images.",
+        "ExpectedResult": "Image upload blocked."
+    },
+    "TC85_Details_UnauthorizedAttr": {
+        "Description": "Verify unauthorized users cannot add or delete attributes.",
+        "ExpectedResult": "Attribute modification blocked."
+    },
+    "TC86_Details_EmptyOrderTypes": {
+        "Description": "Verify Order Types section handles empty order type assignments correctly.",
+        "ExpectedResult": "Empty order types handled correctly."
+    },
+    "TC87_Details_PaginationDynamic": {
+        "Description": "Verify pagination does not break when record count changes dynamically.",
+        "ExpectedResult": "Pagination handles dynamic changes."
+    },
+    "TC88_Details_NullValues": {
+        "Description": "Verify null values in catalog details do not break the UI.",
+        "ExpectedResult": "Null values do not break UI."
+    },
+    "TC89_Details_ConcurrentUpdates": {
+        "Description": "Verify concurrent updates by multiple users are handled correctly.",
+        "ExpectedResult": "Concurrent updates handled correctly."
+    },
+    "TC90_Details_BackRefreshUnsaved": {
+        "Description": "Verify browser back/refresh actions do not cause unsaved data corruption.",
+        "ExpectedResult": "No data corruption on back/refresh."
+    },
 
-  // ═══════════════════════════════════════════════════════════════════════
-  // CATALOG MAIN SCREEN — Negative
-  // ═══════════════════════════════════════════════════════════════════════
-  {
-    TestID: "TC09_MainScreen_DetailsButtonDisabled",
-    Description: "Verify the Details button remains disabled when no catalog is selected.",
-    persona: ADMIN_PERSONA, CatalogNode: "", ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "", DisplayName: "", LongDescription: "", ShortDescription: "",
-    CatalogType: "", Parent: "", DuplicateName: "", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "details button disabled or inactive", Issue: "",
-  },
-  {
-    TestID: "TC10_MainScreen_DeleteButtonDisabled",
-    Description: "Verify the Delete Catalog button remains disabled when no catalog is selected.",
-    persona: ADMIN_PERSONA, CatalogNode: "", ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "", DisplayName: "", LongDescription: "", ShortDescription: "",
-    CatalogType: "", Parent: "", DuplicateName: "", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "delete button disabled or inactive", Issue: "",
-  },
-  {
-    TestID: "TC11_MainScreen_InvalidCatalogURL",
-    Description: "Verify selecting a non-existent/deleted catalog through a direct URL displays an appropriate error message.",
-    persona: ADMIN_PERSONA, CatalogNode: "", ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "", DisplayName: "", LongDescription: "", ShortDescription: "",
-    CatalogType: "", Parent: "", DuplicateName: "", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "error or catalog page loaded", Issue: "Navigate to /catalog/nonexistent-id",
-  },
-  {
-    TestID: "TC12_MainScreen_EmptyTree",
-    Description: "Verify the system handles an empty Catalog Tree without UI breakage when no catalogs exist.",
-    persona: ADMIN_PERSONA, CatalogNode: "", ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "", DisplayName: "", LongDescription: "", ShortDescription: "",
-    CatalogType: "", Parent: "", DuplicateName: "", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "catalog page loaded without crash", Issue: "Soft pass — tree has data in env",
-  },
-  {
-    TestID: "TC13_MainScreen_StaleDetails",
-    Description: "Verify catalog details section does not display stale data after selecting an invalid catalog.",
-    persona: ADMIN_PERSONA, CatalogNode: ROOT_NODE, ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "", DisplayName: "", LongDescription: "", ShortDescription: "",
-    CatalogType: "", Parent: "", DuplicateName: "", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "details section shows current data", Issue: "",
-  },
-  {
-    TestID: "TC14_MainScreen_APIFailure",
-    Description: "Verify the application handles API failure while loading catalog details and displays an error message.",
-    persona: ADMIN_PERSONA, CatalogNode: "", ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "", DisplayName: "", LongDescription: "", ShortDescription: "",
-    CatalogType: "", Parent: "", DuplicateName: "", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "page loaded or error shown", Issue: "Soft pass — simulated by navigation",
-  },
-  {
-    TestID: "TC15_MainScreen_UnauthorizedAccess",
-    Description: "Verify unauthorized users cannot access catalog details through direct navigation or API calls.",
-    persona: ADMIN_PERSONA, CatalogNode: "", ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "", DisplayName: "", LongDescription: "", ShortDescription: "",
-    CatalogType: "", Parent: "", DuplicateName: "", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "page loaded for authorized admin user", Issue: "Tested as admin — pass if catalog accessible",
-  },
-  {
-    TestID: "TC16_MainScreen_RapidNodeClicks",
-    Description: "Verify rapid multiple clicks on Catalog Tree nodes do not cause incorrect catalog details to load or application crashes.",
-    persona: ADMIN_PERSONA, CatalogNode: ROOT_NODE, ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "", DisplayName: "", LongDescription: "", ShortDescription: "",
-    CatalogType: "", Parent: "", DuplicateName: "", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "no crash and details update correctly", Issue: "",
-  },
+    // ── Delete Catalog Popup (TC91 to TC100) ──
+    "TC91_Delete_ConfirmDeletes": {
+        "Description": "Verify clicking \"Yes, Delete it!\" successfully deletes the selected catalog and removes it from the Catalog Tree.",
+        "ExpectedResult": "Catalog deleted successfully."
+    },
+    "TC92_Delete_CancelKeeps": {
+        "Description": "Verify clicking \"Cancel\" closes the delete confirmation popup without deleting the catalog.",
+        "ExpectedResult": "Popup closes; catalog kept."
+    },
+    "TC93_Delete_PopupDisplayed": {
+        "Description": "Verify the delete confirmation popup is displayed when Delete Catalog button is clicked.",
+        "ExpectedResult": "Delete confirmation popup displays."
+    },
+    "TC94_Delete_SuccessMessage": {
+        "Description": "Verify after successful deletion, a success message/notification is displayed.",
+        "ExpectedResult": "Success message displays."
+    },
+    "TC95_Delete_RedirectAfterDelete": {
+        "Description": "Verify the system redirects or refreshes the Catalog Details section correctly after catalog deletion.",
+        "ExpectedResult": "System redirects/refreshes details correctly."
+    },
+    "TC96_Delete_CancelNoDelete": {
+        "Description": "Verify catalog is not deleted when user clicks \"Cancel\" on the confirmation popup.",
+        "ExpectedResult": "Catalog is not deleted."
+    },
+    "TC97_Delete_CloseNoDelete": {
+        "Description": "Verify catalog is not deleted when the popup is closed using the X/Close option (if available).",
+        "ExpectedResult": "Catalog remains unchanged."
+    },
+    "TC98_Delete_APIError": {
+        "Description": "Verify deletion fails gracefully and displays an error message when the delete API returns an error.",
+        "ExpectedResult": "Deletion fails gracefully with error message."
+    },
+    "TC99_Delete_RapidClicks": {
+        "Description": "Verify user cannot perform multiple delete requests by rapidly clicking \"Yes, Delete it!\" multiple times.",
+        "ExpectedResult": "Only one request processes."
+    },
+    "TC100_Delete_DependentChild": {
+        "Description": "Verify deletion is restricted and an appropriate validation/error message is shown when the catalog contains dependent child catalogs/products.",
+        "ExpectedResult": "Deletion blocked with validation message."
+    },
 
-  // ═══════════════════════════════════════════════════════════════════════
-  // CATALOG DETAILS SCREEN — Positive
-  // ═══════════════════════════════════════════════════════════════════════
-  {
-    TestID: "TC17_Details_PageLoads",
-    Description: "Verify Catalog Details page loads successfully with all sections displayed.",
-    persona: ADMIN_PERSONA, CatalogNode: ROOT_NODE, ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "", DisplayName: "", LongDescription: "", ShortDescription: "",
-    CatalogType: "", Parent: "", DuplicateName: "", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "details page loaded", Issue: "",
-  },
-  {
-    TestID: "TC18_Details_InfoPopulated",
-    Description: "Verify catalog information is populated correctly for the selected catalog.",
-    persona: ADMIN_PERSONA, CatalogNode: ROOT_NODE, ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "", DisplayName: "", LongDescription: "", ShortDescription: "",
-    CatalogType: "", Parent: "", DuplicateName: "", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "info populated", Issue: "",
-  },
-  {
-    TestID: "TC19_Details_LanguageTabs",
-    Description: "Verify language tabs switch successfully between available languages.",
-    persona: ADMIN_PERSONA, CatalogNode: ROOT_NODE, ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "Bengali",
-    Name: "", DisplayName: "", LongDescription: "", ShortDescription: "",
-    CatalogType: "", Parent: "", DuplicateName: "", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "language tab switches successfully", Issue: "",
-  },
-  {
-    TestID: "TC20_Details_CatalogType",
-    Description: "Verify catalog type is displayed correctly for the selected catalog.",
-    persona: ADMIN_PERSONA, CatalogNode: ROOT_NODE, ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "", DisplayName: "", LongDescription: "", ShortDescription: "",
-    CatalogType: "", Parent: "", DuplicateName: "", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "catalog type displayed", Issue: "",
-  },
-  {
-    TestID: "TC21_Details_ParentDropdown",
-    Description: "Verify parent catalog dropdown displays valid parent options.",
-    persona: ADMIN_PERSONA, CatalogNode: CHILD_NODE, ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "", DisplayName: "", LongDescription: "", ShortDescription: "",
-    CatalogType: "", Parent: "", DuplicateName: "", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "parent field visible", Issue: "",
-  },
-  {
-    TestID: "TC22_Details_ImageDisplayed",
-    Description: "Verify catalog image is displayed correctly.",
-    persona: ADMIN_PERSONA, CatalogNode: ROOT_NODE, ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "", DisplayName: "", LongDescription: "", ShortDescription: "",
-    CatalogType: "", Parent: "", DuplicateName: "", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "image section visible", Issue: "",
-  },
-  {
-    TestID: "TC23_Details_AddAttribute",
-    Description: "Verify selected attribute is added successfully using Add Attribute button.",
-    persona: ADMIN_PERSONA, CatalogNode: ROOT_NODE, ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "", DisplayName: "", LongDescription: "", ShortDescription: "",
-    CatalogType: "", Parent: "", DuplicateName: "", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "attribute added", Issue: "",
-  },
-  {
-    TestID: "TC24_Details_AttributeSearch",
-    Description: "Verify attribute search returns matching results.",
-    persona: ADMIN_PERSONA, CatalogNode: ROOT_NODE, ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "", DisplayName: "", LongDescription: "", ShortDescription: "",
-    CatalogType: "", Parent: "", DuplicateName: "", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "name",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "search results visible", Issue: "",
-  },
-  {
-    TestID: "TC25_Details_SearchableToggle",
-    Description: "Verify Searchable toggle can be enabled successfully.",
-    persona: ADMIN_PERSONA, CatalogNode: ROOT_NODE, ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "", DisplayName: "", LongDescription: "", ShortDescription: "",
-    CatalogType: "", Parent: "", DuplicateName: "", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "searchable toggle visible", Issue: "",
-  },
-  {
-    TestID: "TC26_Details_InheritableToggle",
-    Description: "Verify Inheritable toggle can be enabled successfully.",
-    persona: ADMIN_PERSONA, CatalogNode: ROOT_NODE, ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "", DisplayName: "", LongDescription: "", ShortDescription: "",
-    CatalogType: "", Parent: "", DuplicateName: "", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "inheritable toggle visible", Issue: "",
-  },
-  {
-    TestID: "TC27_Details_RequiredToggle",
-    Description: "Verify Required toggle can be enabled successfully.",
-    persona: ADMIN_PERSONA, CatalogNode: ROOT_NODE, ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "", DisplayName: "", LongDescription: "", ShortDescription: "",
-    CatalogType: "", Parent: "", DuplicateName: "", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "required toggle visible", Issue: "",
-  },
-  {
-    TestID: "TC28_Details_VarianceToggle",
-    Description: "Verify Variance toggle can be enabled successfully.",
-    persona: ADMIN_PERSONA, CatalogNode: ROOT_NODE, ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "", DisplayName: "", LongDescription: "", ShortDescription: "",
-    CatalogType: "", Parent: "", DuplicateName: "", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "variance toggle visible", Issue: "",
-  },
-  {
-    TestID: "TC29_Details_VisibleOnCreate",
-    Description: "Verify Visible On Create toggle updates successfully.",
-    persona: ADMIN_PERSONA, CatalogNode: ROOT_NODE, ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "", DisplayName: "", LongDescription: "", ShortDescription: "",
-    CatalogType: "", Parent: "", DuplicateName: "", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "visible on create toggle visible", Issue: "",
-  },
-  {
-    TestID: "TC30_Details_VisibleOnUpdate",
-    Description: "Verify Visible On Update toggle updates successfully.",
-    persona: ADMIN_PERSONA, CatalogNode: ROOT_NODE, ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "", DisplayName: "", LongDescription: "", ShortDescription: "",
-    CatalogType: "", Parent: "", DuplicateName: "", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "visible on update toggle visible", Issue: "",
-  },
-  {
-    TestID: "TC31_Details_VisibleOnShow",
-    Description: "Verify Visible On Show toggle updates successfully.",
-    persona: ADMIN_PERSONA, CatalogNode: ROOT_NODE, ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "", DisplayName: "", LongDescription: "", ShortDescription: "",
-    CatalogType: "", Parent: "", DuplicateName: "", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "visible on show toggle visible", Issue: "",
-  },
-  {
-    TestID: "TC32_Details_Pagination",
-    Description: "Verify pagination navigates to the next attribute page correctly.",
-    persona: ADMIN_PERSONA, CatalogNode: ROOT_NODE, ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "", DisplayName: "", LongDescription: "", ShortDescription: "",
-    CatalogType: "", Parent: "", DuplicateName: "", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "pagination visible", Issue: "Soft pass — depends on attribute count",
-  },
-  {
-    TestID: "TC33_Details_AddBlock",
-    Description: "Verify Add Block button creates a new form block.",
-    persona: ADMIN_PERSONA, CatalogNode: ROOT_NODE, ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "", DisplayName: "", LongDescription: "", ShortDescription: "",
-    CatalogType: "", Parent: "", DuplicateName: "", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "block created or page stable", Issue: "",
-  },
-  {
-    TestID: "TC34_Details_DragDropReorder",
-    Description: "Verify drag-and-drop reorders fields within a block successfully.",
-    persona: ADMIN_PERSONA, CatalogNode: ROOT_NODE, ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "", DisplayName: "", LongDescription: "", ShortDescription: "",
-    CatalogType: "", Parent: "", DuplicateName: "", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "page stable after drag-drop attempt", Issue: "Soft pass — UI drag-drop may vary",
-  },
-  {
-    TestID: "TC35_Details_SaveLayout",
-    Description: "Verify Save Layout button saves form configuration successfully.",
-    persona: ADMIN_PERSONA, CatalogNode: ROOT_NODE, ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "", DisplayName: "", LongDescription: "", ShortDescription: "",
-    CatalogType: "", Parent: "", DuplicateName: "", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "success or page stable", Issue: "",
-  },
-  {
-    TestID: "TC36_Details_UpdateButton",
-    Description: "Verify Update button saves all catalog changes successfully.",
-    persona: ADMIN_PERSONA, CatalogNode: ROOT_NODE, ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "Root", DisplayName: "Root", LongDescription: "Root", ShortDescription: "Root",
-    CatalogType: "", Parent: "", DuplicateName: "", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "success", Issue: "",
-  },
-  {
-    TestID: "TC37_Details_UnassignedAttributes",
-    Description: "Verify unassigned attributes can be moved into a block.",
-    persona: ADMIN_PERSONA, CatalogNode: ROOT_NODE, ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "", DisplayName: "", LongDescription: "", ShortDescription: "",
-    CatalogType: "", Parent: "", DuplicateName: "", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "page stable", Issue: "Soft pass",
-  },
-  {
-    TestID: "TC38_Details_PersistAfterRefresh",
-    Description: "Verify saved catalog details persist after page refresh.",
-    persona: ADMIN_PERSONA, CatalogNode: ROOT_NODE, ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "", DisplayName: "", LongDescription: "", ShortDescription: "",
-    CatalogType: "", Parent: "", DuplicateName: "", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "page loaded after refresh", Issue: "",
-  },
-  {
-    TestID: "TC39_Details_ValidImageUpload",
-    Description: "Verify valid image upload updates catalog image successfully.",
-    persona: ADMIN_PERSONA, CatalogNode: ROOT_NODE, ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "", DisplayName: "", LongDescription: "", ShortDescription: "",
-    CatalogType: "", Parent: "", DuplicateName: "", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "image preview visible", Issue: "",
-  },
-  {
-    TestID: "TC40_Details_ExternalAttributeDropdown",
-    Description: "Verify External Attribute dropdown loads available attributes.",
-    persona: ADMIN_PERSONA, CatalogNode: ROOT_NODE, ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "", DisplayName: "", LongDescription: "", ShortDescription: "",
-    CatalogType: "", Parent: "", DuplicateName: "", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "attribute section visible", Issue: "",
-  },
-  {
-    TestID: "TC41_Details_UpdateCatalogDetails",
-    Description: "Verify Update Catalog Details button saves catalog information.",
-    persona: ADMIN_PERSONA, CatalogNode: ROOT_NODE, ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "Root", DisplayName: "Root", LongDescription: "Root", ShortDescription: "Root",
-    CatalogType: "", Parent: "", DuplicateName: "", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "success or page stable", Issue: "",
-  },
+    // ── Create Catalog Screen (TC101 to TC140) ──
+    "TC101_Create_AllMandatory": {
+        "Description": "Verify catalog is created successfully with all mandatory fields populated.",
+        "ExpectedResult": "Catalog created successfully."
+    },
+    "TC102_Create_ValidFields": {
+        "Description": "Verify user can create a catalog with valid Name, Display Name, Long Description, and Short Description.",
+        "ExpectedResult": "Catalog created successfully with detailed fields."
+    },
+    "TC103_Create_EnglishLanguage": {
+        "Description": "Verify user can select English language and save the catalog successfully.",
+        "ExpectedResult": "Catalog saved successfully in English."
+    },
+    "TC104_Create_ProductType": {
+        "Description": "Verify user can select Product Type catalog type and save successfully.",
+        "ExpectedResult": "Product Type catalog saved successfully."
+    },
+    "TC105_Create_ValidParent": {
+        "Description": "Verify user can select a valid Parent Catalog from the dropdown.",
+        "ExpectedResult": "Valid Parent Catalog selected."
+    },
+    "TC106_Create_ThumbnailUpload": {
+        "Description": "Verify thumbnail image upload works with a valid image file (JPG/PNG).",
+        "ExpectedResult": "Thumbnail image uploaded."
+    },
+    "TC107_Create_ThumbnailPreview": {
+        "Description": "Verify uploaded thumbnail is displayed correctly before saving.",
+        "ExpectedResult": "Thumbnail preview displays correctly."
+    },
+    "TC108_Create_AddAttribute": {
+        "Description": "Verify user can add an external attribute successfully.",
+        "ExpectedResult": "External attribute added."
+    },
+    "TC109_Create_SearchableToggle": {
+        "Description": "Verify user can enable/disable Searchable toggle for an attribute.",
+        "ExpectedResult": "Searchable toggle updates."
+    },
+    "TC110_Create_RequiredToggle": {
+        "Description": "Verify user can enable/disable Required toggle for an attribute.",
+        "ExpectedResult": "Required toggle updates."
+    },
+    "TC111_Create_VisibleOnCreate": {
+        "Description": "Verify user can enable/disable Visible on Create toggle.",
+        "ExpectedResult": "Visible on Create updates."
+    },
+    "TC112_Create_VisibleOnUpdate": {
+        "Description": "Verify user can enable/disable Visible on Update toggle.",
+        "ExpectedResult": "Visible on Update updates."
+    },
+    "TC113_Create_VisibleOnShow": {
+        "Description": "Verify user can enable/disable Visible on Show toggle.",
+        "ExpectedResult": "Visible on Show updates."
+    },
+    "TC114_Create_ReorderAttributes": {
+        "Description": "Verify user can reorder attributes using sort arrows.",
+        "ExpectedResult": "Attributes sorted successfully."
+    },
+    "TC115_Create_AttrSearch": {
+        "Description": "Verify attribute search returns matching attributes.",
+        "ExpectedResult": "Search returns matching attributes."
+    },
+    "TC116_Create_OrderInputAttr": {
+        "Description": "Verify order input attributes can be added successfully.",
+        "ExpectedResult": "Order input attribute added."
+    },
+    "TC117_Create_MultipleAttributes": {
+        "Description": "Verify multiple attributes can be configured before saving.",
+        "ExpectedResult": "Multiple attributes configured successfully."
+    },
+    "TC118_Create_AppearsInTree": {
+        "Description": "Verify saved catalog appears under the selected parent in the Catalog Tree.",
+        "ExpectedResult": "Catalog appears in Catalog Tree."
+    },
+    "TC119_Create_Pagination": {
+        "Description": "Verify pagination works correctly in the External Attribute section.",
+        "ExpectedResult": "Pagination navigates correctly."
+    },
+    "TC120_Create_SaveSuccess": {
+        "Description": "Verify clicking Save persists all catalog details and displays a success message.",
+        "ExpectedResult": "Details saved with success toaster."
+    },
+    "TC121_Create_BlankName": {
+        "Description": "Verify catalog creation fails when Name field is left blank.",
+        "ExpectedResult": "Blank Name rejected with validation."
+    },
+    "TC122_Create_BlankDisplayName": {
+        "Description": "Verify catalog creation fails when Display Name field is blank.",
+        "ExpectedResult": "Blank Display Name rejected."
+    },
+    "TC123_Create_BlankLongDesc": {
+        "Description": "Verify catalog creation fails when Long Description is blank.",
+        "ExpectedResult": "Blank Long Description rejected."
+    },
+    "TC124_Create_BlankShortDesc": {
+        "Description": "Verify catalog creation fails when Short Description is blank.",
+        "ExpectedResult": "Blank Short Description rejected."
+    },
+    "TC125_Create_NoCatalogType": {
+        "Description": "Verify catalog creation fails when no Catalog Type is selected.",
+        "ExpectedResult": "Catalog Type missing validation error."
+    },
+    "TC126_Create_NoParent": {
+        "Description": "Verify catalog creation fails when no Parent Catalog is selected.",
+        "ExpectedResult": "Parent Catalog missing validation error."
+    },
+    "TC127_Create_DuplicateName": {
+        "Description": "Verify user cannot create a catalog with a duplicate catalog name.",
+        "ExpectedResult": "Duplicate catalog name validation warning displays."
+    },
+    "TC128_Create_NameTooLong": {
+        "Description": "Verify validation message appears when Name exceeds maximum allowed length.",
+        "ExpectedResult": "Validation warns on Name length limit."
+    },
+    "TC129_Create_DisplayNameTooLong": {
+        "Description": "Verify validation message appears when Display Name exceeds maximum allowed length.",
+        "ExpectedResult": "Validation warns on Display Name limit."
+    },
+    "TC130_Create_SpecialCharsName": {
+        "Description": "Verify special characters not allowed in catalog name are rejected.",
+        "ExpectedResult": "Special characters name rejected with warning."
+    },
+    "TC131_Create_NonImageFile": {
+        "Description": "Verify upload fails when a non-image file (PDF, EXE, TXT) is uploaded as thumbnail.",
+        "ExpectedResult": "Non-image upload rejected."
+    },
+    "TC132_Create_OversizedImage": {
+        "Description": "Verify upload fails when image size exceeds the allowed limit.",
+        "ExpectedResult": "Oversized image upload rejected."
+    },
+    "TC133_Create_CorruptedImage": {
+        "Description": "Verify corrupted image files cannot be uploaded.",
+        "ExpectedResult": "Corrupted image upload blocked."
+    },
+    "TC134_Create_MissingRequiredAttr": {
+        "Description": "Verify clicking Save without selecting required attributes shows validation.",
+        "ExpectedResult": "Validation prompts on required attributes."
+    },
+    "TC135_Create_DuplicateAttr": {
+        "Description": "Verify duplicate attributes cannot be added multiple times.",
+        "ExpectedResult": "Duplicate attribute additions blocked."
+    },
+    "TC136_Create_IncompleteAttrConfig": {
+        "Description": "Verify system prevents saving when mandatory attribute configuration is incomplete.",
+        "ExpectedResult": "Configuration incomplete validation warning."
+    },
+    "TC137_Create_AttrSearchNoResults": {
+        "Description": "Verify attribute search with invalid text returns no results without errors.",
+        "ExpectedResult": "Attribute search returns empty list."
+    },
+    "TC138_Create_RapidSaveClicks": {
+        "Description": "Verify rapid multiple clicks on Save do not create duplicate catalogs.",
+        "ExpectedResult": "Only one request processes."
+    },
+    "TC139_Create_APIFailureSave": {
+        "Description": "Verify system handles API/server failure during save and shows an error message.",
+        "ExpectedResult": "Save fails with error message."
+    },
+    "TC140_Create_DeleteMandatoryAttr": {
+        "Description": "Verify user cannot delete a mandatory default attribute from the attribute list.",
+        "ExpectedResult": "Deletion of mandatory default attribute blocked."
+    }
+};
 
-  // ═══════════════════════════════════════════════════════════════════════
-  // CATALOG DETAILS SCREEN — Negative
-  // ═══════════════════════════════════════════════════════════════════════
-  {
-    TestID: "TC42_Details_BlankName",
-    Description: "Verify update is prevented when Name field is left blank.",
-    persona: ADMIN_PERSONA, CatalogNode: ROOT_NODE, ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "", DisplayName: "Root", LongDescription: "", ShortDescription: "",
-    CatalogType: "", Parent: "", DuplicateName: "", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "validation error", Issue: "",
-  },
-  {
-    TestID: "TC43_Details_BlankDisplayName",
-    Description: "Verify update is prevented when Display Name field is blank.",
-    persona: ADMIN_PERSONA, CatalogNode: ROOT_NODE, ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "Root", DisplayName: "", LongDescription: "", ShortDescription: "",
-    CatalogType: "", Parent: "", DuplicateName: "", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "validation error", Issue: "",
-  },
-  {
-    TestID: "TC44_Details_UnsupportedImageFormat",
-    Description: "Verify system rejects unsupported image file formats.",
-    persona: ADMIN_PERSONA, CatalogNode: ROOT_NODE, ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "", DisplayName: "", LongDescription: "", ShortDescription: "",
-    CatalogType: "", Parent: "", DuplicateName: "", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "error or page stable", Issue: "",
-  },
-  {
-    TestID: "TC45_Details_OversizedImage",
-    Description: "Verify system rejects image uploads exceeding size limits.",
-    persona: ADMIN_PERSONA, CatalogNode: ROOT_NODE, ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "", DisplayName: "", LongDescription: "", ShortDescription: "",
-    CatalogType: "", Parent: "", DuplicateName: "", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "error or page stable", Issue: "",
-  },
-  {
-    TestID: "TC46_Details_CorruptedImage",
-    Description: "Verify corrupted image files cannot be uploaded.",
-    persona: ADMIN_PERSONA, CatalogNode: ROOT_NODE, ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "", DisplayName: "", LongDescription: "", ShortDescription: "",
-    CatalogType: "", Parent: "", DuplicateName: "", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "error or page stable", Issue: "",
-  },
-  {
-    TestID: "TC47_Details_AddAttributeNoSelection",
-    Description: "Verify Add Attribute fails when no attribute is selected.",
-    persona: ADMIN_PERSONA, CatalogNode: ROOT_NODE, ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "", DisplayName: "", LongDescription: "", ShortDescription: "",
-    CatalogType: "", Parent: "", DuplicateName: "", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "no crash page stable", Issue: "",
-  },
-  {
-    TestID: "TC48_Details_DuplicateAttribute",
-    Description: "Verify duplicate attributes cannot be added.",
-    persona: ADMIN_PERSONA, CatalogNode: ROOT_NODE, ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "", DisplayName: "", LongDescription: "", ShortDescription: "",
-    CatalogType: "", Parent: "", DuplicateName: "", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "validation or page stable", Issue: "",
-  },
-  {
-    TestID: "TC49_Details_SearchSpecialChars",
-    Description: "Verify attribute search handles invalid special characters safely.",
-    persona: ADMIN_PERSONA, CatalogNode: ROOT_NODE, ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "", DisplayName: "", LongDescription: "", ShortDescription: "",
-    CatalogType: "", Parent: "", DuplicateName: "", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "@#$%^&*()",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "no crash", Issue: "",
-  },
-  {
-    TestID: "TC50_Details_SQLInjection",
-    Description: "Verify SQL injection strings are not executed in search fields.",
-    persona: ADMIN_PERSONA, CatalogNode: ROOT_NODE, ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "", DisplayName: "", LongDescription: "", ShortDescription: "",
-    CatalogType: "", Parent: "", DuplicateName: "", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "'; DROP TABLE catalogs; --",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "no crash no injection", Issue: "",
-  },
-  {
-    TestID: "TC51_Details_XSSSearch",
-    Description: "Verify XSS scripts entered in search fields are not executed.",
-    persona: ADMIN_PERSONA, CatalogNode: ROOT_NODE, ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "", DisplayName: "", LongDescription: "", ShortDescription: "",
-    CatalogType: "", Parent: "", DuplicateName: "", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "<script>alert('xss')</script>",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "no script executed", Issue: "",
-  },
-  {
-    TestID: "TC52_Details_UpdateAPIFailure",
-    Description: "Verify update fails gracefully during API failure.",
-    persona: ADMIN_PERSONA, CatalogNode: ROOT_NODE, ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "Root", DisplayName: "Root", LongDescription: "Root", ShortDescription: "Root",
-    CatalogType: "", Parent: "", DuplicateName: "", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "page stable", Issue: "Soft pass — simulated by save attempt",
-  },
-  {
-    TestID: "TC53_Details_MandatorySpacesOnly",
-    Description: "Verify update fails when mandatory catalog fields contain only spaces.",
-    persona: ADMIN_PERSONA, CatalogNode: ROOT_NODE, ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "   ", DisplayName: "   ", LongDescription: "", ShortDescription: "",
-    CatalogType: "", Parent: "", DuplicateName: "", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "validation error", Issue: "",
-  },
+try {
+    const wb = XLSX.readFile(FILE);
+    const ws = wb.Sheets[SHEET_NAME];
+    if (!ws) {
+        throw new Error(`Sheet "${SHEET_NAME}" not found`);
+    }
 
-  // ═══════════════════════════════════════════════════════════════════════
-  // DELETE CATALOG SCREEN — Positive
-  // ═══════════════════════════════════════════════════════════════════════
-  {
-    TestID: "TC54_Delete_PopupOpens",
-    Description: "Verify clicking Delete Catalog opens the confirmation popup successfully.",
-    persona: ADMIN_PERSONA, CatalogNode: ROOT_NODE, ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "", DisplayName: "", LongDescription: "", ShortDescription: "",
-    CatalogType: "", Parent: "", DuplicateName: "", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "popup displayed", Issue: "",
-  },
-  {
-    TestID: "TC55_Delete_CancelCloses",
-    Description: "Verify clicking Cancel closes the delete confirmation popup without deleting the catalog.",
-    persona: ADMIN_PERSONA, CatalogNode: ROOT_NODE, ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "", DisplayName: "", LongDescription: "", ShortDescription: "",
-    CatalogType: "", Parent: "", DuplicateName: "", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "popup closed catalog still present", Issue: "",
-  },
-  {
-    TestID: "TC56_Delete_ConfirmDeletes",
-    Description: "Verify clicking Yes, Delete it! deletes the selected catalog successfully.",
-    persona: ADMIN_PERSONA, CatalogNode: CHILD_NODE, ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "", DisplayName: "", LongDescription: "", ShortDescription: "",
-    CatalogType: "", Parent: "", DuplicateName: "", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "success", Issue: "Uses a test catalog that can be recreated",
-  },
-  {
-    TestID: "TC57_Delete_SuccessMessage",
-    Description: "Verify a success message is displayed after successful catalog deletion.",
-    persona: ADMIN_PERSONA, CatalogNode: CHILD_NODE, ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "", DisplayName: "", LongDescription: "", ShortDescription: "",
-    CatalogType: "", Parent: "", DuplicateName: "", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "success toast shown", Issue: "",
-  },
-  {
-    TestID: "TC58_Delete_RemovedFromTree",
-    Description: "Verify the deleted catalog is removed from the Catalog Tree immediately after deletion.",
-    persona: ADMIN_PERSONA, CatalogNode: CHILD_NODE, ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "", DisplayName: "", LongDescription: "", ShortDescription: "",
-    CatalogType: "", Parent: "", DuplicateName: "", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "catalog removed from tree", Issue: "",
-  },
+    const rows = XLSX.utils.sheet_to_json(ws);
+    console.log(`Original rows length: ${rows.length}`);
 
-  // ═══════════════════════════════════════════════════════════════════════
-  // DELETE CATALOG SCREEN — Negative
-  // ═══════════════════════════════════════════════════════════════════════
-  {
-    TestID: "TC59_Delete_CancelNoDelete",
-    Description: "Verify catalog is not deleted when the Cancel button is clicked.",
-    persona: ADMIN_PERSONA, CatalogNode: ROOT_NODE, ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "", DisplayName: "", LongDescription: "", ShortDescription: "",
-    CatalogType: "", Parent: "", DuplicateName: "", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "catalog still in tree", Issue: "",
-  },
-  {
-    TestID: "TC60_Delete_ClickOutsideNoDelete",
-    Description: "Verify clicking outside the popup does not delete the catalog.",
-    persona: ADMIN_PERSONA, CatalogNode: ROOT_NODE, ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "", DisplayName: "", LongDescription: "", ShortDescription: "",
-    CatalogType: "", Parent: "", DuplicateName: "", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "catalog still in tree", Issue: "",
-  },
-  {
-    TestID: "TC61_Delete_APIError",
-    Description: "Verify deletion fails gracefully when the backend/API returns an error.",
-    persona: ADMIN_PERSONA, CatalogNode: ROOT_NODE, ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "", DisplayName: "", LongDescription: "", ShortDescription: "",
-    CatalogType: "", Parent: "", DuplicateName: "", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "error or page stable", Issue: "Soft pass",
-  },
-  {
-    TestID: "TC62_Delete_ParentWithChildren",
-    Description: "Verify a parent catalog with child catalogs cannot be deleted if business rules restrict it.",
-    persona: ADMIN_PERSONA, CatalogNode: ROOT_NODE, ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "", DisplayName: "", LongDescription: "", ShortDescription: "",
-    CatalogType: "", Parent: "", DuplicateName: "", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "error or page stable", Issue: "Soft pass — depends on business rules",
-  },
-  {
-    TestID: "TC63_Delete_UnauthorizedDelete",
-    Description: "Verify unauthorized users cannot delete catalogs even if the delete popup is displayed.",
-    persona: ADMIN_PERSONA, CatalogNode: ROOT_NODE, ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "", DisplayName: "", LongDescription: "", ShortDescription: "",
-    CatalogType: "", Parent: "", DuplicateName: "", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "page stable for authorized admin", Issue: "Tested as admin — soft pass",
-  },
+    // Update each row's Description and ExpectedResult based on its TestID
+    let count = 0;
+    rows.forEach((row) => {
+        const id = row.TestID;
+        if (updates[id]) {
+            row.Description = updates[id].Description;
+            row.ExpectedResult = updates[id].ExpectedResult;
+            count++;
+        }
+    });
 
-  // ═══════════════════════════════════════════════════════════════════════
-  // CREATE CATALOG SCREEN — Positive
-  // ═══════════════════════════════════════════════════════════════════════
-  {
-    TestID: "TC64_Create_AllMandatory",
-    Description: "Verify user can create a catalog with all mandatory fields populated.",
-    persona: ADMIN_PERSONA, CatalogNode: "", ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "TestCatalog_AllFields", DisplayName: "Test Catalog All", LongDescription: "Long description for test", ShortDescription: "Short desc",
-    CatalogType: "Domain", Parent: "", DuplicateName: "Root", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "TestCatalog_AllFields", ExpectedResult: "success", Issue: "",
-  },
-  {
-    TestID: "TC65_Create_NameField",
-    Description: "Verify Name field accepts valid catalog name and saves successfully.",
-    persona: ADMIN_PERSONA, CatalogNode: "", ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "TestCatalog_Name", DisplayName: "TestCatalog_Name", LongDescription: "Long desc", ShortDescription: "Short",
-    CatalogType: "Domain", Parent: "", DuplicateName: "Root", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "TestCatalog_Name", ExpectedResult: "success", Issue: "",
-  },
-  {
-    TestID: "TC66_Create_DisplayName",
-    Description: "Verify Display Name field accepts valid input and saves successfully.",
-    persona: ADMIN_PERSONA, CatalogNode: "", ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "TestCatalog_Display", DisplayName: "My Display Name", LongDescription: "Long desc", ShortDescription: "Short",
-    CatalogType: "Domain", Parent: "", DuplicateName: "Root", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "TestCatalog_Display", ExpectedResult: "success", Issue: "",
-  },
-  {
-    TestID: "TC67_Create_LongDescription",
-    Description: "Verify Long Description accepts maximum allowed character limit.",
-    persona: ADMIN_PERSONA, CatalogNode: "", ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "TestCatalog_LongDesc", DisplayName: "Long Desc Test", LongDescription: "L".repeat(500), ShortDescription: "Short",
-    CatalogType: "Domain", Parent: "", DuplicateName: "Root", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "TestCatalog_LongDesc", ExpectedResult: "success", Issue: "",
-  },
-  {
-    TestID: "TC68_Create_ShortDescription",
-    Description: "Verify Short Description accepts valid text and saves successfully.",
-    persona: ADMIN_PERSONA, CatalogNode: "", ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "TestCatalog_ShortDesc", DisplayName: "Short Desc Test", LongDescription: "Long desc", ShortDescription: "Valid short desc",
-    CatalogType: "Domain", Parent: "", DuplicateName: "Root", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "TestCatalog_ShortDesc", ExpectedResult: "success", Issue: "",
-  },
-  {
-    TestID: "TC69_Create_EnglishLanguage",
-    Description: "Verify English language can be selected successfully.",
-    persona: ADMIN_PERSONA, CatalogNode: "", ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "TestCatalog_EN", DisplayName: "English Test", LongDescription: "Long desc", ShortDescription: "Short",
-    CatalogType: "Domain", Parent: "", DuplicateName: "Root", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "TestCatalog_EN", ExpectedResult: "success", Issue: "",
-  },
-  {
-    TestID: "TC70_Create_BengaliLanguage",
-    Description: "Verify Bengali language can be selected successfully.",
-    persona: ADMIN_PERSONA, CatalogNode: "", ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "Bengali",
-    Name: "TestCatalog_BN", DisplayName: "Bengali Test", LongDescription: "Long desc", ShortDescription: "Short",
-    CatalogType: "Domain", Parent: "", DuplicateName: "Root", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "TestCatalog_BN", ExpectedResult: "success", Issue: "",
-  },
-  {
-    TestID: "TC71_Create_TeluguLanguage",
-    Description: "Verify Telugu language can be selected successfully.",
-    persona: ADMIN_PERSONA, CatalogNode: "", ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "Telugu",
-    Name: "TestCatalog_TE", DisplayName: "Telugu Test", LongDescription: "Long desc", ShortDescription: "Short",
-    CatalogType: "Domain", Parent: "", DuplicateName: "Root", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "TestCatalog_TE", ExpectedResult: "success", Issue: "",
-  },
-  {
-    TestID: "TC72_Create_HindiLanguage",
-    Description: "Verify Hindi language can be selected successfully.",
-    persona: ADMIN_PERSONA, CatalogNode: "", ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "Hindi",
-    Name: "TestCatalog_HI", DisplayName: "Hindi Test", LongDescription: "Long desc", ShortDescription: "Short",
-    CatalogType: "Domain", Parent: "", DuplicateName: "Root", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "TestCatalog_HI", ExpectedResult: "success", Issue: "",
-  },
-  {
-    TestID: "TC73_Create_RootType",
-    Description: "Verify Root catalog type can be selected successfully.",
-    persona: ADMIN_PERSONA, CatalogNode: "", ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "TestCatalog_Root", DisplayName: "Root Type Test", LongDescription: "Long desc", ShortDescription: "Short",
-    CatalogType: "Root layer", Parent: "", DuplicateName: "Root", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "TestCatalog_Root", ExpectedResult: "catalog type selectable", Issue: "",
-  },
-  {
-    TestID: "TC74_Create_DomainType",
-    Description: "Verify Domain catalog type can be selected successfully.",
-    persona: ADMIN_PERSONA, CatalogNode: "", ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "TestCatalog_Domain", DisplayName: "Domain Test", LongDescription: "Long desc", ShortDescription: "Short",
-    CatalogType: "Domain", Parent: "", DuplicateName: "Root", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "TestCatalog_Domain", ExpectedResult: "catalog type selectable", Issue: "",
-  },
-  {
-    TestID: "TC75_Create_MarketType",
-    Description: "Verify Market catalog type can be selected successfully.",
-    persona: ADMIN_PERSONA, CatalogNode: "", ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "TestCatalog_Market", DisplayName: "Market Test", LongDescription: "Long desc", ShortDescription: "Short",
-    CatalogType: "Market", Parent: "", DuplicateName: "Root", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "TestCatalog_Market", ExpectedResult: "catalog type selectable", Issue: "",
-  },
-  {
-    TestID: "TC76_Create_CategoryType",
-    Description: "Verify Category catalog type can be selected successfully.",
-    persona: ADMIN_PERSONA, CatalogNode: "", ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "TestCatalog_Category", DisplayName: "Category Test", LongDescription: "Long desc", ShortDescription: "Short",
-    CatalogType: "Category", Parent: "", DuplicateName: "Root", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "TestCatalog_Category", ExpectedResult: "catalog type selectable", Issue: "",
-  },
-  {
-    TestID: "TC77_Create_ProductType",
-    Description: "Verify Product Type catalog type can be selected successfully.",
-    persona: ADMIN_PERSONA, CatalogNode: "", ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "TestCatalog_ProdType", DisplayName: "Product Type Test", LongDescription: "Long desc", ShortDescription: "Short",
-    CatalogType: "Product Type", Parent: "", DuplicateName: "Root", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "TestCatalog_ProdType", ExpectedResult: "catalog type selectable", Issue: "",
-  },
-  {
-    TestID: "TC78_Create_ParentDropdown",
-    Description: "Verify Parent Catalog dropdown displays available catalogs.",
-    persona: ADMIN_PERSONA, CatalogNode: "", ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "TestCatalog_Parent", DisplayName: "Parent Dropdown Test", LongDescription: "Long desc", ShortDescription: "Short",
-    CatalogType: "Domain", Parent: "Root", DuplicateName: "Root", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "TestCatalog_Parent", ExpectedResult: "parent dropdown has options", Issue: "",
-  },
-  {
-    TestID: "TC79_Create_ValidParent",
-    Description: "Verify user can select a valid Parent Catalog.",
-    persona: ADMIN_PERSONA, CatalogNode: "", ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "TestCatalog_ValidParent", DisplayName: "Valid Parent Test", LongDescription: "Long desc", ShortDescription: "Short",
-    CatalogType: "Domain", Parent: "Root", DuplicateName: "Root", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "TestCatalog_ValidParent", ExpectedResult: "success", Issue: "",
-  },
-  {
-    TestID: "TC80_Create_ThumbnailUpload",
-    Description: "Verify valid image upload is successful for Thumbnail.",
-    persona: ADMIN_PERSONA, CatalogNode: "", ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "TestCatalog_Thumb", DisplayName: "Thumbnail Test", LongDescription: "Long desc", ShortDescription: "Short",
-    CatalogType: "Domain", Parent: "", DuplicateName: "Root", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "TestCatalog_Thumb", ExpectedResult: "image preview visible", Issue: "",
-  },
-  {
-    TestID: "TC81_Create_AddAttribute",
-    Description: "Verify Add Attribute button adds selected attribute successfully.",
-    persona: ADMIN_PERSONA, CatalogNode: "", ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "TestCatalog_Attr", DisplayName: "Add Attribute Test", LongDescription: "Long desc", ShortDescription: "Short",
-    CatalogType: "Domain", Parent: "", DuplicateName: "Root", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "TestCatalog_Attr", ExpectedResult: "attribute section visible", Issue: "",
-  },
-  {
-    TestID: "TC82_Create_SearchAttribute",
-    Description: "Verify Search field filters attributes correctly.",
-    persona: ADMIN_PERSONA, CatalogNode: "", ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "TestCatalog_Search", DisplayName: "Search Attr Test", LongDescription: "Long desc", ShortDescription: "Short",
-    CatalogType: "Domain", Parent: "", DuplicateName: "Root", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "name",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "TestCatalog_Search", ExpectedResult: "search results visible or page stable", Issue: "",
-  },
-  {
-    TestID: "TC83_Create_SaveSuccess",
-    Description: "Verify Save button creates catalog successfully and displays success message.",
-    persona: ADMIN_PERSONA, CatalogNode: "", ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "TestCatalog_SaveSuccess", DisplayName: "Save Success Test", LongDescription: "Long description", ShortDescription: "Short",
-    CatalogType: "Domain", Parent: "", DuplicateName: "Root", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "TestCatalog_SaveSuccess", ExpectedResult: "success toast", Issue: "",
-  },
+    console.log(`Updated: ${count} rows`);
 
-  // ═══════════════════════════════════════════════════════════════════════
-  // CREATE CATALOG SCREEN — Negative
-  // ═══════════════════════════════════════════════════════════════════════
-  {
-    TestID: "TC84_Create_BlankName",
-    Description: "Verify catalog creation fails when Name field is left blank.",
-    persona: ADMIN_PERSONA, CatalogNode: "", ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "", DisplayName: "Some Display Name", LongDescription: "Long desc", ShortDescription: "Short",
-    CatalogType: "Domain", Parent: "", DuplicateName: "Root", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "validation error", Issue: "",
-  },
-  {
-    TestID: "TC85_Create_BlankDisplayName",
-    Description: "Verify catalog creation fails when Display Name field is left blank.",
-    persona: ADMIN_PERSONA, CatalogNode: "", ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "TestCatalog_NoDN", DisplayName: "", LongDescription: "Long desc", ShortDescription: "Short",
-    CatalogType: "Domain", Parent: "", DuplicateName: "Root", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "validation error", Issue: "",
-  },
-  {
-    TestID: "TC86_Create_BlankLongDesc",
-    Description: "Verify catalog creation fails when Long Description is empty if mandatory.",
-    persona: ADMIN_PERSONA, CatalogNode: "", ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "TestCatalog_NoLD", DisplayName: "No Long Desc", LongDescription: "", ShortDescription: "Short",
-    CatalogType: "Domain", Parent: "", DuplicateName: "Root", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "validation or page stable", Issue: "Soft pass if not mandatory",
-  },
-  {
-    TestID: "TC87_Create_BlankShortDesc",
-    Description: "Verify catalog creation fails when Short Description is empty if mandatory.",
-    persona: ADMIN_PERSONA, CatalogNode: "", ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "TestCatalog_NoSD", DisplayName: "No Short Desc", LongDescription: "Long desc", ShortDescription: "",
-    CatalogType: "Domain", Parent: "", DuplicateName: "Root", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "validation or page stable", Issue: "Soft pass if not mandatory",
-  },
-  {
-    TestID: "TC88_Create_NoCatalogType",
-    Description: "Verify catalog creation fails when no Catalog Type is selected.",
-    persona: ADMIN_PERSONA, CatalogNode: "", ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "TestCatalog_NoType", DisplayName: "No Type Test", LongDescription: "Long desc", ShortDescription: "Short",
-    CatalogType: "", Parent: "", DuplicateName: "Root", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "validation or page stable", Issue: "",
-  },
-  {
-    TestID: "TC89_Create_SpecialCharsName",
-    Description: "Verify special characters only are not accepted in Name field.",
-    persona: ADMIN_PERSONA, CatalogNode: "", ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "@#$%^&*()", DisplayName: "Special Chars Test", LongDescription: "Long desc", ShortDescription: "Short",
-    CatalogType: "Domain", Parent: "", DuplicateName: "Root", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "validation or page stable", Issue: "",
-  },
-  {
-    TestID: "TC90_Create_DuplicateName",
-    Description: "Verify duplicate catalog name cannot be created.",
-    persona: ADMIN_PERSONA, CatalogNode: "", ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "", DisplayName: "Duplicate Test", LongDescription: "Long desc", ShortDescription: "Short",
-    CatalogType: "Domain", Parent: "", DuplicateName: "Root", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "validation or page stable", Issue: "",
-  },
-  {
-    TestID: "TC91_Create_NameTooLong",
-    Description: "Verify Name field does not accept input beyond maximum length.",
-    persona: ADMIN_PERSONA, CatalogNode: "", ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "", DisplayName: "Long Name Test", LongDescription: "Long desc", ShortDescription: "Short",
-    CatalogType: "Domain", Parent: "", DuplicateName: "Root", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "validation or input truncated", Issue: "",
-  },
-  {
-    TestID: "TC92_Create_DisplayNameTooLong",
-    Description: "Verify Display Name field does not accept input beyond maximum length.",
-    persona: ADMIN_PERSONA, CatalogNode: "", ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "TestCatalog_LongDN", DisplayName: "", LongDescription: "Long desc", ShortDescription: "Short",
-    CatalogType: "Domain", Parent: "", DuplicateName: "Root", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "validation or input truncated", Issue: "",
-  },
-  {
-    TestID: "TC93_Create_NonImageFile",
-    Description: "Verify unsupported file formats (.exe, .txt) cannot be uploaded as Thumbnail.",
-    persona: ADMIN_PERSONA, CatalogNode: "", ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "TestCatalog_BadFile", DisplayName: "Bad File Test", LongDescription: "Long desc", ShortDescription: "Short",
-    CatalogType: "Domain", Parent: "", DuplicateName: "Root", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "error or no upload", Issue: "",
-  },
-  {
-    TestID: "TC94_Create_OversizedImage",
-    Description: "Verify oversized image upload is rejected.",
-    persona: ADMIN_PERSONA, CatalogNode: "", ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "TestCatalog_BigImg", DisplayName: "Big Image Test", LongDescription: "Long desc", ShortDescription: "Short",
-    CatalogType: "Domain", Parent: "", DuplicateName: "Root", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "error or no upload", Issue: "",
-  },
-  {
-    TestID: "TC95_Create_CorruptedImage",
-    Description: "Verify corrupted image file upload fails gracefully.",
-    persona: ADMIN_PERSONA, CatalogNode: "", ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "TestCatalog_CorruptImg", DisplayName: "Corrupt Image Test", LongDescription: "Long desc", ShortDescription: "Short",
-    CatalogType: "Domain", Parent: "", DuplicateName: "Root", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "error or no upload", Issue: "",
-  },
-  {
-    TestID: "TC96_Create_AddAttrNoSelection",
-    Description: "Verify Add Attribute does not work when no attribute is selected.",
-    persona: ADMIN_PERSONA, CatalogNode: "", ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "TestCatalog_NoAttr", DisplayName: "No Attr Test", LongDescription: "Long desc", ShortDescription: "Short",
-    CatalogType: "Domain", Parent: "", DuplicateName: "Root", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "no crash page stable", Issue: "",
-  },
-  {
-    TestID: "TC97_Create_DuplicateAttr",
-    Description: "Verify duplicate attributes cannot be added multiple times.",
-    persona: ADMIN_PERSONA, CatalogNode: "", ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "TestCatalog_DupAttr", DisplayName: "Dup Attr Test", LongDescription: "Long desc", ShortDescription: "Short",
-    CatalogType: "Domain", Parent: "", DuplicateName: "Root", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "validation or page stable", Issue: "",
-  },
-  {
-    TestID: "TC98_Create_SearchSpecialChars",
-    Description: "Verify search field handles invalid special characters without crashing.",
-    persona: ADMIN_PERSONA, CatalogNode: "", ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "TestCatalog_SearchSC", DisplayName: "Search SC Test", LongDescription: "Long desc", ShortDescription: "Short",
-    CatalogType: "Domain", Parent: "", DuplicateName: "Root", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "@#$%^&*()",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "no crash", Issue: "",
-  },
-  {
-    TestID: "TC99_Create_SQLInjection",
-    Description: "Verify SQL injection strings entered in fields are not executed.",
-    persona: ADMIN_PERSONA, CatalogNode: "", ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "'; DROP TABLE catalogs; --", DisplayName: "SQL Injection Test", LongDescription: "Long desc", ShortDescription: "Short",
-    CatalogType: "Domain", Parent: "", DuplicateName: "Root", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "'; DROP TABLE catalogs; --",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "no injection no crash", Issue: "",
-  },
-  {
-    TestID: "TC100_Create_XSSScript",
-    Description: "Verify XSS scripts entered in text fields are not executed.",
-    persona: ADMIN_PERSONA, CatalogNode: "", ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "<script>alert('xss')</script>", DisplayName: "XSS Test", LongDescription: "Long desc", ShortDescription: "Short",
-    CatalogType: "Domain", Parent: "", DuplicateName: "Root", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "<script>alert('xss')</script>",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "no script executed", Issue: "",
-  },
-  {
-    TestID: "TC101_Create_APIFailureSave",
-    Description: "Verify clicking Save during API failure shows proper error message.",
-    persona: ADMIN_PERSONA, CatalogNode: "", ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "TestCatalog_APIFail", DisplayName: "API Fail Test", LongDescription: "Long desc", ShortDescription: "Short",
-    CatalogType: "Domain", Parent: "", DuplicateName: "Root", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "error or page stable", Issue: "Soft pass",
-  },
-  {
-    TestID: "TC102_Create_UnauthorizedCreate",
-    Description: "Verify unauthorized users cannot create a catalog even with valid data.",
-    persona: ADMIN_PERSONA, CatalogNode: "", ParentNode: ROOT_NODE, ChildNode: CHILD_NODE,
-    ExpectedChildren: "Nipigev2", ExpectedCount: "20", Language: "English",
-    Name: "TestCatalog_Auth", DisplayName: "Auth Test", LongDescription: "Long desc", ShortDescription: "Short",
-    CatalogType: "Domain", Parent: "", DuplicateName: "Root", InvalidName: "@#$%^&*()",
-    LongName: "A".repeat(260), LongDisplayName: "B".repeat(260), SearchTerm: "XYZ_NON_EXISTENT_9999",
-    ThumbnailPath: "src/resources/images/sample.png",
-    NonImageFilePath: "src/resources/files/sample.txt",
-    OversizedImagePath: "src/resources/images/oversized.jpg",
-    CorruptedImagePath: "src/resources/images/corrupted.jpg",
-    CreatedName: "", ExpectedResult: "page loaded for authorized admin", Issue: "Tested as admin — soft pass",
-  },
-];
+    // Write it back to the workbook sheet
+    const wsHeaders = Object.keys(rows[0]);
+    const wsData = [
+        wsHeaders,
+        ...rows.map((row) => wsHeaders.map((h) => row[h] === undefined ? "" : row[h]))
+    ];
 
-const headers = [
-  "TestID", "Description", "persona", "CatalogNode", "ParentNode", "ChildNode",
-  "ExpectedChildren", "ExpectedCount", "Language", "Name", "DisplayName",
-  "LongDescription", "ShortDescription", "CatalogType", "Parent",
-  "DuplicateName", "InvalidName", "LongName", "LongDisplayName", "SearchTerm",
-  "ThumbnailPath", "NonImageFilePath", "OversizedImagePath", "CorruptedImagePath",
-  "CreatedName", "ExpectedResult", "Issue",
-];
+    const newWs = XLSX.utils.aoa_to_sheet(wsData);
 
-const wsData = [
-  headers,
-  ...rows.map((r) => headers.map((h) => (r[h] !== undefined ? r[h] : ""))),
-];
+    const idx = wb.SheetNames.indexOf(SHEET_NAME);
+    wb.SheetNames.splice(idx, 1);
+    delete wb.Sheets[SHEET_NAME];
+    XLSX.utils.book_append_sheet(wb, newWs, SHEET_NAME);
 
-const wb = XLSX.readFile(FILE);
-const ws = XLSX.utils.aoa_to_sheet(wsData);
-
-if (wb.SheetNames.includes(SHEET)) {
-  const idx = wb.SheetNames.indexOf(SHEET);
-  wb.SheetNames.splice(idx, 1);
-  delete wb.Sheets[SHEET];
+    XLSX.writeFile(wb, FILE);
+    console.log(`Successfully saved CatalogTest workbook!`);
+} catch (err) {
+    console.error("Failed to update testData.xlsx:", err.message);
+    process.exit(1);
 }
-XLSX.utils.book_append_sheet(wb, ws, SHEET);
-XLSX.writeFile(wb, FILE);
-console.log(`Written ${rows.length} rows to '${SHEET}' sheet in ${FILE}`);

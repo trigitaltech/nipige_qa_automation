@@ -22,19 +22,52 @@ export default class FreshCartSteps {
             const url = process.env.FRESHCART_URL || "https://freshcart-usa.nipige.com/login";
             const email = process.env.FRESHCART_EMAIL || freshCartRow.UserName;
             const password = process.env.FRESHCART_PASSWORD || freshCartRow.Password;
-            await this.ui.goto(url, FreshCartConstants.LOGIN_PAGE);
+            let loginSuccess = false;
+            for (let attempt = 1; attempt <= 3; attempt++) {
+                try {
+                    await this.ui.goto(url, FreshCartConstants.LOGIN_PAGE);
 
-            const loginLink = this.page.locator('a[href*="login"], a:has-text("Login"), button:has-text("Login")').first();
-            if (await loginLink.isVisible({ timeout: 2000 }).catch(() => false)) {
-                await loginLink.click();
+                    const loginInput = this.page.locator(FreshCartPage.USERNAME_INPUT).first();
+                    if (!(await loginInput.isVisible({ timeout: 2000 }).catch(() => false))) {
+                        const loginLink = this.page.locator('a[href*="login"], a:has-text("Login"), button:has-text("Login")').first();
+                        if (await loginLink.isVisible({ timeout: 2000 }).catch(() => false)) {
+                            await loginLink.click();
+                        }
+                    }
+
+                    await this.ui.editBox(FreshCartPage.USERNAME_INPUT,
+                        FreshCartConstants.USERNAME_INPUT).fill(email);
+                    await this.ui.editBox(FreshCartPage.PASSWORD_INPUT,
+                        FreshCartConstants.PASSWORD_INPUT).fill(password);
+                    await this.ui.element(FreshCartPage.LOGIN_BUTTON,
+                        FreshCartConstants.LOGIN_BUTTON).click();
+
+                    // Wait up to 10s for URL to change (away from the login page)
+                    await this.page.waitForURL(u => !u.href.includes('/login'), { timeout: 10000 })
+                        .catch(async () => {
+                            const unexpectedError = this.page.locator('text="An unexpected error occurred"').first();
+                            if (await unexpectedError.isVisible({ timeout: 500 }).catch(() => false)) {
+                                throw new Error("FreshCart login failed: An unexpected error occurred on the portal.");
+                            }
+                            const genericError = this.page.locator('[class*="error" i], [class*="alert" i]').first();
+                            if (await genericError.isVisible({ timeout: 500 }).catch(() => false)) {
+                                const txt = await genericError.innerText().catch(() => "");
+                                throw new Error(`FreshCart login failed: ${txt}`);
+                            }
+                            throw new Error("FreshCart login failed: Navigation timed out and user remained on the login page.");
+                        });
+
+                    loginSuccess = true;
+                    break; // Success! Exit loop.
+                } catch (err) {
+                    console.log(`[Attempt ${attempt}/3] FreshCart login failed: ${err.message}. Retrying...`);
+                    if (attempt === 3) {
+                        throw err; // Rethrow if all attempts fail
+                    }
+                    await this.page.waitForTimeout(2000); // Wait 2s before retry
+                }
             }
 
-            await this.ui.editBox(FreshCartPage.USERNAME_INPUT,
-                FreshCartConstants.USERNAME_INPUT).fill(email);
-            await this.ui.editBox(FreshCartPage.PASSWORD_INPUT,
-                FreshCartConstants.PASSWORD_INPUT).fill(password);
-            await this.ui.element(FreshCartPage.LOGIN_BUTTON,
-                FreshCartConstants.LOGIN_BUTTON).click();
             await this.page.waitForLoadState("domcontentloaded");
         });
     }
