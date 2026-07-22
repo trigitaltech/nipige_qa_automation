@@ -13,13 +13,36 @@ jobs:
     timeout-minutes: 180
     
     env:
+      # Playwright Timeouts
       TEST_TIMEOUT: 5
       ACTION_TIMEOUT: 3
       NAVIGATION_TIMEOUT: 2
       RETRIES: 2
+      
+      # Browser Settings
+      HEADLESS: "true"
+      BROWSER: chromium
+      PARALLEL_THREAD: 6
+      
+      # Rate Limiting
       RATE_LIMIT_DELAY: 2000
       API_REQUEST_RETRY: 3
       API_REQUEST_DELAY: 1000
+      
+      # Test Users - Admin
+      ADMIN_EMAIL: admin@test.com
+      ADMIN_PASSWORD: Admin@123
+      
+      # Test Users - Tenant
+      TENANT_EMAIL: tenant@test.com
+      TENANT_PASSWORD: Tenant@123
+      
+      # Test Users - Valid Login
+      VALID_USERNAME: validuser@test.com
+      VALID_PASSWORD: ValidPass@123
+      
+      # Base URL
+      BASE_URL: https://migration.demn8gjs27bhv.amplifyapp.com/
 
     steps:
       - name: Checkout repository
@@ -65,43 +88,65 @@ jobs:
       - name: Create .env file for CI
         run: |
           cp .env.example .env
-          sed -i 's|BASE_URL=http://advantageonlineshopping.com|BASE_URL=https://migration.demn8gjs27bhv.amplifyapp.com/|g' .env
-
-      - name: Add rate limiting handling
-        run: |
           cat >> .env << EOF
+          # Playwright Configuration
+          TEST_TIMEOUT=5
+          ACTION_TIMEOUT=3
+          NAVIGATION_TIMEOUT=2
+          RETRIES=2
+          HEADLESS=true
+          BROWSER=chromium
+          PARALLEL_THREAD=6
+          
+          # Rate Limiting
           RATE_LIMIT_DELAY=2000
           API_REQUEST_RETRY=3
           API_REQUEST_DELAY=1000
+          
+          # Test Users - Admin
+          ADMIN_EMAIL=admin@test.com
+          ADMIN_PASSWORD=Admin@123
+          
+          # Test Users - Tenant
+          TENANT_EMAIL=tenant@test.com
+          TENANT_PASSWORD=Tenant@123
+          
+          # Test Users - Valid Login
+          VALID_USERNAME=validuser@test.com
+          VALID_PASSWORD=ValidPass@123
+          
+          # Base URL
+          BASE_URL=https://migration.demn8gjs27bhv.amplifyapp.com/
           EOF
 
       - name: Verify environment
         run: |
-          echo "Checking environment..."
-
-          if [ ! -f .env ]; then
-            echo "WARNING: .env not found"
-            ls -la
-          else
-            echo ".env found"
-            grep "^BASE_URL" .env || true
-          fi
+          echo "✓ Checking environment variables..."
+          echo "BASE_URL: $(grep '^BASE_URL' .env)"
+          echo "ADMIN_EMAIL: $(grep '^ADMIN_EMAIL' .env)"
+          echo "TENANT_EMAIL: $(grep '^TENANT_EMAIL' .env)"
+          echo "VALID_USERNAME: $(grep '^VALID_USERNAME' .env)"
+          echo "✓ All environment variables configured"
 
       - name: Patch Playwright config for CI
         run: |
           sed -i 's/headless: false/headless: true/g' playwright.config.ts || true
           sed -i 's/"--start-maximized"/"--window-size=1920,1080"/g' playwright.config.ts || true
           sed -i 's/viewport: null/viewport: { width: 1920, height: 1080 }/g' playwright.config.ts || true
+          echo "✓ Playwright config patched for CI"
 
       - name: Run Playwright tests
         run: |
+          echo "Starting test execution with 6 workers and 2 retries..."
           npm run test:regression -- --workers=6 --retries=2
 
       - name: Kill hanging processes
         if: always()
         run: |
+          echo "Cleaning up hanging processes..."
           pkill -f playwright || true
           pkill -f chromium || true
+          echo "✓ Cleanup complete"
 
       - name: Upload HTML Report
         if: always()
