@@ -11,3 +11,13 @@ appId: ${APP_ID}
       visible: "NO"
     commands:
       - tapOn: "NO"
+- runFlow:
+    when:
+      visible: "Close app"
+    commands:
+      - tapOn: "Close app"
+- runFlow:
+    when:
+      visible: "Wait"
+    commands:
+      - tapOn: "Wait"

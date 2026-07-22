@@ -2,6 +2,7 @@
 # Parameters required: USERNAME, PASSWORD
 appId: ${APP_ID}
 ---
+- runFlow: ../common/dismiss_popups.yaml
 - tapOn: "Company Id"
 - inputText: ${USERNAME}
 - tapOn: "Password"
