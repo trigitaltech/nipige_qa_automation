@@ -1,8 +1,47 @@
 # PowerShell Test Runner with Cross-Device Support and Emulator Window Optimization
-$ErrorActionPreference = "Stop"
+$ErrorActionPreference = "Continue"
 
-# User-configurable emulator zoom/scaling (0.4 is optimal for standard 1080p, 0.5 for 1440p)
-$EMULATOR_SCALE = "0.5"
+# User-configurable emulator window target size (Width x Height) for desktop screen fitting
+$EMULATOR_TARGET_WIDTH = 450
+$EMULATOR_TARGET_HEIGHT = 900
+
+# Win32 API Helper function to dynamically resize the emulator window on the host computer desktop screen
+function Resize-EmulatorWindow {
+    param(
+        [int]$Width = $EMULATOR_TARGET_WIDTH,
+        [int]$Height = $EMULATOR_TARGET_HEIGHT
+    )
+    try {
+        $code = @"
+        using System;
+        using System.Runtime.InteropServices;
+        
+        public class Win32 {
+            [DllImport("user32.dll", SetLastError = true)]
+            public static extern bool MoveWindow(IntPtr hWnd, int X, int Y, int nWidth, int nHeight, bool bRepaint);
+        }
+"@
+        # Create Win32 Type mapping if not already registered in this PowerShell session
+        if (-not ([System.Management.Automation.PSTypeName]'Win32').Type) {
+            Add-Type -TypeDefinition $code -ErrorAction SilentlyContinue | Out-Null
+        }
+        
+        # Look for emulator processes (qemu-system-x86_64 or emulator)
+        $processes = Get-Process | Where-Object { $_.ProcessName -like "*qemu-system*" -or $_.ProcessName -eq "emulator" }
+        foreach ($p in $processes) {
+            $hwnd = $p.MainWindowHandle
+            if ($hwnd -ne [IntPtr]::Zero) {
+                # Resize the emulator window to the target width and height
+                $res = [Win32]::MoveWindow($hwnd, 100, 100, $Width, $Height, $true)
+                if ($res) {
+                    Write-Host "Automatically scaled emulator window to optimal desktop dimensions: $($Width)x$($Height)" -ForegroundColor Green
+                }
+            }
+        }
+    } catch {
+        # Silently capture any window drawing race condition errors during startup
+    }
+}
 
 # 1. Environment Validation
 Write-Host "==================================================" -ForegroundColor Cyan
@@ -39,7 +78,8 @@ $maestroOk = Get-Command "maestro" -ErrorAction SilentlyContinue
 
 Write-Host "Java Development Kit   : " -NoNewline
 if ($javaOk) { 
-    $javaVer = (java -version 2>&1 | Select-Object -First 1).Trim()
+    # Force convert to string to avoid ErrorRecord type exceptions
+    $javaVer = "$((java -version 2>&1 | Select-Object -First 1))".Trim()
     Write-Host "FOUND ($javaVer)" -ForegroundColor Green 
 } else { 
     Write-Host "MISSING" -ForegroundColor Red 
@@ -74,132 +114,149 @@ if (-not ($javaOk -and $adbOk -and $emulatorOk -and $maestroOk)) {
 }
 Write-Host "All prerequisites validated successfully!`n" -ForegroundColor Green
 
-# 2. Device Detection Loop
-:device_detect_loop
-Write-Host "Checking for connected Android devices..." -ForegroundColor Yellow
-$deviceLines = adb devices | Select-String -Pattern "\tdevice$"
-$devices = @()
-
-foreach ($line in $deviceLines) {
-    $serial = $line.Line.Split("`t")[0].Trim()
-    
-    # Query properties
-    $model = (adb -s $serial shell getprop ro.product.model).Trim()
-    $version = (adb -s $serial shell getprop ro.build.version.release).Trim()
-    $characteristics = (adb -s $serial shell getprop ro.build.characteristics).Trim()
-    
-    # Identify type
-    $isEmulator = $serial.StartsWith("emulator-") -or `
-                  $serial.Contains("127.0.0.1") -or `
-                  $serial.Contains("localhost") -or `
-                  $characteristics.Contains("emulator") -or `
-                  $model.Contains("Emulator") -or `
-                  $model.Contains("Android SDK")
-                  
-    $type = if ($isEmulator) { "Emulator" } else { "Physical Device" }
-    
-    $devices += [PSCustomObject]@{
-        Serial  = $serial
-        Model   = $model
-        Version = $version
-        Type    = $type
-    }
-}
-
-# 3. Handle Empty Devices (Start Emulator automatically)
-if ($devices.Count -eq 0) {
-    Write-Host "No connected Android devices found." -ForegroundColor Yellow
-    Write-Host "Querying configured Android Virtual Devices (AVDs)..." -ForegroundColor Yellow
-    
-    # Get AVD names
-    $avdOutput = & "emulator" -list-avds
-    $avds = @()
-    foreach ($avd in $avdOutput) {
-        if (-not [string]::IsNullOrEmpty($avd.Trim())) {
-            $avds += $avd.Trim()
-        }
-    }
-    
-    if ($avds.Count -eq 0) {
-        Write-Host "`n[ERROR] No connected devices and no configured AVD emulators found!" -ForegroundColor Red
-        Write-Host "Please create an emulator in Android Studio Device Manager or connect a physical device." -ForegroundColor Yellow
-        Read-Host "Press Enter to exit..."
-        exit 1
-    }
-    
-    # Select and start emulator
-    $targetAvd = $null
-    if ($avds.Count -eq 1) {
-        $targetAvd = $avds[0]
-        Write-Host "Automatically launching configured AVD emulator: $targetAvd with window scale $EMULATOR_SCALE..." -ForegroundColor Green
-    } else {
-        Write-Host "Available Virtual Devices:" -ForegroundColor Yellow
-        for ($i = 0; $i -lt $avds.Count; $i++) {
-            Write-Host "[$($i + 1)] $($avds[$i])"
-        }
-        do {
-            $choice = Read-Host "Choose an emulator to launch (1-$($avds.Count))"
-            if ($choice -match '^\d+$' -and [int]$choice -ge 1 -and [int]$choice -le $avds.Count) {
-                $targetAvd = $avds[[int]$choice - 1]
-            } else {
-                Write-Host "Invalid choice." -ForegroundColor Red
-            }
-        } while ($null -eq $targetAvd)
-    }
-    
-    # Launch emulator in the background with window scaling to prevent oversized UI window
-    Write-Host "Starting emulator '$targetAvd' using command: emulator -avd $targetAvd -window-scale $EMULATOR_SCALE" -ForegroundColor Green
-    Start-Process -FilePath "emulator" -ArgumentList "-avd $targetAvd -window-scale $EMULATOR_SCALE" -NoNewWindow
-    
-    # Loop and wait for the new emulator device to register under ADB
-    Write-Host "Waiting for the emulator process to register under ADB..." -ForegroundColor Yellow
-    $detected = $false
-    $timeout = 0
-    while (-not $detected -and $timeout -lt 20) {
-        Start-Sleep -Seconds 2
-        $detectedLines = adb devices | Select-String -Pattern "\tdevice$"
-        if ($detectedLines) {
-            $detected = $true
-        }
-        $timeout++
-    }
-    
-    if (-not $detected) {
-        Write-Host "[ERROR] Launched emulator failed to connect to ADB within 40 seconds." -ForegroundColor Red
-        Read-Host "Press Enter to exit..."
-        exit 1
-    }
-    
-    # Go back to re-detect and retrieve full properties
-    goto device_detect_loop
-}
-
-# 4. Device Selection Menu
+# 2. Device Detection and Auto-Launch Loop
 $selectedDevice = $null
 
-if ($devices.Count -eq 1) {
-    $selectedDevice = $devices[0]
-} else {
-    # If multiple devices, check if exactly one physical device is connected to auto-prefer
-    $physicalDevices = $devices | Where-Object { $_.Type -eq "Physical Device" }
-    if ($physicalDevices.Count -eq 1) {
-        $selectedDevice = $physicalDevices[0]
-        Write-Host "Multiple devices detected. Auto-routing to the connected physical device: $($selectedDevice.Model)" -ForegroundColor Green
-    } else {
-        Write-Host "Multiple devices connected. Please choose target device:" -ForegroundColor Yellow
-        for ($i = 0; $i -lt $devices.Count; $i++) {
-            $dev = $devices[$i]
-            Write-Host "[$($i + 1)] Model: $($dev.Model) | Type: $($dev.Type) | Version: Android $($dev.Version) | Serial: $($dev.Serial)"
+while ($null -eq $selectedDevice) {
+    Write-Host "Checking for connected Android devices..." -ForegroundColor Yellow
+    $deviceLines = adb devices | Select-String -Pattern "\tdevice$"
+    $devices = @()
+
+    foreach ($line in $deviceLines) {
+        $serial = $line.Line.Split("`t")[0].Trim()
+        
+        # Query properties safely (checking for null/empty values during emulator initialization)
+        $modelVal = adb -s $serial shell getprop ro.product.model
+        $model = if ($null -ne $modelVal) { "$modelVal".Trim() } else { "" }
+        
+        $versionVal = adb -s $serial shell getprop ro.build.version.release
+        $version = if ($null -ne $versionVal) { "$versionVal".Trim() } else { "" }
+        
+        $characteristicsVal = adb -s $serial shell getprop ro.build.characteristics
+        $characteristics = if ($null -ne $characteristicsVal) { "$characteristicsVal".Trim() } else { "" }
+        
+        # Identify type
+        $isEmulator = $serial.StartsWith("emulator-") -or `
+                      $serial.Contains("127.0.0.1") -or `
+                      $serial.Contains("localhost") -or `
+                      $characteristics.Contains("emulator") -or `
+                      $model.Contains("Emulator") -or `
+                      $model.Contains("Android SDK")
+                      
+        $type = if ($isEmulator) { "Emulator" } else { "Physical Device" }
+        
+        $devices += [PSCustomObject]@{
+            Serial  = $serial
+            Model   = $model
+            Version = $version
+            Type    = $type
         }
-        Write-Host ""
-        do {
-            $choice = Read-Host "Enter choice (1-$($devices.Count))"
-            if ($choice -match '^\d+$' -and [int]$choice -ge 1 -and [int]$choice -le $devices.Count) {
-                $selectedDevice = $devices[[int]$choice - 1]
-            } else {
-                Write-Host "Invalid choice. Please select a valid number." -ForegroundColor Red
+    }
+
+    if ($devices.Count -gt 0) {
+        # 3. Route Device Target selection
+        if ($devices.Count -eq 1) {
+            $selectedDevice = $devices[0]
+            # Verify and try resizing if it's a running emulator
+            if ($selectedDevice.Type -eq "Emulator") {
+                Resize-EmulatorWindow
             }
-        } while ($null -eq $selectedDevice)
+        } else {
+            # If multiple devices, check if exactly one physical device is connected to auto-prefer
+            $physicalDevices = $devices | Where-Object { $_.Type -eq "Physical Device" }
+            if ($physicalDevices.Count -eq 1) {
+                $selectedDevice = $physicalDevices[0]
+                Write-Host "Multiple devices detected. Auto-routing to the connected physical device: $($selectedDevice.Model)" -ForegroundColor Green
+            } else {
+                Write-Host "Multiple devices connected. Please choose target device:" -ForegroundColor Yellow
+                for ($i = 0; $i -lt $devices.Count; $i++) {
+                    $dev = $devices[$i]
+                    Write-Host "[$($i + 1)] Model: $($dev.Model) | Type: $($dev.Type) | Version: Android $($dev.Version) | Serial: $($dev.Serial)"
+                }
+                Write-Host ""
+                do {
+                    $choice = Read-Host "Enter choice (1-$($devices.Count))"
+                    if ($choice -match '^\d+$' -and [int]$choice -ge 1 -and [int]$choice -le $devices.Count) {
+                        $selectedDevice = $devices[[int]$choice - 1]
+                        if ($selectedDevice.Type -eq "Emulator") {
+                            Resize-EmulatorWindow
+                        }
+                    } else {
+                        Write-Host "Invalid choice. Please select a valid number." -ForegroundColor Red
+                    }
+                } while ($null -eq $selectedDevice)
+            }
+        }
+    } else {
+        # 4. No connected devices -> Search AVDs and launch emulator
+        Write-Host "No connected Android devices found." -ForegroundColor Yellow
+        Write-Host "Querying configured Android Virtual Devices (AVDs)..." -ForegroundColor Yellow
+        
+        # Get AVD names
+        $avdOutput = & "emulator" -list-avds
+        $avds = @()
+        foreach ($avd in $avdOutput) {
+            if (-not [string]::IsNullOrEmpty($avd.Trim())) {
+                $avds += $avd.Trim()
+            }
+        }
+        
+        if ($avds.Count -eq 0) {
+            Write-Host "`n[ERROR] No connected devices and no configured AVD emulators found!" -ForegroundColor Red
+            Write-Host "Please create an emulator in Android Studio Device Manager or connect a physical device." -ForegroundColor Yellow
+            Read-Host "Press Enter to exit..."
+            exit 1
+        }
+        
+        # Select and start emulator AVD
+        $targetAvd = $null
+        if ($avds.Count -eq 1) {
+            $targetAvd = $avds[0]
+            Write-Host "Automatically launching configured AVD emulator: $targetAvd..." -ForegroundColor Green
+        } else {
+            Write-Host "Available Virtual Devices:" -ForegroundColor Yellow
+            for ($i = 0; $i -lt $avds.Count; $i++) {
+                Write-Host "[$($i + 1)] $($avds[$i])"
+            }
+            do {
+                $choice = Read-Host "Choose an emulator to launch (1-$($avds.Count))"
+                if ($choice -match '^\d+$' -and [int]$choice -ge 1 -and [int]$choice -le $avds.Count) {
+                    $targetAvd = $avds[[int]$choice - 1]
+                } else {
+                    Write-Host "Invalid choice." -ForegroundColor Red
+                }
+            } while ($null -eq $targetAvd)
+        }
+        
+        # Launch emulator process cleanly in background if not already running
+        $emulatorProcess = Get-Process | Where-Object { $_.ProcessName -like "*qemu-system*" -or $_.ProcessName -eq "emulator" }
+        if (-not $emulatorProcess) {
+            Write-Host "Starting emulator '$targetAvd'..." -ForegroundColor Green
+            Start-Process -FilePath "emulator" -ArgumentList "-avd $targetAvd" -NoNewWindow -RedirectStandardOutput "$env:TEMP\emu_out.log" -RedirectStandardError "$env:TEMP\emu_err.log"
+        } else {
+            Write-Host "Emulator process is already running. Waiting for ADB registration..." -ForegroundColor Yellow
+        }
+        
+        # Loop and wait for the new emulator device to register under ADB
+        Write-Host "Waiting for the emulator process to register under ADB..." -ForegroundColor Yellow
+        $detected = $false
+        $timeout = 0
+        while (-not $detected -and $timeout -lt 25) {
+            Start-Sleep -Seconds 2
+            $detectedLines = adb devices | Select-String -Pattern "\tdevice$"
+            if ($detectedLines) {
+                $detected = $true
+            }
+            $timeout++
+            # Dynamically attempt to apply window scale parameters once it registers
+            Resize-EmulatorWindow
+        }
+        
+        if (-not $detected) {
+            Write-Host "[ERROR] Launched emulator failed to connect to ADB within 50 seconds." -ForegroundColor Red
+            Read-Host "Press Enter to exit..."
+            exit 1
+        }
     }
 }
 
@@ -216,7 +273,7 @@ while (-not $booted -and $attempts -lt $maxAttempts) {
             $booted = $true
         }
     } catch {
-        # Retry on shell failures
+        # Suppress query exceptions during startup resets
     }
     if (-not $booted) {
         $attempts++
@@ -228,6 +285,11 @@ if (-not $booted) {
     Write-Host "[WARNING] Device boot verification timed out! Attempting to proceed..." -ForegroundColor Yellow
 } else {
     Write-Host "Device is booted and ready for test execution!" -ForegroundColor Green
+}
+
+# Apply window resize safety check
+if ($selectedDevice.Type -eq "Emulator") {
+    Resize-EmulatorWindow
 }
 
 # 6. Select Target Environment config
@@ -287,8 +349,31 @@ Write-Host "[RUNNING] Test Path : $flowPath"
 Write-Host "[RUNNING] Log File  : $logFile"
 Write-Host "==================================================`n" -ForegroundColor Cyan
 
-# 10. Execute Maestro test suite with target device binding
-$cmd = "maestro --device $($selectedDevice.Serial) --env-file $envFile test $flowPath --format JUNIT --output $reportDir\report.xml --test-output-dir $reportDir"
+# 10. Parse environment variables from the selected configuration YAML file for Maestro 2.7.0 compatibility
+$envArgs = @()
+if (Test-Path $envFile) {
+    $lines = Get-Content $envFile
+    foreach ($line in $lines) {
+        $line = $line.Trim()
+        # Skip blank lines and comments
+        if ([string]::IsNullOrEmpty($line) -or $line.StartsWith("#")) {
+            continue
+        }
+        # Parse KEY: "VALUE"
+        if ($line -match '^([^:]+):\s*(.*)$') {
+            $key = $Matches[1].Trim()
+            $val = $Matches[2].Trim()
+            # Strip outer single/double quotes from value
+            $val = $val -replace '^"|"$', ''
+            $val = $val -replace "^'|'$", ""
+            $envArgs += "--env `"$key=$val`""
+        }
+    }
+}
+$envString = $envArgs -join " "
+
+# 11. Execute Maestro test suite with target device binding and env options
+$cmd = "maestro test $flowPath --device $($selectedDevice.Serial) $envString --format JUNIT --output $reportDir\report.xml --test-output-dir $reportDir"
 
 # Run command and write outputs to console + file dynamically
 Invoke-Expression $cmd | Tee-Object -FilePath $logFile
