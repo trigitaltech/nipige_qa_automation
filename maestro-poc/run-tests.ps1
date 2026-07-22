@@ -5,6 +5,10 @@ $ErrorActionPreference = "Continue"
 $EMULATOR_TARGET_WIDTH = 450
 $EMULATOR_TARGET_HEIGHT = 900
 
+# User-configurable local APK path for automatic installation on target devices if missing
+$APK_PATH = "C:\Users\anura\Downloads\lirs-pos-agent-20-07-16-31 2.apk"
+$APP_PACKAGE = "com.lirs.pos"
+
 # Win32 API Helper function to dynamically resize the emulator window on the host computer desktop screen
 function Resize-EmulatorWindow {
     param(
@@ -290,6 +294,46 @@ if (-not $booted) {
 # Apply window resize safety check
 if ($selectedDevice.Type -eq "Emulator") {
     Resize-EmulatorWindow
+}
+
+# 5.5 Check if application package is installed on the target device
+Write-Host "Checking if package '$APP_PACKAGE' is installed on $($selectedDevice.Model)..." -ForegroundColor Yellow
+$packageCheck = ""
+try {
+    $packageCheck = (adb -s $selectedDevice.Serial shell pm list packages $APP_PACKAGE).Trim()
+} catch {
+    # Suppress shell listing errors on early startup
+}
+
+if ([string]::IsNullOrEmpty($packageCheck)) {
+    Write-Host "[WARNING] Package '$APP_PACKAGE' is NOT installed on this device!" -ForegroundColor Red
+    if (Test-Path $APK_PATH) {
+        Write-Host "Local APK found at: $APK_PATH" -ForegroundColor Green
+        Write-Host "Installing APK onto the device. Please wait..." -ForegroundColor Yellow
+        $installResult = adb -s $selectedDevice.Serial install "$APK_PATH"
+        Write-Host $installResult
+        
+        # Verify installation again
+        $packageCheckAfter = ""
+        try {
+            $packageCheckAfter = (adb -s $selectedDevice.Serial shell pm list packages $APP_PACKAGE).Trim()
+        } catch {}
+        
+        if ([string]::IsNullOrEmpty($packageCheckAfter)) {
+            Write-Host "[ERROR] Installation failed. Please install the APK manually on your device." -ForegroundColor Red
+            Read-Host "Press Enter to exit..."
+            exit 1
+        } else {
+            Write-Host "Application installed successfully!" -ForegroundColor Green
+        }
+    } else {
+        Write-Host "[ERROR] Local APK file not found at: $APK_PATH" -ForegroundColor Red
+        Write-Host "Please install the app manually on your phone, or configure `$APK_PATH at the top of the runner script." -ForegroundColor Yellow
+        Read-Host "Press Enter to exit..."
+        exit 1
+    }
+} else {
+    Write-Host "Application package is already installed on the device." -ForegroundColor Green
 }
 
 # 6. Select Target Environment config
