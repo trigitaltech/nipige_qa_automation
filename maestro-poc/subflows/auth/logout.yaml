@@ -1,0 +1,10 @@
+# Reusable session termination subflow
+appId: ${APP_ID}
+---
+- runFlow: ../common/dismiss_popups.yaml
+- assertVisible: "Sales Report"
+- tapOn:
+    point: 991, 212
+- runFlow: ../common/dismiss_popups.yaml
+- tapOn: "LOGOUT"
+- assertVisible: "Company Id"

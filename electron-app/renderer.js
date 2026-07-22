@@ -74,6 +74,11 @@ async function loadDefaults() {
         if (currentEnvConfig.BROWSER) {
             browserNameSelect.value = currentEnvConfig.BROWSER;
         }
+        if (currentEnvConfig.TEST_DATA_PATH) {
+            selectedExcelPath = currentEnvConfig.TEST_DATA_PATH;
+            excelPathInput.value = currentEnvConfig.TEST_DATA_PATH;
+            loadExcelSheets(selectedExcelPath);
+        }
 
         // Fill Settings elements
         txtTenantEmail.value = currentEnvConfig.TENANT_EMAIL || '';
@@ -149,37 +154,41 @@ executionModeSelect.addEventListener('change', () => {
     updateRunButtonState();
 });
 
+// Helper to read excel sheets into dropdown
+async function loadExcelSheets(filePath) {
+    sheetNameSelect.disabled = true;
+    sheetNameSelect.innerHTML = '<option value="" disabled selected>Loading sheets...</option>';
+    btnRun.disabled = true;
+
+    try {
+        const sheets = await window.api.readExcelSheets(filePath);
+        
+        sheetNameSelect.innerHTML = '<option value="" disabled selected>Choose a sheet...</option>';
+        sheets.forEach(sheet => {
+            const opt = document.createElement('option');
+            opt.value = sheet;
+            opt.textContent = sheet;
+            // Pre-select Regression, Smoke, or Sanity if found
+            if (['Regression', 'Smoke', 'Sanity'].includes(sheet)) {
+                opt.selected = true;
+            }
+            sheetNameSelect.appendChild(opt);
+        });
+        sheetNameSelect.disabled = false;
+        updateRunButtonState();
+    } catch (e) {
+        sheetNameSelect.innerHTML = '<option value="" disabled selected>Error loading sheets</option>';
+        console.error("Error loading excel sheets", e);
+    }
+}
+
 // 3. Select Excel File & Read Sheets
 btnBrowse.addEventListener('click', async () => {
     const filePath = await window.api.selectExcelFile();
     if (filePath) {
         selectedExcelPath = filePath;
         excelPathInput.value = filePath;
-        
-        sheetNameSelect.disabled = true;
-        sheetNameSelect.innerHTML = '<option value="" disabled selected>Loading sheets...</option>';
-        btnRun.disabled = true;
-
-        try {
-            const sheets = await window.api.readExcelSheets(filePath);
-            
-            sheetNameSelect.innerHTML = '<option value="" disabled selected>Choose a sheet...</option>';
-            sheets.forEach(sheet => {
-                const opt = document.createElement('option');
-                opt.value = sheet;
-                opt.textContent = sheet;
-                // Pre-select Regression, Smoke, or Sanity if found
-                if (['Regression', 'Smoke', 'Sanity'].includes(sheet)) {
-                    opt.selected = true;
-                }
-                sheetNameSelect.appendChild(opt);
-            });
-            sheetNameSelect.disabled = false;
-            updateRunButtonState();
-        } catch (e) {
-            sheetNameSelect.innerHTML = '<option value="" disabled selected>Error loading sheets</option>';
-            alert(`Could not read Excel sheets. Make sure the file format is valid and it is not currently open.\n\nError: ${e.message}`);
-        }
+        await loadExcelSheets(filePath);
     }
 });
 

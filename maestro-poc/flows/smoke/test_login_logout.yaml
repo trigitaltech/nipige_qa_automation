@@ -1,0 +1,18 @@
+# Smoke Test: Verify basic launch, login, navigation, and logout functionality
+appId: ${APP_ID}
+---
+# 1. Reset and Launch App
+- runFlow: ../../subflows/common/launch.yaml
+
+# 2. Login Flow with Environment credentials
+- runFlow:
+    file: ../../subflows/auth/login.yaml
+    env:
+      USERNAME: ${USER_EMAIL}
+      PASSWORD: ${USER_PASSWORD}
+
+# 3. Quick Home screen Navigation
+- runFlow: ../../subflows/navigation/navigate_home.yaml
+
+# 4. Logout Flow
+- runFlow: ../../subflows/auth/logout.yaml

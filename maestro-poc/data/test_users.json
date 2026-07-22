@@ -1,0 +1,10 @@
+{
+  "dev": {
+    "username": "qa_dev_user@example.com",
+    "password": "Password123"
+  },
+  "staging": {
+    "username": "techzone@gmail.com",
+    "password": "Nipige#2026"
+  }
+}

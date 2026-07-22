@@ -1,0 +1,5 @@
+# QA Environment Configuration
+APP_ID: "com.lirs.pos"
+BASE_URL: "https://dev.horc.lirs.net"
+USER_EMAIL: "techzone@gmail.com"
+USER_PASSWORD: "Nipige#2026"

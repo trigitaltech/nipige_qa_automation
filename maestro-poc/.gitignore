@@ -1,0 +1,13 @@
+# Maestro Outputs
+reports/
+screenshots/
+logs/
+
+# App builds
+apps/*.apk
+
+# IDE & Editor files
+.idea/
+.vscode/
+.DS_Store
+*.log

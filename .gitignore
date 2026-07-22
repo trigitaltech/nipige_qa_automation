@@ -44,3 +44,8 @@ Thumbs.db
 # Lock files (pnpm, npm) — usually committed, uncomment if needed locally
 # pnpm-lock.yaml
 # package-lock.json
+
+# Maestro POC
+maestro-poc/reports/
+maestro-poc/logs/
+

@@ -109,12 +109,25 @@ ipcMain.handle('get-defaults', () => {
     const fallbackPath = path.join(automationDir, '.env.example');
     const targetPath = fs.existsSync(envPath) ? envPath : (fs.existsSync(fallbackPath) ? fallbackPath : '');
 
-    if (!targetPath) return {};
+    const config = {};
+    
+    // Default Excel file path if it exists
+    // Packaged: look next to the executable. Unpackaged: look inside the workspace root.
+    const exeDir = isPackaged ? path.dirname(app.getPath('exe')) : automationDir;
+    const externalExcel = path.resolve(exeDir, 'testData.xlsx');
+    const localExcel = path.resolve(automationDir, 'src', 'resources', 'data', 'testData.xlsx');
+    
+    if (fs.existsSync(externalExcel)) {
+        config['TEST_DATA_PATH'] = externalExcel;
+    } else if (fs.existsSync(localExcel)) {
+        config['TEST_DATA_PATH'] = localExcel;
+    }
+
+    if (!targetPath) return config;
 
     try {
         const envContent = fs.readFileSync(targetPath, 'utf8');
         const lines = envContent.split(/\r?\n/);
-        const config = {};
         for (const line of lines) {
             const trimmed = line.trim();
             if (!trimmed || trimmed.startsWith('#')) continue;
@@ -128,7 +141,7 @@ ipcMain.handle('get-defaults', () => {
         return config;
     } catch (e) {
         console.error(e);
-        return {};
+        return config;
     }
 });
 

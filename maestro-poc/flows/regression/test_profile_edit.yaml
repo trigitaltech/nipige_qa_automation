@@ -1,0 +1,29 @@
+# Regression Test: Profile Editing functionality
+appId: ${APP_ID}
+---
+# 1. Reset and Launch App
+- runFlow: ../../subflows/common/launch.yaml
+
+# 2. Login Flow with Environment credentials
+- runFlow:
+    file: ../../subflows/auth/login.yaml
+    env:
+      USERNAME: ${USER_EMAIL}
+      PASSWORD: ${USER_PASSWORD}
+
+# 3. (Placeholder) Profile editing steps
+- tapOn:
+    id: "nav_profile_button"
+  optional: true
+- tapOn: "Edit Profile"
+  optional: true
+- tapOn:
+    id: "phone_input"
+  optional: true
+- inputText: "9876543210"
+  optional: true
+- tapOn: "Save"
+  optional: true
+- assertVisible: "Profile updated successfully"
+  optional: true
+

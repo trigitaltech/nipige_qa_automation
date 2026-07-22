@@ -1,0 +1,5 @@
+# UAT Environment Configuration
+APP_ID: "com.lirs.pos"
+BASE_URL: "https://uat.nipige.com"
+USER_EMAIL: "qa_stage_user@example.com"
+USER_PASSWORD: "PasswordStaging"
