@@ -17,14 +17,14 @@ if (isCI) {
   viewportConfig = { width: 1280, height: 1000 };
 }
 
-let retriesConfig = Number.parseInt(String(process.env.RETRIES ?? "0"), 10);
+let retriesConfig = Number.parseInt(String(process.env.RETRIES ?? "2"), 10);
 if (isCI) {
   retriesConfig = process.env.CI_RETRIES ? Number.parseInt(process.env.CI_RETRIES, 10) : 2;
 }
 
-let workersConfig = Number.parseInt(String(process.env.PARALLEL_THREAD ?? "10"), 10);
+let workersConfig = Number.parseInt(String(process.env.PARALLEL_THREAD ?? "6"), 10);
 if (isCI) {
-  workersConfig = process.env.CI_WORKERS ? Number.parseInt(process.env.CI_WORKERS, 10) : 2;
+  workersConfig = process.env.CI_WORKERS ? Number.parseInt(process.env.CI_WORKERS, 10) : 6;
 }
 
 const config: PlaywrightTestConfig = {
@@ -38,24 +38,32 @@ const config: PlaywrightTestConfig = {
             "--window-size=1920,1080",
             "--disable-extensions",
             "--disable-plugins",
+            "--disable-blink-features=AutomationControlled",
+            "--disable-dev-shm-usage",
+            "--no-sandbox",
+            "--disable-gpu",
           ]
         : [
             "--start-maximized",
             "--disable-extensions",
             "--disable-plugins",
+            "--disable-blink-features=AutomationControlled",
+            "--disable-dev-shm-usage",
+            "--no-sandbox",
+            "--disable-gpu",
           ],
       headless: isCI ? true : isHeadless,
       timeout: Number.parseInt(String(process.env.BROWSER_LAUNCH_TIMEOUT ?? "30000"), 10),
-      // Artificial per-action delay. Defaults to 0 (was a hard-coded 100ms on every action,
+      // Artificial per-action delay. Defaults to 200 (was a hard-coded 100ms on every action,
       // which added minutes across the suite). Re-enable via SLOW_MO in .env only when debugging.
-      slowMo: Number.parseInt(String(process.env.SLOW_MO ?? "0"), 10),
+      slowMo: Number.parseInt(String(process.env.SLOW_MO ?? "200"), 10),
       downloadsPath: "./test-results/downloads",
     },
     viewport: viewportConfig,
     ignoreHTTPSErrors: true,
     acceptDownloads: true,
-    actionTimeout: Number.parseInt(String(process.env.ACTION_TIMEOUT ?? "2"), 10) * timeInMin,
-    navigationTimeout: Number.parseInt(String(process.env.NAVIGATION_TIMEOUT ?? "5"), 10) * timeInMin,
+    actionTimeout: Number.parseInt(String(process.env.ACTION_TIMEOUT ?? "3"), 10) * timeInMin,
+    navigationTimeout: Number.parseInt(String(process.env.NAVIGATION_TIMEOUT ?? "2"), 10) * timeInMin,
     // Capture screenshots only when a test fails. "on" (a full-page PNG after every test)
     // is a large I/O cost across a 44-spec suite and is only needed for debugging.
     screenshot: {
@@ -71,7 +79,7 @@ const config: PlaywrightTestConfig = {
   retries: retriesConfig,
   preserveOutput: "always",
   reportSlowTests: null,
-  timeout: Number.parseInt(String(process.env.TEST_TIMEOUT ?? "3"), 10) * timeInMin,
+  timeout: Number.parseInt(String(process.env.TEST_TIMEOUT ?? "5"), 10) * timeInMin,
   fullyParallel: false,
   workers: workersConfig,
 

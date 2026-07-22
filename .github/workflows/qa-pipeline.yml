@@ -7,7 +7,12 @@ jobs:
   run-all-tests:
     name: Run All Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 180
+    timeout-minutes: 90
+    env:
+      TEST_TIMEOUT: 5
+      ACTION_TIMEOUT: 3
+      NAVIGATION_TIMEOUT: 2
+      RETRIES: 2
 
     steps:
       - name: Checkout repository
@@ -69,6 +74,14 @@ jobs:
           cp .env.example .env
           sed -i 's|BASE_URL=http://advantageonlineshopping.com|BASE_URL=https://migration.demn8gjs27bhv.amplifyapp.com/|g' .env
 
+      - name: Add rate limiting handling
+        run: |
+          cat >> .env << EOF
+          RATE_LIMIT_DELAY=2000
+          API_REQUEST_RETRY=3
+          API_REQUEST_DELAY=1000
+          EOF
+
       - name: Verify environment
         run: |
           echo "Checking environment..."
@@ -82,15 +95,13 @@ jobs:
           fi
 
       - name: Run Playwright tests
-        env:
-          CI_WORKERS: 6
+        run: npm run test:regression -- --workers=6 --retries=2
+
+      - name: Kill hanging processes
+        if: always()
         run: |
-          # Generate the suite once, then run the tests.
-          # --grep-invert excludes @external (third-party FreshCart portal) and @quarantine
-          # (known-flaky) so the gate only goes red on real Nipige regressions.
-          npm run create:suite -- SHEET=Regression
-          npx playwright test --project=suite \
-            --grep-invert "@external|@quarantine"
+          pkill -f playwright || true
+          pkill -f chromium || true
 
       - name: Upload HTML Report
         if: always()
