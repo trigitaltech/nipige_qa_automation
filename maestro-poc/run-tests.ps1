@@ -241,9 +241,9 @@ while ($null -eq $selectedDevice) {
         Write-Host "Waiting for the emulator process to register under ADB..." -ForegroundColor Yellow
         $detected = $false
         $timeout = 0
-        while (-not $detected -and $timeout -lt 25) {
+        while (-not $detected -and $timeout -lt 45) {
             Start-Sleep -Seconds 2
-            $detectedLines = adb devices | Select-String -Pattern "\tdevice$"
+            $detectedLines = adb devices | Select-String -Pattern "\t(device|offline|unauthorized)$"
             if ($detectedLines) {
                 $detected = $true
             }
@@ -253,7 +253,7 @@ while ($null -eq $selectedDevice) {
         }
         
         if (-not $detected) {
-            Write-Host "[ERROR] Launched emulator failed to connect to ADB within 50 seconds." -ForegroundColor Red
+            Write-Host "[ERROR] Launched emulator failed to connect to ADB within 90 seconds." -ForegroundColor Red
             Read-Host "Press Enter to exit..."
             exit 1
         }
