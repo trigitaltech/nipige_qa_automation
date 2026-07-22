@@ -1,0 +1,11 @@
+# Reusable authentication subflow to execute login steps
+# Parameters required: USERNAME, PASSWORD
+appId: ${APP_ID}
+---
+- tapOn: "Company Id"
+- inputText: ${USERNAME}
+- tapOn: "Password"
+- inputText: ${PASSWORD}
+- hideKeyboard
+- tapOn: "LOGIN"
+- assertVisible: "Dashboard"

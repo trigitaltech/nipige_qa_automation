@@ -1,0 +1,33 @@
+{
+  "dev": {
+    "tenant_admin": {
+      "username": "qa_dev_user@example.com",
+      "password": "Password123",
+      "description": "Developer test credentials for general tenant actions"
+    },
+    "system_admin": {
+      "username": "sys_dev_admin@example.com",
+      "password": "SysPassword123",
+      "description": "Developer test credentials for administrative functions"
+    }
+  },
+  "qa": {
+    "tenant_admin": {
+      "username": "techzone@gmail.com",
+      "password": "Nipige#2026",
+      "description": "QA credentials for tenant features"
+    },
+    "system_admin": {
+      "username": "techzone@gmail.com",
+      "password": "Nipige#2026",
+      "description": "QA credentials for platform setup"
+    }
+  },
+  "prod": {
+    "tenant_admin": {
+      "username": "prod_user@example.com",
+      "password": "PasswordProd123",
+      "description": "Production credentials for verification"
+    }
+  }
+}

@@ -1,0 +1,19 @@
+# Sanity Test: Verify core dashboard navigation paths
+appId: ${APP_ID}
+---
+# 1. Reset and Launch App
+- runFlow: ../../subflows/common/launch.yaml
+
+# 2. Login Flow with Environment credentials
+- runFlow:
+    file: ../../subflows/auth/login.yaml
+    env:
+      USERNAME: ${USER_EMAIL}
+      PASSWORD: ${USER_PASSWORD}
+
+# 3. Verify Home Screen loading
+- runFlow: ../../subflows/navigation/navigate_home.yaml
+
+- assertVisible: "Settings"
+  optional: true
+

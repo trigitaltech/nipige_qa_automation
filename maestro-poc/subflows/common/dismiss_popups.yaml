@@ -1,0 +1,13 @@
+# Reusable subflow to dismiss unexpected/dynamic system and app popups
+appId: ${APP_ID}
+---
+- runFlow:
+    when:
+      visible: "CLOSE"
+    commands:
+      - tapOn: "CLOSE"
+- runFlow:
+    when:
+      visible: "NO"
+    commands:
+      - tapOn: "NO"

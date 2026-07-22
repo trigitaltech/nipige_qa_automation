@@ -1,0 +1,5 @@
+# Production Environment Configuration
+APP_ID: "com.lirs.pos"
+BASE_URL: "https://nipige.com"
+USER_EMAIL: "prod_user@example.com"
+USER_PASSWORD: "PasswordProd123"

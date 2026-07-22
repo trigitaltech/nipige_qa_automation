@@ -1,0 +1,5 @@
+# Reusable subflow to reset and launch the target application
+appId: ${APP_ID}
+---
+- clearState
+- launchApp

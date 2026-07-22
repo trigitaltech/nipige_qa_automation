@@ -1,0 +1,6 @@
+# Reusable subflow to navigate to the Home screen dashboard
+appId: ${APP_ID}
+---
+- runFlow: ../common/dismiss_popups.yaml
+- tapOn: "Dashboard"
+- assertVisible: "Dashboard"
