@@ -54,16 +54,16 @@ const config: PlaywrightTestConfig = {
           ],
       headless: isCI ? true : isHeadless,
       timeout: Number.parseInt(String(process.env.BROWSER_LAUNCH_TIMEOUT ?? "30000"), 10),
-      // Artificial per-action delay. Defaults to 200 (was a hard-coded 100ms on every action,
+      // Artificial per-action delay disabled in CI. Defaults to 0ms (was a hard-coded 100ms on every action,
       // which added minutes across the suite). Re-enable via SLOW_MO in .env only when debugging.
-      slowMo: Number.parseInt(String(process.env.SLOW_MO ?? "200"), 10),
+      slowMo: isCI ? 0 : Number.parseInt(String(process.env.SLOW_MO ?? "0"), 10),
       downloadsPath: "./test-results/downloads",
     },
     viewport: viewportConfig,
     ignoreHTTPSErrors: true,
     acceptDownloads: true,
-    actionTimeout: Number.parseInt(String(process.env.ACTION_TIMEOUT ?? "3"), 10) * timeInMin,
-    navigationTimeout: Number.parseInt(String(process.env.NAVIGATION_TIMEOUT ?? "2"), 10) * timeInMin,
+    actionTimeout: Number.parseInt(String(process.env.ACTION_TIMEOUT ?? "2"), 10) * timeInMin, // Reduced to 2 min
+    navigationTimeout: Number.parseInt(String(process.env.NAVIGATION_TIMEOUT ?? "1"), 10) * timeInMin, // Reduced to 1 min
     // Capture screenshots only when a test fails. "on" (a full-page PNG after every test)
     // is a large I/O cost across a 44-spec suite and is only needed for debugging.
     screenshot: {
@@ -83,25 +83,30 @@ const config: PlaywrightTestConfig = {
   fullyParallel: false,
   workers: workersConfig,
 
-  reporter: [
-    ["dot"],
-    [
-      "allure-playwright",
-      {
-        detail: false,
-        suiteTitle: false,
-        environmentInfo: {
-          OS: process.platform.toUpperCase(),
-          BROWSER: String(process.env.BROWSER ?? "").toUpperCase(),
-          BASE_URL: process.env.BASE_URL,
-        },
-      },
-    ],
-    ["html", { open: "never", outputFolder: "./test-results/report" }],
-    ["junit", { outputFile: "./test-results/results/results.xml" }],
-    ["json", { outputFile: "./test-results/results/results.json" }],
-    ["./src/framework/logger/TestListener.ts"],
-  ],
+  reporter: isCI
+    ? [
+        ["dot"],
+        ["html", { open: "never", outputFolder: "./test-results/report" }],
+      ]
+    : [
+        ["dot"],
+        [
+          "allure-playwright",
+          {
+            detail: false,
+            suiteTitle: false,
+            environmentInfo: {
+              OS: process.platform.toUpperCase(),
+              BROWSER: String(process.env.BROWSER ?? "").toUpperCase(),
+              BASE_URL: process.env.BASE_URL,
+            },
+          },
+        ],
+        ["html", { open: "never", outputFolder: "./test-results/report" }],
+        ["junit", { outputFile: "./test-results/results/results.xml" }],
+        ["json", { outputFile: "./test-results/results/results.json" }],
+        ["./src/framework/logger/TestListener.ts"],
+      ],
 
   projects: [
     {
