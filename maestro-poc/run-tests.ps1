@@ -47,6 +47,59 @@ function Resize-EmulatorWindow {
     }
 }
 
+# Helper function to dynamically inspect and dismiss Android System alerts by parsing screen node hierarchy XML
+function Dismiss-AndroidDialog {
+    param(
+        [string]$TargetText,
+        [string]$Serial
+    )
+    $tempFile = $null
+    try {
+        if ([string]::IsNullOrEmpty($Serial)) { return $false }
+        
+        # Dump current screen node layout
+        adb -s $Serial shell uiautomator dump /sdcard/window_dump.xml | Out-Null
+        $tempFile = [System.IO.Path]::GetTempFileName()
+        adb -s $Serial pull /sdcard/window_dump.xml $tempFile | Out-Null
+        
+        if (Test-Path $tempFile) {
+            # Load xml hierarchy
+            [xml]$xml = Get-Content $tempFile
+            
+            # Query text or content-description matches
+            $nodes = $xml.SelectNodes("//node[contains(@text, '$TargetText')]")
+            if (-not $nodes) {
+                $nodes = $xml.SelectNodes("//node[contains(@content-desc, '$TargetText')]")
+            }
+            
+            foreach ($node in $nodes) {
+                $bounds = $node.bounds
+                if ($bounds -match '\[(\d+),(\d+)\]\[(\d+),(\d+)\]') {
+                    $x1 = [int]$Matches[1]
+                    $y1 = [int]$Matches[2]
+                    $x2 = [int]$Matches[3]
+                    $y2 = [int]$Matches[4]
+                    
+                    # Compute center coordinate
+                    $centerX = [int](($x1 + $x2) / 2)
+                    $centerY = [int](($y1 + $y2) / 2)
+                    
+                    Write-Host "Auto-dismissing alert: Found '$TargetText' at bounds $bounds. Tapping $centerX, $centerY..." -ForegroundColor Yellow
+                    adb -s $Serial shell input tap $centerX $centerY | Out-Null
+                    return $true
+                }
+            }
+        }
+    } catch {
+        # Catch any XML validation errors on transitional boots
+    } finally {
+        if ($null -ne $tempFile -and (Test-Path $tempFile)) {
+            Remove-Item $tempFile -Force
+        }
+    }
+    return $false
+}
+
 # 1. Environment Validation
 Write-Host "==================================================" -ForegroundColor Cyan
 Write-Host "      Production Maestro Automation Test Runner" -ForegroundColor Cyan
@@ -300,7 +353,14 @@ if ($selectedDevice.Type -eq "Emulator") {
 Write-Host "Dismissing potential startup system overlays via ADB..." -ForegroundColor Yellow
 for ($i = 0; $i -lt 3; $i++) {
     try {
-        adb -s $selectedDevice.Serial shell input keyevent 4 | Out-Null
+        # Dismiss via text-based coordinate tapping
+        $dismissed1 = Dismiss-AndroidDialog "Close app" $selectedDevice.Serial
+        $dismissed2 = Dismiss-AndroidDialog "Wait" $selectedDevice.Serial
+        
+        # Fallback to keyevent BACK if popup persists
+        if (-not ($dismissed1 -or $dismissed2)) {
+            adb -s $selectedDevice.Serial shell input keyevent 4 | Out-Null
+        }
     } catch {}
     Start-Sleep -Milliseconds 500
 }
