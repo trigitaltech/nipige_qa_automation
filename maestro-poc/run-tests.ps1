@@ -235,8 +235,8 @@ while ($null -eq $selectedDevice) {
         # Launch emulator process cleanly in background if not already running
         $emulatorProcess = Get-Process | Where-Object { $_.ProcessName -like "*qemu-system*" -or $_.ProcessName -eq "emulator" }
         if (-not $emulatorProcess) {
-            Write-Host "Starting emulator '$targetAvd'..." -ForegroundColor Green
-            Start-Process -FilePath "emulator" -ArgumentList "-avd $targetAvd" -NoNewWindow -RedirectStandardOutput "$env:TEMP\emu_out.log" -RedirectStandardError "$env:TEMP\emu_err.log"
+            Write-Host "Starting emulator '$targetAvd' with clean state (-no-snapshot)..." -ForegroundColor Green
+            Start-Process -FilePath "emulator" -ArgumentList "-avd $targetAvd -no-snapshot" -NoNewWindow -RedirectStandardOutput "$env:TEMP\emu_out.log" -RedirectStandardError "$env:TEMP\emu_err.log"
         } else {
             Write-Host "Emulator process is already running. Waiting for ADB registration..." -ForegroundColor Yellow
         }
