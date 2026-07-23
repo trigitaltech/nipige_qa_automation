@@ -31,9 +31,37 @@ export default class HomeSteps {
      *               value only to override that default for a specific test.
      */
     public async login(userName: string, password: string, persona?: string, tenant?: string) {
-        await test.step(`Login as ${userName}${persona ? ` with role '${persona}'` : ""}`, async () => {
-            await this.enterLoginDetails(userName, password, persona, tenant);
-        });
+        // Implement a retry/backoff for HTTP 429 (rate limiting). We try the full login flow and
+        // validation up to MAX_ATTEMPTS. Between attempts we wait with exponential backoff so the
+        // backend has time to recover when it's throttling rapid login requests.
+        const MAX_ATTEMPTS = 3;
+        for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+            await test.step(`Login attempt ${attempt} as ${userName}${persona ? ` with role '${persona}'` : ""}`, async () => {
+                await this.enterLoginDetails(userName, password, persona, tenant);
+            });
+
+            try {
+                // Validate login and succeed if no error thrown
+                await this.validateLogin(userName);
+                return; // success
+            } catch (err: any) {
+                const message = err?.message ?? String(err);
+                // If the failure is a rate-limit (HTTP 429), wait and retry (unless we've exhausted attempts)
+                if (message.includes("429") && attempt < MAX_ATTEMPTS) {
+                    // Backoff: 5s, 10s, ... (in milliseconds)
+                    const backoffMs = 5000 * Math.pow(2, attempt - 1);
+                    // Log and wait before retrying
+                    // Use a test.step to make the wait visible in Playwright traces
+                    await test.step(`Rate limit detected, backing off for ${backoffMs / 1000}s before retry`, async () => {
+                        await this.page.waitForTimeout(backoffMs);
+                    });
+                    // Continue to next attempt
+                    continue;
+                }
+                // Not a retryable error or out of attempts — rethrow to fail the test with original message
+                throw err;
+            }
+        }
     }
     /**
      * Enter login details and submit.
@@ -57,6 +85,9 @@ export default class HomeSteps {
                     await this.selectTenant(tenantToSelect);
                 }
             }
+            // Small pause before clicking Sign In to avoid rapid-fire requests that may trigger
+            // backend throttling when tests run in parallel or loops.
+            await this.page.waitForTimeout(1000);
             await this.ui.element(HomePage.SIGN_IN_BUTTON, HomePageConstants.SIGN_IN_BUTTON).click();
         });
     }
