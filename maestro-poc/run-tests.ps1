@@ -296,6 +296,15 @@ if ($selectedDevice.Type -eq "Emulator") {
     Resize-EmulatorWindow
 }
 
+# Dismiss potential startup system crash dialogs/overlays (e.g. System UI / Pixel Launcher hangs)
+Write-Host "Dismissing potential startup system overlays via ADB..." -ForegroundColor Yellow
+for ($i = 0; $i -lt 3; $i++) {
+    try {
+        adb -s $selectedDevice.Serial shell input keyevent 4 | Out-Null
+    } catch {}
+    Start-Sleep -Milliseconds 500
+}
+
 # 5.5 Check if application package is installed on the target device
 Write-Host "Checking if package '$APP_PACKAGE' is installed on $($selectedDevice.Model)..." -ForegroundColor Yellow
 $packageCheck = ""
