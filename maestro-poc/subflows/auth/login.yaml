@@ -5,8 +5,10 @@ appId: ${APP_ID}
 - runFlow: ../common/dismiss_popups.yaml
 - tapOn: "Company Id"
 - inputText: ${USERNAME}
+- runFlow: ../common/dismiss_popups.yaml
 - tapOn: "Password"
 - inputText: ${PASSWORD}
 - hideKeyboard
+- runFlow: ../common/dismiss_popups.yaml
 - tapOn: "LOGIN"
 - assertVisible: "Dashboard"

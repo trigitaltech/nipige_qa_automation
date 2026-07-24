@@ -64,7 +64,7 @@ export default class ItemPage {
     // ── Item table ─────────────────────────────────────────────────────────────
     static readonly TABLE = 'table, [class*="item-list"], [class*="data-table"]';
     static readonly TABLE_HEADERS = 'thead th, [class*="table-header"] [class*="col"]';
-    static readonly TABLE_ROWS = 'tbody tr, [class*="table-row"]:not([class*="header"])';
+    static readonly TABLE_ROWS = 'tbody tr:has(td:not([colspan])), [class*="table-row"]:not([class*="header"]):not(:has-text("No items found")):not(:has-text("No Records Found"))';
     static readonly NO_ITEMS_MSG = [
         'td:has-text("No items found")',
         'p:has-text("No items found")',
@@ -345,13 +345,16 @@ export default class ItemPage {
     static readonly DELETE_CONFIRM_BTN = [
         'button:has-text("Yes, delete it")',
         'button:has-text("Yes, Delete it")',
+        'button:has-text("Yes, delete it!")',
+        'button:has-text("Yes, Delete it!")',
         'button:has-text("Confirm")',
         '.swal2-confirm',
     ].join(', ');
 
     static readonly DELETE_CANCEL_BTN = [
         '.swal2-cancel',
-        // Scope "No" button to be inside the delete confirmation container
+        'button:has-text("No")',
+        'button:has-text("Cancel")',
         'div:has(button:has-text("Yes, delete it")) button:has-text("No")',
         'div:has(button:has-text("Yes, Delete it")) button:has-text("No")',
         '[role="dialog"] button:has-text("No")',
