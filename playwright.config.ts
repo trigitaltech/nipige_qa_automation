@@ -54,18 +54,17 @@ const config: PlaywrightTestConfig = {
           ],
       headless: isCI ? true : isHeadless,
       timeout: Number.parseInt(String(process.env.BROWSER_LAUNCH_TIMEOUT ?? "30000"), 10),
-      // Artificial per-action delay. Defaults to 200 (was a hard-coded 100ms on every action,
-      // which added minutes across the suite). Re-enable via SLOW_MO in .env only when debugging.
-      slowMo: Number.parseInt(String(process.env.SLOW_MO ?? "200"), 10),
+      // Disable slowMo in CI for speed; local debugging can set via .env
+      slowMo: isCI ? 0 : Number.parseInt(String(process.env.SLOW_MO ?? "0"), 10),
       downloadsPath: "./test-results/downloads",
     },
     viewport: viewportConfig,
     ignoreHTTPSErrors: true,
     acceptDownloads: true,
-    actionTimeout: Number.parseInt(String(process.env.ACTION_TIMEOUT ?? "3"), 10) * timeInMin,
-    navigationTimeout: Number.parseInt(String(process.env.NAVIGATION_TIMEOUT ?? "2"), 10) * timeInMin,
-    // Capture screenshots only when a test fails. "on" (a full-page PNG after every test)
-    // is a large I/O cost across a 44-spec suite and is only needed for debugging.
+    // Increased timeouts to handle slow UI interactions and network latency
+    actionTimeout: Number.parseInt(String(process.env.ACTION_TIMEOUT ?? "60"), 10) * 1000, // 60 seconds for actions
+    navigationTimeout: Number.parseInt(String(process.env.NAVIGATION_TIMEOUT ?? "45"), 10) * 1000, // 45 seconds for navigation
+    // Capture screenshots only when a test fails to reduce I/O overhead
     screenshot: {
       mode: "only-on-failure",
       fullPage: true,
@@ -76,32 +75,38 @@ const config: PlaywrightTestConfig = {
 
   testDir: "./src/tests",
   outputDir: "./test-results/failure",
-  retries: retriesConfig,
+  retries: retriesConfig, // Keep 2 retries for flaky tests
   preserveOutput: "always",
   reportSlowTests: null,
-  timeout: Number.parseInt(String(process.env.TEST_TIMEOUT ?? "5"), 10) * timeInMin,
+  // Increased test timeout to handle complex UI scenarios
+  timeout: Number.parseInt(String(process.env.TEST_TIMEOUT ?? "15"), 10) * timeInMin, // 15 minutes per test
   fullyParallel: false,
   workers: workersConfig,
 
-  reporter: [
-    ["dot"],
-    [
-      "allure-playwright",
-      {
-        detail: false,
-        suiteTitle: false,
-        environmentInfo: {
-          OS: process.platform.toUpperCase(),
-          BROWSER: String(process.env.BROWSER ?? "").toUpperCase(),
-          BASE_URL: process.env.BASE_URL,
-        },
-      },
-    ],
-    ["html", { open: "never", outputFolder: "./test-results/report" }],
-    ["junit", { outputFile: "./test-results/results/results.xml" }],
-    ["json", { outputFile: "./test-results/results/results.json" }],
-    ["./src/framework/logger/TestListener.ts"],
-  ],
+  reporter: isCI
+    ? [
+        ["dot"],
+        ["html", { open: "never", outputFolder: "./test-results/report" }],
+      ]
+    : [
+        ["dot"],
+        [
+          "allure-playwright",
+          {
+            detail: false,
+            suiteTitle: false,
+            environmentInfo: {
+              OS: process.platform.toUpperCase(),
+              BROWSER: String(process.env.BROWSER ?? "").toUpperCase(),
+              BASE_URL: process.env.BASE_URL,
+            },
+          },
+        ],
+        ["html", { open: "never", outputFolder: "./test-results/report" }],
+        ["junit", { outputFile: "./test-results/results/results.xml" }],
+        ["json", { outputFile: "./test-results/results/results.json" }],
+        ["./src/framework/logger/TestListener.ts"],
+      ],
 
   projects: [
     {

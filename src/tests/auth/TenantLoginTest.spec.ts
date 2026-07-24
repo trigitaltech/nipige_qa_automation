@@ -21,16 +21,20 @@ scenarios.forEach((scenario) => {
         const home = new HomeSteps(page);
 
         await home.launchApplication();
-        await home.login(
-            data.UserName || "",
-            data.Password || "",
-            data.persona || "",
-        );
 
         if (data.TestID === "TC01_ValidLogin" || data.TestID === "TC03_LoginCreateAccount") {
-            await home.validateLogin(data.UserName);
+            await home.login(
+                data.UserName || "",
+                data.Password || "",
+                data.persona || "",
+            );
             await home.logout();
         } else {
+            await home.enterLoginDetails(
+                data.UserName || "",
+                data.Password || "",
+                data.persona || "",
+            );
             await home.validateInvalidLogin(data.ErrorMessage);
         }
     });

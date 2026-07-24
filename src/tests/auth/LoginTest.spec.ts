@@ -76,7 +76,7 @@ test(`${data2.TestID} - ${data2.Description} @regression @auth @smoke @sanity`, 
     await home.launchApplication();
     // Nipige requires choosing a "Login as" role before it validates credentials; without it the
     // app stops at "Please select login way" instead of returning the invalid-credentials error.
-    await home.login(data2.UserName, data2.Password, data2.persona);
+    await home.enterLoginDetails(data2.UserName, data2.Password, data2.persona);
     await home.validateInvalidLogin(data2.ErrorMessage);
 });
 
@@ -119,8 +119,8 @@ test(`${data5.TestID} - ${data5.Description} @regression @auth @smoke @sanity`, 
     const home = new HomeSteps(page);
 
     await home.launchApplication();
-    await home.login(
-        data4.UserName,
+    await home.enterLoginDetails(
+        data5.UserName,
         data5.Password,
         data5.persona,
     );
