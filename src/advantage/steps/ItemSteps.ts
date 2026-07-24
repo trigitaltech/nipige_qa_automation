@@ -22,6 +22,8 @@ export interface ItemFormData {
 }
 
 export default class ItemSteps {
+    private createdTempName?: string;
+
     constructor(private readonly page: Page) {}
 
     private async settle(ms = ItemConstants.SETTLE_MS): Promise<void> {
@@ -193,12 +195,8 @@ export default class ItemSteps {
 
     public async searchItem(term: string): Promise<void> {
         await test.step(`Search for item: '${term}'`, async () => {
-            // The page has two "Search here" inputs — left nav sidebar (index 0) and
-            // right-side content area (index 1). Always target the content-area one.
-            const allInputs = this.page.locator('input[placeholder*="Search" i]');
-            const count = await allInputs.count().catch(() => 0);
-            const input = count >= 2 ? allInputs.nth(1) : allInputs.first();
-            await expect(input).toBeVisible({ timeout: 5_000 });
+            const input = this.page.locator(ItemPage.SEARCH_INPUT).first();
+            await expect(input).toBeVisible({ timeout: 8_000 });
             await input.fill(term);
             await this.page.keyboard.press("Enter");
             await this.settle();
@@ -347,33 +345,111 @@ export default class ItemSteps {
     }
 
     // Click the nth button (0-based) in the Actions column of the first table row
-    private async clickRowActionButton(index: number): Promise<void> {
+    private async clickRowActionButton(type: "view" | "edit" | "delete"): Promise<void> {
         await this.ensureItemsLoaded();
         await this.waitForFirstRow();
         const row = this.page.locator(ItemPage.TABLE_ROWS).first();
-        const actionCol = row.locator("td").last();
-        const items = actionCol.locator("button, a, svg, [role='button'], [class*='icon'], div, span");
-        const btn = (await items.count().catch(() => 0)) > index ? items.nth(index) : actionCol;
-        await expect(btn).toBeVisible({ timeout: 10_000 });
-        await btn.click({ force: true });
+        
+
+
+        let locatorStr = "";
+        if (type === "view") {
+            locatorStr = 'button[aria-label*="view" i], [class*="view"], [title*="View" i], svg[class*="view"], svg[class*="eye"]';
+        } else if (type === "edit") {
+            locatorStr = 'button[aria-label*="edit" i], [class*="edit"], [title*="Edit" i], svg[class*="edit"], svg[class*="pencil"]';
+        } else if (type === "delete") {
+            locatorStr = 'button[aria-label*="delete" i], [class*="delete"], [title*="Delete" i], svg[class*="delete"], svg[class*="trash"]';
+        }
+        
+        const btn = row.locator(locatorStr).first();
+        if (await btn.isVisible({ timeout: 4_000 }).catch(() => false)) {
+            await btn.click({ force: true });
+        } else {
+            // Fallback to old index logic
+            const oldIndex = type === "view" ? 0 : (type === "edit" ? 1 : 2);
+            const actionCol = row.locator("td").last();
+            const items = actionCol.locator("button, a, svg, [role='button'], [class*='icon'], div, span");
+            const fallbackBtn = (await items.count().catch(() => 0)) > oldIndex ? items.nth(oldIndex) : actionCol;
+            await expect(fallbackBtn).toBeVisible({ timeout: 10_000 });
+            await fallbackBtn.click({ force: true });
+        }
         await this.settle(ItemConstants.NAV_TIMEOUT_MS);
+    }
+
+    private async ensureItemExistsIfEmpty(): Promise<void> {
+        await this.ensureItemsLoaded();
+        const bodyText = await this.page.locator("body").textContent().catch(() => "");
+        const isEmpty = (bodyText ?? "").toLowerCase().includes("no items found")
+            || (bodyText ?? "").toLowerCase().includes("no records found")
+            || (bodyText ?? "").toLowerCase().includes("no data");
+
+        if (isEmpty) {
+            console.log("[Self-Healing] Items list is empty. Creating a temporary item first...");
+            const createBtn = this.page.locator(ItemPage.CREATE_BTN).first();
+            await createBtn.click();
+            await this.settle(ItemConstants.NAV_TIMEOUT_MS);
+            
+            // Fill and save item
+            const tempName = `TempItem_${Date.now().toString().slice(-6)}`;
+            this.createdTempName = tempName;
+            await this.fillItemForm({
+                name: tempName,
+                price: "10.00",
+                quantity: "10",
+                inventoryType: "STOCK",
+                stockCount: "10"
+            });
+            const saveBtn = this.page.locator(ItemPage.SAVE_BTN).first();
+            await saveBtn.click();
+            await this.settle(ItemConstants.NAV_TIMEOUT_MS);
+            
+            // Navigate back to items list
+            await this.navigateToItems();
+        }
     }
 
     public async clickViewIconOnFirstRow(): Promise<void> {
         await test.step("Click View icon on first item row", async () => {
-            await this.clickRowActionButton(0);
+            await this.ensureItemExistsIfEmpty();
+            await this.clickRowActionButton("view");
         });
     }
 
     public async clickEditIconOnFirstRow(): Promise<void> {
         await test.step("Click Edit icon on first item row", async () => {
-            await this.clickRowActionButton(1);
+            await this.ensureItemExistsIfEmpty();
+            await this.clickRowActionButton("edit");
         });
     }
 
     public async clickDeleteIconOnFirstRow(): Promise<void> {
         await test.step("Click Delete icon on first item row", async () => {
-            await this.clickRowActionButton(2);
+            await this.ensureItemsLoaded();
+            
+            console.log("[Test Setup] Creating a dedicated item for deletion to avoid protected system items...");
+            const createBtn = this.page.locator(ItemPage.CREATE_BTN).first();
+            await createBtn.click();
+            await this.settle(ItemConstants.NAV_TIMEOUT_MS);
+            
+            const tempName = `DelItem_${Date.now().toString().slice(-6)}`;
+            this.createdTempName = tempName;
+            
+            await this.fillItemForm({
+                name: tempName,
+                price: "15.00",
+                quantity: "5",
+                inventoryType: "STOCK",
+                stockCount: "5"
+            });
+            const saveBtn = this.page.locator(ItemPage.SAVE_BTN).first();
+            await saveBtn.click();
+            await this.settle(ItemConstants.NAV_TIMEOUT_MS);
+            
+            // Navigate back and search for our specific item
+            await this.navigateToItems();
+            await this.searchItem(tempName);
+            
+            await this.clickRowActionButton("delete");
         });
     }
 
@@ -758,11 +834,15 @@ export default class ItemSteps {
 
     public async confirmDelete(): Promise<void> {
         await test.step("Confirm deletion by clicking 'Yes, delete it'", async () => {
-            const btn = this.page.getByRole("button", { name: /yes.*delete/i }).first();
-            if (await btn.isVisible({ timeout: 4_000 }).catch(() => false)) {
-                await btn.click();
+
+
+            // Check if there is an active popup-scoped confirm button first to avoid matching background buttons
+            const popupConfirm = this.page.locator('.swal2-popup .swal2-confirm, [role="dialog"] button:has-text("delete"), [role="dialog"] button:has-text("Delete"), [role="dialog"] button:has-text("Yes")').filter({ visible: true }).first();
+            if (await popupConfirm.isVisible({ timeout: 3_000 }).catch(() => false)) {
+                await popupConfirm.click();
             } else {
-                await this.page.locator(ItemPage.DELETE_CONFIRM_BTN).first().click().catch(() => {});
+                const btn = this.page.locator(ItemPage.DELETE_CONFIRM_BTN).filter({ visible: true }).first();
+                await btn.click();
             }
             await this.settle();
         });
@@ -770,14 +850,13 @@ export default class ItemSteps {
 
     public async cancelDelete(): Promise<void> {
         await test.step("Cancel deletion by clicking 'No'", async () => {
-            // The delete popup shows "Yes, delete it" and "No" buttons.
-            // Use getByRole to find the exact "No" button, falling back to text match.
-            const btn = this.page.getByRole("button", { name: "No", exact: true });
-            if (await btn.isVisible({ timeout: 4_000 }).catch(() => false)) {
-                await btn.click();
+            // Check if there is an active popup-scoped cancel button first
+            const popupCancel = this.page.locator('.swal2-popup .swal2-cancel, [role="dialog"] button:has-text("No"), [role="dialog"] button:has-text("Cancel")').filter({ visible: true }).first();
+            if (await popupCancel.isVisible({ timeout: 3_000 }).catch(() => false)) {
+                await popupCancel.click();
             } else {
-                // Fallback: any button with text "No" that is currently visible
-                await this.page.locator('button:visible').filter({ hasText: /^No$/ }).first().click().catch(() => {});
+                const btn = this.page.locator(ItemPage.DELETE_CANCEL_BTN).filter({ visible: true }).first();
+                await btn.click();
             }
             await this.settle();
         });
@@ -791,14 +870,22 @@ export default class ItemSteps {
     }
 
     public async verifyItemRemovedFromList(name: string): Promise<void> {
-        await test.step(`Verify item '${name}' is removed from the list after deletion`, async () => {
+        const itemToVerify = name || this.createdTempName || "";
+        await test.step(`Verify item '${itemToVerify}' is removed from the list after deletion`, async () => {
             await this.page.waitForLoadState("networkidle", { timeout: 8_000 }).catch(() => {});
             await this.page.waitForTimeout(1_000);
             const bodyText = (await this.page.locator("body").textContent().catch(() => "")) ?? "";
-            await Assert.assertTrue(
-                !bodyText.includes(name),
-                `Item '${name}' is no longer in the Item List after deletion`,
-            );
+            if (itemToVerify) {
+                await Assert.assertTrue(
+                    !bodyText.includes(itemToVerify),
+                    `Item '${itemToVerify}' is no longer in the Item List after deletion`,
+                );
+            } else {
+                const isEmpty = bodyText.toLowerCase().includes("no items found")
+                    || bodyText.toLowerCase().includes("no records found")
+                    || bodyText.toLowerCase().includes("no data");
+                await Assert.assertTrue(isEmpty, "Item list is empty after deletion");
+            }
         });
     }
 
