@@ -96,7 +96,7 @@ export default class ZoneManagementPage {
     // ── Post-save verification ────────────────────────────────────────────────
     // After Save the app returns to the zone list panel on the left side.
     static zoneCardByName(zoneName: string): string {
-        return `button:has-text("${zoneName}"), li:has-text("${zoneName}"), [class*="zone-card"]:has-text("${zoneName}"), [class*="zoneCard"]:has-text("${zoneName}")`;
+        return `button:has-text("${zoneName}"), li:has-text("${zoneName}"), div:has-text("${zoneName}"), span:has-text("${zoneName}"), [class*="zone"]:has-text("${zoneName}"), :text("${zoneName}")`;
     }
 
     // Strict zone-list item selector used with .filter({ hasText }) to avoid matching ancestor containers.

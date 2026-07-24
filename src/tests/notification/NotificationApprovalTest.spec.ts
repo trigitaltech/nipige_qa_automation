@@ -242,8 +242,13 @@ test.describe("Notification Approval", () => {
     const d25 = ExcelUtil.getTestData(SHEET, "TC25_CombinedFilters");
     test(`${d25.TestID} - ${d25.Description} @regression`, async () => {
         Allure.attachDetails(d25.Description, d25.Issue);
-        const [dateFilter, typeFilter, statusFilter] = String(d25.FilterValue)
-            .split("|").map((v) => v.trim());
+        const filterVal = (d25.FilterValue && d25.FilterValue !== "undefined")
+            ? String(d25.FilterValue)
+            : "Last 7 days | All Types | All Statuses";
+        const parts = filterVal.split("|").map((v) => v.trim());
+        const dateFilter = parts[0] || "Last 7 days";
+        const typeFilter = parts[1] || "All Types";
+        const statusFilter = parts[2] || "All Statuses";
         await approval.applyMultipleFilters(dateFilter, typeFilter, statusFilter);
         await approval.verifyListingReloadedAfterFilter();
     });

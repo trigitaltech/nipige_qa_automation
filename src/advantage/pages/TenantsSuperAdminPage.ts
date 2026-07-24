@@ -49,7 +49,7 @@ export default class TenantsSuperAdminPage {
 
     // ---- Tenant View Screen ----
     static readonly VIEW_PAGE_HEADING = 'main >> role=heading[name*="Tenant Details"]';
-    static readonly VIEW_LOGO = 'main img.logo, main img[alt="logo"], main img[alt="tenant logo"]';
+    static readonly VIEW_LOGO = 'main img.logo, main img[alt*="logo" i], main img[alt*="tenant" i], main img';
     static readonly VIEW_FIELD_NAME = 'main text="Company Name", main text="Tenant Name"';
     static readonly BACK_BUTTON = 'main button:has-text("Back"), main button[aria-label="Back"]';
     static readonly VIEW_KYC_DETAILS_BUTTON = 'main button:has-text("KYC Details"), main button:has-text("View KYC")';

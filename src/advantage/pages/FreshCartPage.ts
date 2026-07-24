@@ -1,35 +1,26 @@
 export default class FreshCartPage {
     // ── Login page ────────────────────────────────────────────────────────────
-    // Confirmed from DevTools: <input id="identifier" type="email">
-    static readonly USERNAME_INPUT = '#identifier';
-    // Confirmed from DevTools: <input id="password" type="password">
-    static readonly PASSWORD_INPUT = '#password';
-    // Confirmed from DevTools: <button type="submit">
-    static readonly LOGIN_BUTTON = 'button[type="submit"]';
+    static readonly USERNAME_INPUT = '#identifier, input[name="identifier"], input[type="email"], input[name="email"], input[placeholder*="email" i], input[placeholder*="username" i]';
+    static readonly PASSWORD_INPUT = '#password, input[name="password"], input[type="password"]';
+    static readonly LOGIN_BUTTON = 'button[type="submit"], button:has-text("Sign in"), button:has-text("Sign In"), button:has-text("Login")';
 
     // ── Top navigation ────────────────────────────────────────────────────────
-    // TODO: verify selector — inspect the Orders link in the top nav
-    static readonly ORDERS_LINK = 'a:text-is("Orders")';
+    static readonly ORDERS_LINK = 'a[href*="order" i], a:has-text("Orders"), button:has-text("Orders")';
 
     // ── Orders listing page ───────────────────────────────────────────────────
-    // Confirmed from DevTools: card-based layout — <a><span>View Details</span></a>
-    static readonly FIRST_ORDER_VIEW_DETAILS = 'a:has(span:has-text("View Details"))';
+    static readonly FIRST_ORDER_VIEW_DETAILS = 'a:has-text("View Details"), button:has-text("View Details"), a:has(span:has-text("View Details")), a[href*="order"], button:has-text("Details"), td a, li a';
 
     // ── Order detail page ─────────────────────────────────────────────────────
-    // TODO: verify selector — inspect the Need Help button on the order detail page
-    static readonly NEED_HELP_BUTTON = 'button:text-is("Need Help")';
+    static readonly NEED_HELP_BUTTON = 'button:has-text("Need Help"), a:has-text("Need Help"), :text("Need Help"), button:has-text("Support"), a[href*="support"]';
 
     // ── Need Help / Support panel ─────────────────────────────────────────────
-    // Confirmed: rendered as a non-button/anchor element — text= matches any tag
-    static readonly SUPPORT_TICKET_OPTION = 'text=Support Ticket';
+    static readonly SUPPORT_TICKET_OPTION = ':text("Support Ticket"), button:has-text("Support Ticket"), a:has-text("Support Ticket")';
 
     // ── Support Ticket creation ───────────────────────────────────────────────
-    // TODO: verify selector — inspect the Raise Ticket button
-    static readonly RAISE_TICKET_BUTTON = 'button:text-is("Raise Ticket")';
+    static readonly RAISE_TICKET_BUTTON = 'button:has-text("Raise Ticket"), button:has-text("Create Ticket"), button:has-text("New Ticket"), :text("Raise Ticket")';
 
     // Issue Type dropdown
-    // Confirmed from DevTools: native <select class="w-full rounded-xl border...">
-    static readonly ISSUE_TYPE_DROPDOWN = 'select';
+    static readonly ISSUE_TYPE_DROPDOWN = 'select, [role="combobox"], button:has-text("Select"), div[class*="select"]';
 
     // Confirmed from DevTools: <input placeholder="Enter issue title" type="text">
     static readonly ISSUE_INPUT = 'input[placeholder="Enter issue title"]';

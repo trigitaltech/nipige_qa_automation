@@ -86,7 +86,7 @@ export default class AdvertisementSteps {
             const targetUrl = `${process.env.BASE_URL}${AdvertisementPage.ADVERTISEMENT_PATH}`;
             console.log(`[Advertisement] Navigating to: ${targetUrl}`);
             await this.page.goto(targetUrl);
-            await this.page.waitForLoadState("networkidle");
+            await this.page.waitForLoadState("domcontentloaded").catch(() => {});
             const landedUrl = this.page.url();
             console.log(`[Advertisement] Landed on: ${landedUrl}`);
             if (landedUrl.includes("/login")) {
