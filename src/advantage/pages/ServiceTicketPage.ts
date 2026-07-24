@@ -12,12 +12,12 @@ export default class ServiceTicketPage {
 
     // Eye icon / View button scoped to the row containing the given ticket ID
     static ticketViewButton(ticketId: string): string {
-        return `tr:has-text("${ticketId}") button[title="View"]`;
+        return `tr:has-text("${ticketId}") button[title="View"], tr:has-text("${ticketId}") button:has(svg), tr:has-text("${ticketId}") a[title="View"], tr:has-text("${ticketId}") button:first-of-type`;
     }
 
     // Confirmed from DevTools: <button title="Edit" data-slot="button"> — title attribute matches View pattern
     static ticketEditButton(ticketId: string): string {
-        return `tr:has-text("${ticketId}") button[title="Edit"]`;
+        return `tr:has-text("${ticketId}") button[title="Edit"], tr:has-text("${ticketId}") button:nth-of-type(2), tr:has-text("${ticketId}") a[title="Edit"]`;
     }
 
     // Row selector scoped to the ticket ID — used to chain .nth() in steps
@@ -69,15 +69,12 @@ export default class ServiceTicketPage {
     // Confirmed from DevTools: native <select> with no name attribute, scoped by its label
     static readonly STATUS_DROPDOWN = 'div:has-text("Status") select';
 
-    // Confirmed from DevTools: <textarea placeholder="Enter note to customer (max 150 chars)">
-    static readonly NOTE_TO_CUSTOMER = 'textarea[placeholder*="note to customer"]';
-
-    // Confirmed from DevTools: <textarea placeholder="Enter internal note">
-    static readonly INTERNAL_NOTE = 'textarea[placeholder*="internal note"]';
-
-    // Update button that submits the edit form
-    // TODO: verify selector — inspect the submit button on the Edit page
-    static readonly UPDATE_BUTTON = 'button:text-is("Update")';
+    // Confirmed from DevTools: <textarea placeholder="Enter note to customer..." ...>
+    static readonly NOTE_TO_CUSTOMER_INPUT = 'textarea[placeholder*="customer" i], textarea[placeholder*="note" i], textarea:first-of-type';
+    // Confirmed from DevTools: <textarea placeholder="Enter internal note..." ...>
+    static readonly INTERNAL_NOTE_INPUT = 'textarea[placeholder*="internal" i], textarea:nth-of-type(2)';
+    // Confirmed from DevTools: <button type="submit">Update</button>
+    static readonly UPDATE_BUTTON = 'button:has-text("Update"), button[type="submit"]';
 
     // Confirmed from DevTools: icon-only button with aria-label="Reload"
     static readonly REFRESH_BUTTON = 'button[aria-label="Reload"]';

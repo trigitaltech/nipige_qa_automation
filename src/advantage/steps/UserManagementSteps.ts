@@ -173,7 +173,34 @@ export default class UserManagementSteps {
                 await this.searchUser(fallbackText, "Found");
                 return fallbackText;
             }
-            throw new Error(`[UserManagementSteps] Both target user '${searchText}' and fallback search failed: no users found in list.`);
+
+            // Check other tabs (Pending Approval, Approved, Rejected) if current tab has no users
+            const tabs = [
+                UserManagementPage.PENDING_TAB,
+                UserManagementPage.APPROVED_TAB,
+                UserManagementPage.REJECTED_TAB,
+                UserManagementPage.ALL_USERS_TAB
+            ];
+            for (const tab of tabs) {
+                try {
+                    const tabBtn = this.page.locator(tab);
+                    if (await tabBtn.isVisible().catch(() => false)) {
+                        await tabBtn.click();
+                        await this.wait(3000);
+                        const rowText = await tableBody.locator("tr").first().locator("td").first().textContent().catch(() => "");
+                        if (rowText && !rowText.includes("No users found") && rowText.trim().length > 0) {
+                            const fallbackText = rowText.trim();
+                            console.log(`[UserManagementSteps] Found user in fallback tab: '${fallbackText}'`);
+                            await this.searchUser(fallbackText, "Found");
+                            return fallbackText;
+                        }
+                    }
+                } catch (err: any) {
+                    console.log(`[UserManagementSteps] Error checking tab: ${err?.message}`);
+                }
+            }
+
+            throw new Error(`[UserManagementSteps] Both target user '${searchText}' and tab fallbacks failed: no users found in list.`);
         }
     }
 

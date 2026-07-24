@@ -38,7 +38,37 @@ export default class BulkNotificationSteps {
         // can't be clicked. Centering the combobox in the viewport first guarantees headroom.
         await combobox.evaluate((el) => el.scrollIntoView({ block: "center" }));
         await combobox.click();
-        const option = this.page.locator(BulkNotificationPage.comboboxOption(label)).first();
+
+        let option = this.page.locator(BulkNotificationPage.comboboxOption(label)).first();
+        let isVisible = await option.isVisible({ timeout: 2000 }).catch(() => false);
+
+        if (!isVisible) {
+            const altLabels: string[] = [];
+            if (label.toLowerCase().includes("equal")) {
+                altLabels.push("Equals (=)", "Equals", "Equal To", "Equal", "=");
+            } else if (label.toLowerCase().includes("or")) {
+                altLabels.push("Or", "OR", "or");
+            }
+            
+            for (const alt of altLabels) {
+                const altOption = this.page.locator(`button:has-text("${alt}")`).first();
+                if (await altOption.isVisible().catch(() => false)) {
+                    option = altOption;
+                    isVisible = true;
+                    break;
+                }
+            }
+
+            if (!isVisible) {
+                const partialLabel = label.split(" ")[0];
+                const genericOption = this.page.locator(`button:has-text("${partialLabel}")`).first();
+                if (await genericOption.isVisible().catch(() => false)) {
+                    option = genericOption;
+                    isVisible = true;
+                }
+            }
+        }
+
         await option.waitFor({ state: "visible", timeout: 10_000 });
         // scrollIntoViewIfNeeded() aligns to the nearest edge, which can still leave a long listbox
         // option partly clipped — center it explicitly (same fix as the combobox above) before

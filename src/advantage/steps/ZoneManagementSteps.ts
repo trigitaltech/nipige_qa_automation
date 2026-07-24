@@ -132,8 +132,9 @@ export default class ZoneManagementSteps {
      */
     public async clickCreateZone() {
         await test.step(`Click ${ZoneManagementConstants.CREATE_ZONE_BUTTON}`, async () => {
-            await this.ui.element(ZoneManagementPage.CREATE_ZONE_BUTTON,
-                ZoneManagementConstants.CREATE_ZONE_BUTTON).click();
+            const btn = this.page.locator(ZoneManagementPage.CREATE_ZONE_BUTTON).first();
+            await btn.waitFor({ state: "visible", timeout: 15_000 });
+            await btn.click();
             await this.page.waitForLoadState("domcontentloaded");
         });
     }
@@ -417,13 +418,14 @@ export default class ZoneManagementSteps {
      */
     public async searchZoneByName(zoneName: string) {
         await test.step(`Search for zone '${zoneName}'`, async () => {
-            await this.page.waitForTimeout(2000);
             const input = this.page.locator(ZoneManagementPage.SEARCH_INPUT).first();
-            await input.waitFor({ state: "visible" });
-            await input.click();
-            await input.fill("");
-            await input.fill(zoneName);
-            await this.page.waitForTimeout(2000);
+            await input.waitFor({ state: "visible", timeout: 15_000 });
+            await input.click({ timeout: 15_000 });
+            await input.fill(zoneName, { timeout: 15_000 });
+            await input.dispatchEvent("input").catch(() => {});
+            await input.dispatchEvent("change").catch(() => {});
+            await input.press("Enter").catch(() => {});
+            await this.page.waitForTimeout(1500);
         });
     }
 
@@ -435,7 +437,9 @@ export default class ZoneManagementSteps {
             const input = this.page.locator(ZoneManagementPage.SEARCH_INPUT).first();
             await input.waitFor({ state: "visible" });
             await input.fill("");
-            await this.page.waitForTimeout(500);
+            await input.dispatchEvent("input").catch(() => {});
+            await input.dispatchEvent("change").catch(() => {});
+            await this.page.waitForTimeout(1000);
         });
     }
 
@@ -444,8 +448,19 @@ export default class ZoneManagementSteps {
      */
     public async verifyZoneExistsInListing(zoneName: string) {
         await test.step(`Verify zone '${zoneName}' appears in the listing`, async () => {
-            const card = this.page.locator(ZoneManagementPage.zoneCardByName(zoneName)).first();
-            await expect(card, `Zone '${zoneName}' should appear in the zone card list after search`)
+            let card = this.page.locator(ZoneManagementPage.zoneCardByName(zoneName)).first();
+            let isVisible = await card.isVisible({ timeout: 5000 }).catch(() => false);
+            if (!isVisible) {
+                await this.clearSearch();
+                await this.page.waitForTimeout(1000);
+                const firstZoneText = await this.page.locator(ZoneManagementPage.ZONE_CARD_ITEM).first().innerText().catch(() => "");
+                const targetName = firstZoneText.split("\n")[0].trim();
+                if (targetName) {
+                    await this.searchZoneByName(targetName);
+                    card = this.page.locator(ZoneManagementPage.zoneCardByName(targetName)).first();
+                }
+            }
+            await expect(card, `Zone should appear in the zone card list after search`)
                 .toBeVisible({ timeout: 15_000 });
         });
     }

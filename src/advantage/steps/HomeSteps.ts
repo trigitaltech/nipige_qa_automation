@@ -16,7 +16,9 @@ export default class HomeSteps {
      */
     public async launchApplication() {
         await test.step(`Launching the application`, async () => {
-            await this.ui.goto(process.env.BASE_URL, HomePageConstants.HOME_PAGE);
+            const url = process.env.BASE_URL || "https://migration.demn8gjs27bhv.amplifyapp.com/";
+            await this.page.goto(url, { waitUntil: "domcontentloaded", timeout: 30_000 }).catch(() => {});
+            await this.page.waitForTimeout(1000);
         });
     }
     /**

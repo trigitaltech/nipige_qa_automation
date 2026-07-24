@@ -381,9 +381,9 @@ export default class NotificationApprovalSteps {
     public async applyMultipleFilters(dateOption: string, typeOption: string, statusOption: string) {
         await test.step(`Apply combined filters: Date='${dateOption}', Type='${typeOption}', Status='${statusOption}'`,
             async () => {
-                await this.selectDateFilter(dateOption);
-                await this.selectTypeFilter(typeOption);
-                await this.selectStatusFilter(statusOption);
+                if (dateOption && dateOption !== "undefined") await this.selectDateFilter(dateOption);
+                if (typeOption && typeOption !== "undefined") await this.selectTypeFilter(typeOption);
+                if (statusOption && statusOption !== "undefined") await this.selectStatusFilter(statusOption);
             });
     }
 

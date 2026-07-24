@@ -87,19 +87,29 @@ export default class OrderReportSteps {
     }
 
     private formatDate(
-        dateValue: string | Date,
+        dateValue?: string | Date,
+        isFromDate = true,
     ): string {
-        const date = new Date(dateValue);
+        let date: Date;
+        if (dateValue) {
+            date = new Date(dateValue);
+        } else {
+            const now = new Date();
+            date = isFromDate
+                ? new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+                : now;
+        }
+
+        if (isNaN(date.getTime())) {
+            const now = new Date();
+            date = isFromDate
+                ? new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+                : now;
+        }
 
         const year = date.getUTCFullYear();
-
-        const month = String(
-                date.getUTCMonth() + 1,
-            ).padStart(2, "0");
-
-        const day = String(
-                date.getUTCDate(),
-            ).padStart(2, "0");
+        const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+        const day = String(date.getUTCDate()).padStart(2, "0");
 
         return `${year}-${month}-${day}`;
     }
@@ -129,19 +139,19 @@ export default class OrderReportSteps {
     }
 
     private async applyCustomDateRange(
-        fromDate: string | Date,
-        toDate: string | Date,
+        fromDate?: string | Date,
+        toDate?: string | Date,
     ) {
         await this.page.locator(
             OrderReportPage.CUSTOM_FROM_DATE,
         ).fill(
-            this.formatDate(fromDate),
+            this.formatDate(fromDate, true),
         );
 
         await this.page.locator(
             OrderReportPage.CUSTOM_TO_DATE,
         ).fill(
-            this.formatDate(toDate),
+            this.formatDate(toDate, false),
         );
 
         await this.page.waitForTimeout(1000);
